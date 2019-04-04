@@ -1,0 +1,24 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+aiohttp = "*"
+
+[packages]
+ujson = "==1.35"
+psycopg2-binary = "==2.7.7"
+graphql-core-next = "==1.0.2"
+graphql-server = {git = "https://github.com/norman-thomas/graphql-server-core",ref = "master"}
+pyjwt = "==1.7.1"
+pytest = "==4.3.1"
+factory-boy = "==2.11.1"
+click = "==7.0"
+termcolor = "==1.1.0"
+halo = "==0.0.23"
+sanic = "==19.3.1"
+boto3 = "==1.9.125"
+
+[requires]
+python_version = "3.7"

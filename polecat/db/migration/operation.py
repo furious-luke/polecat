@@ -59,12 +59,18 @@ class CreateModel(Operation):
         return SQL('\n{}\n').format(
             SQL(',\n').join(
                 SQL('  ') + self.field_sql(f)
-                for f in self.fields
+                for f in self.iter_valid_fields()
             )
         )
 
+    def iter_valid_fields(self):
+        for field in self.fields:
+            db_field = get_db_field(field)
+            if db_field.is_concrete():
+                yield db_field
+
     def field_sql(self, field):
-        return get_db_field(field).get_create_sql()
+        return field.get_create_sql()
 
     def access_sql(self, table_name):
         access = getattr(self.options, 'access', None)

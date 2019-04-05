@@ -22,3 +22,17 @@ all_movies_query = '''query {
   }
 }
 '''
+
+all_actors_query = '''query {
+  allActors {
+    id,
+    firstName,
+    lastName,
+    age,
+    moviesByStar {
+      id,
+      title
+    }
+  }
+}
+'''

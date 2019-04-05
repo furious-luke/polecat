@@ -1,16 +1,21 @@
+from graphql.type import GraphQLList
+
 from ..db.connection import cursor
 from ..db.sql import Q, S
+from ..utils.exceptions import traceback
 from .field import RelatedField
 
 
 def resolve_all_query(obj, info):
-    graphql_type = info.return_type.of_type
-    query = build_query(graphql_type, info.field_nodes[0])
-    # TODO: Ensure cursor is cached. Or at least connection.
-    with cursor() as curs:
-        sql = query.evaluate()
-        curs.execute(*sql)
-        return map(lambda x: x[0], curs.fetchall())
+    # TODO: Remove this in production.
+    with traceback():
+        graphql_type = info.return_type.of_type
+        query = build_query(graphql_type, info.field_nodes[0])
+        # TODO: Ensure cursor is cached. Or at least connection.
+        with cursor() as curs:
+            sql = query.evaluate()
+            curs.execute(*sql)
+            return map(lambda x: x[0], curs.fetchall())
 
 
 def build_query(graphql_type, node):
@@ -19,6 +24,12 @@ def build_query(graphql_type, node):
 
 
 def get_selector_from_node(graphql_type, node):
+    # TODO: I'd like this to be bundled up in the GraphQL type itself,
+    # as in we should call "graphql_type.polecat_fields" to get our
+    # type. This means altering the instantiated GQLType during schema
+    # construction.
+    if isinstance(graphql_type, GraphQLList):
+        graphql_type = graphql_type.of_type
     fields = []
     lookups = {}
     for field_node in node.selection_set.selections:

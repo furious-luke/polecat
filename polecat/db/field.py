@@ -49,6 +49,9 @@ class Field(metaclass=FieldMetaclass):
     def match(cls, field):
         return True
 
+    def is_concrete(self):
+        return True
+
     def get_value(self, model):
         return getattr(model, self.name, None)
 
@@ -127,6 +130,9 @@ class ForeignKeyField(IntField):
 
     # def get_type_sql(self):
     #     return self.get_other().get_type_sql()
+
+    def is_concrete(self):
+        return not self.source.reverse
 
     def get_value(self, model):
         value = super().get_value(model)

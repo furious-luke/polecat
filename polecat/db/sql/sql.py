@@ -60,6 +60,12 @@ class Q:
             if getattr(field, 'primary_key', None):
                 returning.append(field.name)
                 continue
+            # TODO: There needs to be an abstraction for iterating
+            # over fields that are insertable. Ah, maybe
+            # MutableFields?  Reverse fields may need to be a
+            # different class of field. Damn it.
+            if getattr(field, 'reverse', False):
+                continue
             fn, fv = self.get_value_for_field(field)
             field_names.append(fn)
             field_values.append(fv)

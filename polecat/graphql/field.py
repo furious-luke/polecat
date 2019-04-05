@@ -65,4 +65,7 @@ class RelatedField(Field):
     sources = (field.RelatedField,)
 
     def get_graphql_type(self):
-        return graphql_type_registry[self.model_field.other]
+        type = graphql_type_registry[self.model_field.other]
+        if self.model_field.reverse:
+            type = GraphQLList(type)
+        return type

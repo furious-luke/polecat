@@ -9,6 +9,7 @@ query_registry = []
 mutation_registry = []
 
 
+# TODO: Too much overlap between types and models.
 class TypeMetaclass(type):
     def __new__(meta, name, bases, attrs):
         is_sub = bases and name != 'Type'
@@ -21,6 +22,12 @@ class TypeMetaclass(type):
         if is_sub:
             type_registry.append(cls)
         return cls
+
+    def __init__(cls, name, bases, attrs):
+        meta = getattr(cls, 'Meta', None)
+        if meta:
+            for field in meta.fields.values():
+                field.prepare(cls)
 
 
 class ModelMetaclass(type):
@@ -35,6 +42,12 @@ class ModelMetaclass(type):
         if is_sub:
             model_registry.append(cls)
         return cls
+
+    def __init__(cls, name, bases, attrs):
+        meta = getattr(cls, 'Meta', None)
+        if meta:
+            for field in meta.fields.values():
+                field.prepare(cls)
 
 
 class RoleMetaclass(type):
@@ -98,7 +111,7 @@ def make_type_meta(name, bases, attrs, meta):
 def make_model_meta(name, bases, attrs, meta):
     fields = {
         f.name: f
-        for f in get_fields(attrs)
+        for f in get_model_fields(attrs)
     }
     return type('Meta', (), {
         'options': meta,
@@ -150,15 +163,15 @@ def make_mutation_attrs(attrs):
 
 
 def get_type_fields(attrs):
-    for k, v in attrs.items():
-        if is_field_class(v):
+    for name, field in attrs.items():
+        if is_field_class(field):
             yield add_attribute(
-                add_attribute(v, 'name', k),
-                'cc_name', camelcase(k)
+                add_attribute(field, 'name', name),
+                'cc_name', camelcase(name)
             )
 
 
-def get_fields(attrs):
+def get_model_fields(attrs):
     yield add_attribute(
         add_attribute(
             IntField(primary_key=True), 'name', 'id'

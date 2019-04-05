@@ -58,6 +58,10 @@ def iter_model_fields(model):
         # TODO: Should test for auto instead.
         if getattr(field, 'primary_key', False):
             continue
+        # Don't instantiate reverses by default, gets us into infinite
+        # loops.
+        if getattr(field, 'reverse', False):
+            continue
         yield field
 
 

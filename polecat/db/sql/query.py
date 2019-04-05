@@ -19,6 +19,7 @@ class Query:
         self.next_id = self.id + 1
         self.table_alias = f't{self.id}'
         self.join_alias = f'j{self.id}'
+        self.agg_alias = f'a{self.id}'
 
     def __repr__(self):
         return f'<Query selector={self.selector}>'
@@ -52,11 +53,11 @@ class Query:
                 self._result = result
         return result
 
-    def evaluate(self):
+    def evaluate(self, *args, **kwargs):
         self.prepare()
         sql = getattr(self, '_sql', None)
         if sql is None:
-            sql = self.backend_class.evaluate(self)
+            sql = self.backend_class.evaluate(self, *args, **kwargs)
             self._sql = sql
         return sql
 
@@ -75,7 +76,12 @@ class Query:
 
     def prepare_sub_query(self, field_name, selector):
         # TODO: Handle invalid lookup.
-        other_model = self.model_class.Meta.fields[field_name].other
-        sub_query = Query(other_model, selector=selector, parent=self).prepare()
+        field = self.model_class.Meta.fields[field_name]
+        other_model = field.other
+        sub_query = Query(
+            other_model,
+            selector=selector,
+            parent=self
+        ).prepare()
         self.next_id = sub_query.next_id
         return sub_query

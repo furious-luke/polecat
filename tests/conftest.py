@@ -17,24 +17,29 @@ def testdb():
         curs.execute(f'create database {test_dbname}')
     try:
         test_url = unparse_url({**dbinfo, 'dbname': test_dbname})
-        with cursor(test_url) as curs:
-            migrate(cursor=curs)
         with push_database_url(test_url):
-            yield test_url
+            with cursor(test_url) as curs:
+                yield curs
     finally:
         with cursor() as curs:
             curs.execute(f'drop database {test_dbname}')
 
 
+@pytest.fixture(scope='session')
+def migrateddb(testdb):
+    migrate(cursor=testdb)
+    yield testdb
+
+
 @pytest.fixture
-def db(testdb):
-    dbinfo = parse_url(testdb)
+def db(migrateddb):
+    url = migrateddb.connection.dsn
+    dbinfo = parse_url(url)
     local_dbname = random_ident()
-    with cursor(testdb) as curs:
-        curs.execute(
-            f'create database {local_dbname}'
-            f' with template {dbinfo["dbname"]}'
-        )
+    migrateddb.execute(
+        f'create database {local_dbname}'
+        f' with template {dbinfo["dbname"]}'
+    )
     try:
         local_url = unparse_url({**dbinfo, 'dbname': local_dbname})
         with push_database_url(local_url):

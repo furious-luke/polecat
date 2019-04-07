@@ -1,6 +1,7 @@
 import inspect
 import random
 import string
+from pathlib import Path
 
 
 def add_attribute(obj, key, value):
@@ -67,3 +68,7 @@ def set_path(destination, path, value, separator='.'):
             destination[part] = {}
         destination = destination[part]
     destination[parts[-1]] = value
+
+
+def get_data_dir():
+    return Path(__file__).parent.parent / 'data'

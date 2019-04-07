@@ -100,7 +100,7 @@ A local development server will be launched, navigate to
 
 ## Documentation
 
-Please head over to the Wiki for more documentation.
+Coming soon (slowly).
 
 ## Contributing
 

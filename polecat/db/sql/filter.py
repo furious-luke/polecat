@@ -1,6 +1,7 @@
 import re
 
 import ujson
+from psycopg2.sql import SQL, Composable, Identifier
 
 
 class Filter:
@@ -72,8 +73,9 @@ class FilterType:
     def eval_joins(self, filter, condition):
         if not self.joins:
             return condition
-        sql = '{next}'
+        sql = '%s'
         model = filter.model
+        args = []
         for i, j in enumerate(self.joins):
             # TODO: Handle m2m, reverse fk, reverse m2m.
             field = model.Meta.fields[j]
@@ -88,13 +90,16 @@ class FilterType:
             tbl = model.Meta.table
             # TODO: Use Identifier
             # TODO: PK field other than 'id'.
-            next = 'EXISTS (SELECT 1 FROM %s WHERE %s = %s AND {next})' % (
-                tbl,
-                f'{prev_tbl}.{prev_col}',
-                f'{tbl}.id'
-            )
-            sql = sql.format(next=next)
-        sql = sql.format(next=condition)
+            next = 'EXISTS (SELECT 1 FROM {} WHERE {} = {} AND %s)'
+            args.extend([
+                Identifier(tbl),
+                SQL('{}.{}').format(Identifier(prev_tbl), Identifier(prev_col)),
+                SQL('{}.id').format(Identifier(tbl))
+            ])
+            sql = sql % next
+        sql = sql % '{}'
+        args.append(condition)
+        sql = SQL(sql).format(*args)
         return sql
 
     def parse_lookup(self, lookup):
@@ -119,6 +124,14 @@ class FilterType:
             table = model.Meta.table
         return table, self.field
 
+    def format(self, format_string, *args):
+        # TODO: A little ugly.
+        if isinstance(self.value, Composable):
+            format_string = format_string % '{}'
+            return SQL(format_string).format(*(args + (self.value,))), ()
+        else:
+            return SQL(format_string).format(*args), (self.value,)
+
 
 class Equal(FilterType):
     def eval(self, filter):
@@ -128,7 +141,12 @@ class Equal(FilterType):
         except KeyError:
             raise ValueError(f'invalid attribute: {self.field}')
         op = '=' if self.value is not None else 'IS'
-        return f'{tbl}.{col} {op} %s', (self.value,)
+        return self.format(
+            '{}.{} {} %s',
+            Identifier(tbl),
+            Identifier(col),
+            SQL(op)
+        )
 
 
 class NotEqual(FilterType):
@@ -139,7 +157,7 @@ class NotEqual(FilterType):
         except KeyError:
             raise ValueError(f'invalid attribute: {self.field}')
         op = '!=' if self.value is not None else 'IS NOT'
-        return f'{tbl}.{col} {op} %s', (self.value,)
+        return self.format('{}.{} {} %s', tbl, col, op)
 
 
 class Contains(FilterType):
@@ -149,7 +167,7 @@ class Contains(FilterType):
             tbl, col = self.get_table_column(filter)
         except KeyError:
             raise ValueError(f'invalid attribute: {self.field}')
-        return f'{tbl}.{col} LIKE %s', (self.value,)
+        return self.format('{}.{} LIKE %s', tbl, col)
 
     def parse_value(self, filter, value):
         value = '%{}%'.format(value)
@@ -159,25 +177,25 @@ class Contains(FilterType):
 class Less(FilterType):
     def eval(self, filter):
         super().eval(filter)
-        return f'{self.field} < %s', (self.value,)
+        return self.format('{} < %s', self.field)
 
 
 class Greater(FilterType):
     def eval(self, filter):
         super().eval(filter)
-        return f'{self.field} > %s', (self.value,)
+        return self.format('{} > %s', self.field)
 
 
 class LessEqual(FilterType):
     def eval(self, filter):
         super().eval(filter)
-        return f'{self.field} <= %s', (self.value,)
+        return self.format('{} <= %s', self.field)
 
 
 class GreaterEqual(FilterType):
     def eval(self, filter):
         super().eval(filter)
-        return f'{self.field} >= %s', (self.value,)
+        return self.format('{} >= %s', self.field)
 
 
 class In(FilterType):
@@ -187,7 +205,7 @@ class In(FilterType):
             tbl, col = self.get_table_column(filter)
         except KeyError:
             raise ValueError(f'invalid attribute: {self.field}')
-        return f'{tbl}.{col} = ANY (%s)', (self.value,)
+        return self.format('{}.{} = ANY (%s)', tbl, col)
 
     def parse_value(self, filter, value):
         try:
@@ -199,7 +217,7 @@ class In(FilterType):
 class NotIn(In):
     def eval(self, filter):
         FilterType.eval(self, filter)
-        return f'{self.field} NOT IN %s', (self.value,)
+        return self.format('{} NOT IN %s', self.field)
 
 
 class IsNull(FilterType):
@@ -210,16 +228,16 @@ class IsNull(FilterType):
         except KeyError:
             raise ValueError(f'invalid attribute: {self.field}')
         op = 'IS' if self.value else 'IS NOT'
-        return f'{tbl}.{col} {op} NULL'
+        return self.format('{}.{} {} NULL', tbl, col, op)
 
     def parse_value(self, filter, value):
         self.value = to_bool(value)
 
 
-class NotNull(FilterType):
-    def eval(self, filter):
-        super().eval(filter)
-        return f'{self.field} NOTNULL'
+# class NotNull(FilterType):
+#     def eval(self, filter):
+#         super().eval(filter)
+#         return f'{self.field} NOT NULL'
 
 
 class Overlap(FilterType):
@@ -229,7 +247,7 @@ class Overlap(FilterType):
             tbl, col = self.get_table_column(filter)
         except KeyError:
             raise ValueError(f'invalid attribute: {self.field}')
-        return f'{tbl}.{col} && %s', (self.value,)
+        return self.format('{}.{} && %s', tbl, col)
 
 
 class Operator:
@@ -249,17 +267,18 @@ class Operator:
 class And(Operator):
     def get_sql(self, filter):
         left, right, args = self.eval_sides(filter)
+        # TODO: Making new SQLs here is probably a tiny bit inefficient.
         if isinstance(self.left, Or):
-            left = f'({left})'
+            left = SQL('({})').format(left)
         if isinstance(self.right, Or):
-            right = f'({right})'
-        return f'{left} AND {right}', args
+            right = SQL('({})').format(right)
+        return SQL('{} AND {}').format(left, right), args
 
 
 class Or(Operator):
     def get_sql(self, filter):
         left, right, args = self.eval_sides(filter)
-        return f'{left} OR {right}', args
+        return SQL('{} OR {}').format(left, right), args
 
 
 Filter.FILTER_TYPES = {
@@ -273,7 +292,7 @@ Filter.FILTER_TYPES = {
     'ct': Contains,
     'ni': NotIn,
     'nu': IsNull,
-    'nn': NotNull,
+    # 'nn': NotNull,
     'ov': Overlap,
     # 'bt': Between
 }

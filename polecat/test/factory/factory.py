@@ -19,7 +19,7 @@ class ModelFactory(base.Factory):
     @classmethod
     def _create(cls, model_class, *args, **kwargs):
         inst = model_class(*args, **kwargs)
-        Q(inst).insert()
+        Q(inst).insert().execute()
         return inst
 
 

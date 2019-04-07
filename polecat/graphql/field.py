@@ -14,14 +14,17 @@ class Field(metaclass=FieldMetaclass):
     graphql_type = None
     sources = ()
 
-    def __init__(self, model, model_field, input=False):
+    def __init__(self, model, model_field, input=False, registry=None):
         self.model = model
         self.model_field = model_field
         self.input = input
+        self.registry = registry or graphql_type_registry
 
-    def make_graphql_field(self):
+    def make_graphql_field(self, optional=False):
         # TODO: Clean this up a bit.
         if self.input:
+            # TODO: Use `optional` to remove required attributes. Used
+            # for patches.
             self.graphql_field = add_attribute(
                 GraphQLInputField(
                     self.get_graphql_type(),
@@ -65,7 +68,7 @@ class RelatedField(Field):
     sources = (field.RelatedField,)
 
     def get_graphql_type(self):
-        type = graphql_type_registry[self.model_field.other]
+        type = self.registry[self.model_field.other]
         if self.model_field.reverse:
             type = GraphQLList(type)
         return type

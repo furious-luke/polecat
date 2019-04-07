@@ -1,12 +1,12 @@
 from graphql_server import (default_format_error, encode_execution_results,
                             run_http_query)
 
-from .schema import make_graphql_schema
+from .schema import build_graphql_schema
 
 
 class GraphqlAPI:
     def prepare(self):
-        self.schema = make_graphql_schema()
+        self.schema = build_graphql_schema()
 
     async def handle_event(self, event):
         # TODO: Use regex

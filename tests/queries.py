@@ -36,3 +36,19 @@ all_actors_query = '''query {
   }
 }
 '''
+
+create_actors_query = '''mutation {
+  firstActor: createActor(input: {firstName: "a", lastName: "b", age: 30}) {
+    id,
+    firstName,
+    lastName,
+    age
+  }
+  secondActor: createActor(input: {firstName: "c", lastName: "d", age: 40}) {
+    id,
+    firstName,
+    lastName,
+    age
+  }
+}
+'''

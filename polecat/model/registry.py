@@ -18,7 +18,13 @@ class TypeMetaclass(type):
                 name, bases, attrs,
                 attrs.get('Meta')
             )
-        cls = super().__new__(meta, name, bases, attrs)
+            cls = super().__new__(meta, name, bases, {
+                k: v
+                for k, v in attrs.items()
+                if k not in attrs['Meta'].fields
+            })
+        else:
+            cls = super().__new__(meta, name, bases, attrs)
         if is_sub:
             type_registry.append(cls)
         return cls
@@ -38,7 +44,13 @@ class ModelMetaclass(type):
                 name, bases, attrs,
                 attrs.get('Meta')
             )
-        cls = super().__new__(meta, name, bases, attrs)
+            cls = super().__new__(meta, name, bases, {
+                k: v
+                for k, v in attrs.items()
+                if k not in attrs['Meta'].fields
+            })
+        else:
+            cls = super().__new__(meta, name, bases, attrs)
         if is_sub:
             model_registry.append(cls)
         return cls

@@ -1,48 +1,33 @@
 from psycopg2.sql import SQL, Identifier
 
-from ...utils import to_class
-from ..connection import cursor
-from .query import Query
+from ..field import get_db_field
 
 
-# TODO: Should probably just use query.Query?
-class Q:
-    def __init__(self, model):
-        self.model_class = to_class(model)
-        self.model = model
-
-    def select(self, *fields, **lookups):
-        return Query(self.model_class).select(*fields, **lookups)
-
-    def get(self, *args, **kwargs):
-        return Query(self.model_class).get(*args, **kwargs)
-
-    def insert(self, *fields, **lookups):
-        return Query(self.model).insert(*fields, **lookups)
-        # with cursor() as curs:
-        #     curs.execute(*self.get_insert_sql())
-        #     result = curs.fetchone()
-        #     self.model.id = result[0]
-
-    def get_insert_sql(self):
+class Insert:
+    @classmethod
+    def evaluate(self, query):
+        model = query.model
         (
             field_names_sql,
             field_values_sql,
             field_values,
             returning
-        ) = self.get_insert_values_sql()
+        ) = self.get_values_sql(query, model)
         return (
             SQL('INSERT INTO {} ({}) VALUES {} RETURNING {}').format(
-                Identifier(self.model_class.Meta.table),
+                Identifier(model.Meta.table),
                 field_names_sql,
                 field_values_sql,
                 returning
             ),
-            field_values
+            tuple(field_values)  # TODO: Avoid conversion?
         )
 
-    def get_insert_values_sql(self):
-        field_names, field_values, returning = self.get_insert_values()
+    @classmethod
+    def get_values_sql(self, query, model):
+        field_names, field_values, returning = self.get_values(model)
+        # TODO: Should skip this if no selector?
+        returning = set(returning).union(query.selector.all_fields())
         return (
             SQL(',').join(map(Identifier, field_names)),
             SQL('(' + ','.join(('%s',) * len(field_names)) + ')'),
@@ -50,12 +35,13 @@ class Q:
             SQL(',').join(map(Identifier, returning))
         )
 
-    def get_insert_values(self):
+    @classmethod
+    def get_values(self, model):
         # TODO: Make this more functional.
         field_names = []
         field_values = []
         returning = []
-        for field in self.model_class.Meta.fields.values():
+        for field in model.Meta.fields.values():
             # TODO: This should be auto fields, not primary key.
             if getattr(field, 'primary_key', None):
                 returning.append(field.name)
@@ -66,10 +52,11 @@ class Q:
             # different class of field. Damn it.
             if getattr(field, 'reverse', False):
                 continue
-            fn, fv = self.get_value_for_field(field)
+            fn, fv = self.get_value_for_field(model, field)
             field_names.append(fn)
             field_values.append(fv)
         return (field_names, field_values, returning)
 
-    def get_value_for_field(self, field):
-        return (field.name, get_db_field(field).get_value(self.model))
+    @classmethod
+    def get_value_for_field(self, model, field):
+        return (field.name, get_db_field(field).get_value(model))

@@ -64,8 +64,9 @@ class LateralBackend:
 
     @classmethod
     def evaluate_from_clause(cls, query):
+        table = 'cte_mut' if query.is_insert else query.model_class.Meta.table
         sql = SQL('FROM {} AS {}').format(
-            Identifier(query.model_class.Meta.table),
+            Identifier(table),
             Identifier(query.table_alias)
         )
         return sql
@@ -125,9 +126,7 @@ class LateralBackend:
     def evaluate_where_clause(cls, query, extra_where=None):
         filter = query.filter
         if filter:
-            # TODO: The Filter class returns text, it should be SQL.
             sql, args = filter.get_sql(query.model_class, query.table_alias)
-            sql = SQL(sql)
         else:
             sql, args = None, ()
         if extra_where:

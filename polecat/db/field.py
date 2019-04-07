@@ -137,7 +137,9 @@ class ForeignKeyField(IntField):
     def get_value(self, model):
         value = super().get_value(model)
         if value:
-            # TODO: Shouldn't be ID, should be whatever the linked field is.
+            # TODO: Shouldn't be named `id`, should be whatever the
+            # linked field is. Also, how to handle an integer or
+            # whatever value the PK is?
             value = value.id
         return value
 

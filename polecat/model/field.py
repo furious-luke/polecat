@@ -21,11 +21,12 @@ class Field:
 
 
 class MutableField(Field):
-    def __init__(self, *args, null=True, unique=False, default=None, **kwargs):
+    def __init__(self, *args, null=True, unique=False, default=None, primary_key=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.null = null
         self.unique = unique
         self.default = default
+        self.primary_key = primary_key
 
 
 class TextField(MutableField):
@@ -44,9 +45,7 @@ class PasswordField(TextField):
 
 
 class IntField(MutableField):
-    def __init__(self, *args, primary_key=False, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.primary_key = primary_key
+    pass
 
 
 class RelatedField(MutableField):
@@ -77,7 +76,6 @@ class RelatedField(MutableField):
             field = RelatedField(model, related_name=self.name, reverse=True)
             field.name = related_name  # TODO: Hmmm, not sure.
             field.cc_name = camelcase(related_name)
-            setattr(self.other, related_name, field)
             self.other.Meta.fields[field.name] = field  # TODO: Ugh.
             self.other.Meta.cc_fields[field.cc_name] = field
 

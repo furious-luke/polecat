@@ -47,7 +47,7 @@ class Actor(model.Model):
 
 
 class Movie(model.Model):
-    title = model.TextField()
+    title = model.TextField(unique=True)
     star = model.RelatedField(Actor)
 
     class Meta:

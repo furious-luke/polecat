@@ -90,3 +90,5 @@ stats.json
 # Archivesp
 **.tgz
 **.zip
+
+**polecat.json

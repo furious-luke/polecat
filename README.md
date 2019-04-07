@@ -25,25 +25,24 @@ correctly, making the freedom provided by GraphQL moot.
 Enter Postgraphile, a fantastic NodeJS library to automatically create
 GraphQL APIs from a PostgreSQL database schema. Producing a typed,
 `n + 1`-safe, API "free of charge" can be amazingly useful, especially
-for all those typical CRUD operations needed. But every API needs
-customisation, unique mutations; various things to catch all those
-edge-cases and perform atypical operations. Postgraphile provides a
-number plugins which ease the pain of extensions, but the developer
-experience begins to suffer: there is no ORM available out of the box
-to assist in performing database operations, and the documentation
-surrounding the schema builder is a little scarce. Postgraphile
-encourages development of customised queries using PostgreSQL's
-internal scripting language(s). This works very well so long as you're
-able to write your scripts without error. Debugging PostgreSQL
-functions can be a trying experience, with unhelpful error messages
-and very limited ability for stepping through your code. Again,
-developer experience suffers.
+for all those typical CRUD operations needed. But no auto-generated
+API is without the need for customisation. There are always unique
+mutations and edge-cases. Postgraphile provides a number plugins which
+ease the pain of extensions, but the developer experience begins to
+suffer: there is no ORM available out of the box to assist in
+performing database operations, and the documentation surrounding the
+schema builder is a little scarce. Postgraphile encourages development
+of customised queries using PostgreSQL's internal scripting
+language(s). This works very well so long as you're able to write your
+scripts without error. Debugging PostgreSQL functions can be a trying
+experience, with unhelpful error messages and very limited ability for
+stepping through your code. Again, developer experience suffers.
 
-Polecat is inspired by both Django and Postgraphile. It incorporates
-the automatic creation of APIs from Postgraphile, but wraps it in the
-convenience of Django and Python. Polecat attempts to be "batteries
-included", you should be able to use Polecat and only Polecat to build
-a highly-performant, scalable API server, deployed to popular cloud
+Polecat is inspired by both Django and Postgraphile. It borrows the
+automatic creation of APIs from Postgraphile, and attempts to wrap it
+in the same kind of convenience as Django. Polecat attempts to be
+"batteries included", you should be able to use Polecat to build a
+highly-performant, scalable API server, deployed to popular cloud
 services, all the while enjoying a pleasant developer experience.
 
 ## Features

@@ -2,6 +2,11 @@
 
 A lean, powerful, and enjoyable web framework.
 
+## Warning
+
+This is *very* alpha software. It is not yet fully functional and will
+certainly eat your cat.
+
 ## Discussion
 
 Django has always been one of my favorite web frameworks. The Django

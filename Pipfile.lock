@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "16c66f1c44c216b474af603ce6c1d731063c767404cf6dc86040d63b6d8afc0a"
+            "sha256": "07405ca854ef9650c5336ddd25a9b82f828ff07be57ce34f15d735a9ba91370e"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -47,10 +47,10 @@
         },
         "botocore": {
             "hashes": [
-                "sha256:2c071fb9f3cd71d792846e18e2c650f2985b822c552514ea6f27e44764d45a0a",
-                "sha256:ac9585c2afdf81929ccb69b8e6919ec64f3693cc7d3f4f216f292f63312111cf"
+                "sha256:128130b12f8ba4bf07a673b119135264060eb98f6a4a7419cbd1f2c6dc926827",
+                "sha256:59376112fdee707927b644dd44a1771861f8fe354a48d596131ced83d7a3c05b"
             ],
-            "version": "==1.12.125"
+            "version": "==1.12.130"
         },
         "click": {
             "hashes": [
@@ -306,7 +306,7 @@
             "hashes": [
                 "sha256:f66073e5506e91d204ab0c614a148d5aa938bdbf104751be66f8ad7a222f5f86"
             ],
-            "markers": "sys_platform != 'win32' and implementation_name == 'cpython'",
+            "index": "pypi",
             "version": "==1.35"
         },
         "urllib3": {

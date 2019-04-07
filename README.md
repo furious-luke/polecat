@@ -59,8 +59,12 @@ Polecat comes as a PyPi package, and as such the easiest way to
 install it is with `pip`:
 
 ``` bash
-pip install polecat
+pip install polecat[cli]
 ```
+
+The extras keyword `cli` indicates that the command line interface and
+its dependencies should be installed. For production deployments those
+dependencies are omitted.
 
 ## Getting Started
 

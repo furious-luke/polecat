@@ -34,13 +34,21 @@ setup(
         'graphql-server-core @ https://github.com/norman-thomas/graphql-server-core/tarball/master',
         'pyjwt==1.7.1'
     ],
-    dependency_links=[
-        # 'git+https://github.com/norman-thomas/graphql-server-core#egg=graphql_server'
-    ],
+    extras_require={
+        'cli': [
+            'pytest==4.3.1',
+            'factory-boy==2.11.1',
+            'click==7.0',
+            'termcolor==1.1.0',
+            'halo==0.0.23',
+            'sanic==19.3.1',
+            'boto3==1.9.125'
+        ]
+    },
     entry_points={
         'console_scripts': [
             'polecat=polecat.cli.entrypoint:entrypoint'
         ]
     },
-    zip_safe=False
+    zip_safe=True
 )

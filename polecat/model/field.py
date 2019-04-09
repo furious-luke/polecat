@@ -4,6 +4,7 @@ default_resolver = None
 
 
 # TODO: Maybe move this elsewhere?
+# TODO: Make sure it's clear this is a field default.
 class Auto:
     pass
 
@@ -21,7 +22,8 @@ class Field:
 
 
 class MutableField(Field):
-    def __init__(self, *args, null=True, unique=False, default=None, primary_key=False, **kwargs):
+    def __init__(self, *args, null=True, unique=False, default=None,
+                 primary_key=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.null = null
         self.unique = unique
@@ -44,7 +46,19 @@ class PasswordField(TextField):
     pass
 
 
+class BoolField(MutableField):
+    pass
+
+
 class IntField(MutableField):
+    pass
+
+
+class FloatField(MutableField):
+    pass
+
+
+class DatetimeField(MutableField):
     pass
 
 

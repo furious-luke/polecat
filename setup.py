@@ -2,7 +2,7 @@ import os
 
 from setuptools import find_packages, setup
 
-version = '0.0.5'
+version = '0.0.7'
 
 setup(
     name='polecat',
@@ -24,14 +24,14 @@ setup(
         'Programming Language :: Python :: 3.7',
         'License :: OSI Approved :: MIT License'
     ],
-    packages=find_packages(exclude=['tests']),
+    packages=find_packages(exclude=['tests', 'extern']),
     include_package_data=True,
     package_data={'': ['*.txt', '*.js', '*.html', '*.*']},
     install_requires=[
         'ujson==1.35',
         'psycopg2-binary==2.7.7',
         'graphql-core-next==1.0.2',
-        'graphql-server-core @ https://github.com/norman-thomas/graphql-server-core/tarball/master',
+        # 'graphql-server-core @ https://github.com/norman-thomas/graphql-server-core/tarball/master',
         'pyjwt==1.7.1'
     ],
     extras_require={

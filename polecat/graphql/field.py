@@ -1,7 +1,8 @@
-from graphql.type import (GraphQLArgument, GraphQLEnumType, GraphQLEnumValue,
-                          GraphQLField, GraphQLInputField, GraphQLInt,
-                          GraphQLInterfaceType, GraphQLList, GraphQLNonNull,
-                          GraphQLObjectType, GraphQLSchema, GraphQLString)
+from graphql.type import (GraphQLArgument, GraphQLBoolean, GraphQLEnumType,
+                          GraphQLEnumValue, GraphQLField, GraphQLFloat,
+                          GraphQLInputField, GraphQLInt, GraphQLInterfaceType,
+                          GraphQLList, GraphQLNonNull, GraphQLObjectType,
+                          GraphQLSchema, GraphQLString)
 
 from ..model import field
 from ..utils import add_attribute
@@ -56,12 +57,22 @@ class Field(metaclass=FieldMetaclass):
 
 class StringField(Field):
     graphql_type = GraphQLString
-    sources = (field.TextField,)
+    sources = (field.TextField, field.DatetimeField)
+
+
+class BoolField(Field):
+    graphql_type = GraphQLBoolean
+    sources = (field.BoolField,)
 
 
 class IntField(Field):
     graphql_type = GraphQLInt
     sources = (field.IntField,)
+
+
+class FloatField(Field):
+    graphql_type = GraphQLFloat
+    sources = (field.FloatField,)
 
 
 class RelatedField(Field):

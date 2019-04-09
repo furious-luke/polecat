@@ -14,6 +14,7 @@ from .registry import (add_graphql_create_input, add_graphql_type,
 from .resolve import (resolve_all_query, resolve_create_mutation,
                       resolve_get_query, resolve_mutation,
                       resolve_update_mutation)
+from .type import scalars
 
 
 def build_graphql_schema():
@@ -37,7 +38,7 @@ class SchemaBuilder:
                 name='Mutation',
                 fields=self.mutations
             ) if self.mutations else None,
-            types=self.types
+            types=scalars + self.types
         )
 
     def build_models(self):

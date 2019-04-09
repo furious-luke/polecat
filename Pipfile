@@ -5,6 +5,7 @@ verify_ssl = true
 
 [dev-packages]
 aiohttp = "*"
+twine = "*"
 
 [packages]
 ujson = "==1.35"

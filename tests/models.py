@@ -39,6 +39,12 @@ class Actor(model.Model):
     address = model.RelatedField(Address)
 
     class Meta:
+        uniques = (
+            ('first_name', 'last_name'),
+        )
+        checks = (
+            'first_name is not null or last_name is not null',
+        )
         access = model.Access(
             all=UserRole,
             insert=DefaultRole,

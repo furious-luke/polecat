@@ -1,3 +1,4 @@
+import os
 import sys
 
 from halo import Halo
@@ -9,12 +10,12 @@ from ..utils.feedback import Feedback
 class HaloFeedback(Feedback):
     def __init__(self, message=None):
         self.spinner = Halo(text=message or '', spinner='dots')
-        if message:
+        if message and not os.environ.get('POLECAT_DEBUG', False):
             self.spinner.start()
 
     def update_message(self, message):
         super().update_message(message)
-        if not self.spinner._spinner_id:
+        if not self.spinner._spinner_id and not os.environ.get('POLECAT_DEBUG', False):
             self.spinner.start()
         self.spinner.text = (message + ' ...') if self.message else ''
 
@@ -32,5 +33,8 @@ class HaloFeedback(Feedback):
         self.spinner.text = f'{self.message} ... {colored(str(warning), "yellow")}'
         self.spinner.warn()
 
-    def exists(self):
+    def info(self, message):
+        self.spinner.info(message)
+
+    def exists(self, error):
         self.warning('exists')

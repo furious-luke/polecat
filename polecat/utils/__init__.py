@@ -45,6 +45,13 @@ def substitute(template, **kwargs):
     return string.Template(template).safe_substitute(kwargs)
 
 
+def capitalize(value):
+    if value:
+        return value[0].upper() + value[1:]
+    else:
+        return value
+
+
 def uncapitalize(value):
     if value:
         return value[0].lower() + value[1:]

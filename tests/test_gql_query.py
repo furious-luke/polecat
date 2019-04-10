@@ -8,7 +8,7 @@ from .queries import (all_actors_query, all_movies_query, authenticate_query,
 
 def test_schema():
     schema = build_graphql_schema()
-    print_schema(schema)
+    # print_schema(schema)
 
 
 def test_query(db, factory):

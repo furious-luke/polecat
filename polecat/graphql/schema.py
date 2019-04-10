@@ -5,7 +5,7 @@ from graphql.type import (GraphQLField, GraphQLInputObjectType, GraphQLList,
                           GraphQLObjectType, GraphQLSchema)
 
 from ..model import Model, model_registry, mutation_registry, type_registry
-from ..utils import add_attribute, uncapitalize
+from ..utils import add_attribute, capitalize, uncapitalize
 from .field import *  # noqa
 from .registry import (add_graphql_create_input, add_graphql_type,
                        add_graphql_update_input, graphql_create_input_registry,
@@ -42,10 +42,14 @@ class SchemaBuilder:
         )
 
     def build_models(self):
+        builders = []
         for model in self.iter_models():
             builder_class = getattr(model.Meta, 'builder', ModelBuilder)
             builder = builder_class()
             builder.build(self, model)
+            builders.append(builder)
+        for builder in builders:
+            builder.post_build(self)
 
     def build_mutations(self):
         for mutation in self.iter_mutations():
@@ -68,11 +72,14 @@ class SchemaBuilder:
 
 class ModelBuilder:
     def build(self, schema_builder, model):
-        type = self.build_type(model)
-        schema_builder.types.append(type)
-        if issubclass(model, Model):
-            schema_builder.queries.update(self.build_queries(model, type))
-            schema_builder.mutations.update(self.build_mutations(model, type))
+        self.model = model
+        self.type = self.build_type(model)
+        schema_builder.types.append(self.type)
+
+    def post_build(self, schema_builder):
+        if issubclass(self.model, Model):
+            schema_builder.queries.update(self.build_queries(self.model, self.type))
+            schema_builder.mutations.update(self.build_mutations(self.model, self.type))
 
     def build_type(self, model):
         if getattr(model.Meta, 'input', False):
@@ -121,12 +128,19 @@ class ModelBuilder:
             self.get_query_inflection(model, field): add_attribute(
                 GraphQLField(
                     type,
+                    {
+                        # TODO: What happens when the type linked is
+                        # something complicated, like a GraphQLObject?
+                        # Will need to use the PK of the
+                        # relationship. What if there's several?
+                        name: type.fields[name].type
+                    },
                     resolve=resolve_get_query
                 ),
                 '_type', type
             )
             for name, field in model.Meta.cc_fields.items()
-            if field.unique or field.primary_key
+            if field.use_get_query()
         }
 
     def all_query_inflection(self, model):
@@ -136,7 +150,7 @@ class ModelBuilder:
     def get_query_inflection(self, model, field):
         name = f'get{model.Meta.name}'
         if not field.primary_key:
-            name += f'By{field.cc_name.capitalize()}'
+            name += f'By{capitalize(field.cc_name)}'
         return name
 
     def create_mutation_inflection(self, model):
@@ -169,10 +183,15 @@ class TypeBuilder:
         return model.Meta.name
 
     def build_all_fields(self, model):
-        return {
-            name: self.build_field(model, field)
-            for name, field in model.Meta.cc_fields.items()
-        }
+        # TODO: Can I make this more functional?
+        fields = {}
+        for name, field in model.Meta.cc_fields.items():
+            result = self.build_field(model, field)
+            if isinstance(result, dict):
+                fields.update(result)
+            else:
+                fields[name] = result
+        return fields
 
     def build_field(self, model, field):
         for base_class in inspect.getmro(field.__class__):

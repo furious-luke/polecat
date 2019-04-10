@@ -1,5 +1,6 @@
 from psycopg2.sql import SQL, Identifier
 
+from ...model.field import ReverseField
 from ..field import get_db_field
 
 
@@ -46,11 +47,9 @@ class Insert:
             if getattr(field, 'primary_key', None):
                 returning.append(field.name)
                 continue
-            # TODO: There needs to be an abstraction for iterating
-            # over fields that are insertable. Ah, maybe
-            # MutableFields?  Reverse fields may need to be a
-            # different class of field. Damn it.
-            if getattr(field, 'reverse', False):
+            # TODO: Could probably collect mutable fields onto models,
+            # making this redundant.
+            if isinstance(field, ReverseField):
                 continue
             fn, fv = self.get_value_for_field(model, field)
             field_names.append(fn)

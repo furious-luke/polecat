@@ -20,6 +20,9 @@ class Field:
     def prepare(self, model):
         return self
 
+    def use_get_query(self):
+        return False
+
 
 class MutableField(Field):
     def __init__(self, *args, null=True, unique=False, default=None,
@@ -29,6 +32,9 @@ class MutableField(Field):
         self.unique = unique
         self.default = default
         self.primary_key = primary_key
+
+    def use_get_query(self):
+        return self.primary_key or self.unique
 
 
 class TextField(MutableField):
@@ -62,13 +68,18 @@ class DatetimeField(MutableField):
     pass
 
 
-class RelatedField(MutableField):
-    def __init__(self, other, related_name=Auto, reverse=False,
-                 *args, **kwargs):
+class ReverseField(Field):
+    def __init__(self, other, related_name, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.other = other
         self.related_name = related_name
-        self.reverse = reverse
+
+
+class RelatedField(MutableField):
+    def __init__(self, other, related_name=Auto, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.other = other
+        self.related_name = related_name
 
     def prepare(self, model):
         self.add_related_field(model)
@@ -87,7 +98,7 @@ class RelatedField(MutableField):
             # TODO: This whole process of adding an extra field to a
             # model is pretty awful. This should be handled somewhere
             # else.
-            field = RelatedField(model, related_name=self.name, reverse=True)
+            field = ReverseField(model, related_name=self.name)
             field.name = related_name  # TODO: Hmmm, not sure.
             field.cc_name = camelcase(related_name)
             self.other.Meta.fields[field.name] = field  # TODO: Ugh.

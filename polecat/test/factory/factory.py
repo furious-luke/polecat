@@ -1,6 +1,7 @@
 from factory import base
 
 from ...db.sql import Q
+from ...model.field import ReverseField
 from ...model.registry import model_registry
 from .field import factory_field_registry
 
@@ -60,7 +61,7 @@ def iter_model_fields(model):
             continue
         # Don't instantiate reverses by default, gets us into infinite
         # loops.
-        if getattr(field, 'reverse', False):
+        if isinstance(field, ReverseField):
             continue
         yield field
 

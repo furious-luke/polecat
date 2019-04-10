@@ -8,7 +8,7 @@ from ..utils.predicates import not_empty
 __all__ = (
     'db_field_registry', 'get_db_field',
     'TextField', 'IntField',
-    'ForeignKeyField'
+    'RelatedField'
 )
 
 db_field_registry = {
@@ -121,7 +121,7 @@ class PasswordField(TextField):
     sources = (mf.PasswordField,)
 
 
-class ForeignKeyField(IntField):
+class RelatedField(IntField):
     sources = (mf.RelatedField,)
 
     # def get_other(self):
@@ -130,9 +130,6 @@ class ForeignKeyField(IntField):
 
     # def get_type_sql(self):
     #     return self.get_other().get_type_sql()
-
-    def is_concrete(self):
-        return not self.source.reverse
 
     def get_value(self, model):
         value = super().get_value(model)
@@ -148,3 +145,10 @@ class ForeignKeyField(IntField):
         return super().get_constraints_sql((
             SQL('REFERENCES {}(id)').format(Identifier(other_table)),
         ))
+
+
+class ReverseField(IntField):
+    sources = (mf.ReverseField,)
+
+    def is_concrete(self):
+        return False

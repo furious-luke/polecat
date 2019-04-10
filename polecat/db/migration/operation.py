@@ -1,6 +1,7 @@
 from psycopg2.sql import SQL, Identifier
 
 from ...model.registry import make_role_from_name
+from ...utils.predicates import not_empty
 from ...utils.stringcase import snakecase
 from ..field import get_db_field
 
@@ -46,22 +47,47 @@ class CreateModel(Operation):
         table_name_ident = Identifier(self.get_table_name())
         return (
             SQL('\n').join(
-                (SQL('CREATE TABLE {} ({});').format(
+                (SQL('CREATE TABLE {} (\n{}\n);').format(
                     table_name_ident,
-                    self.all_fields_sql()
+                    self.all_sql()
                 ),) +
                 self.access_sql(table_name_ident)
             ),
             ()
         )
 
+    def all_sql(self):
+        return SQL(',\n').join(tuple(filter(not_empty, (
+            self.all_fields_sql(),
+            self.all_uniques_sql(),
+            self.all_checks_sql()
+        ))))
+
     def all_fields_sql(self):
-        return SQL('\n{}\n').format(
-            SQL(',\n').join(
-                SQL('  ') + self.field_sql(f)
-                for f in self.iter_valid_fields()
-            )
+        return SQL(',\n').join(
+            SQL('  ') + self.field_sql(f)
+            for f in self.iter_valid_fields()
         )
+
+    def all_uniques_sql(self):
+        uniques = self.options.get('uniques', ())
+        if len(uniques):
+            return SQL(',\n').join(
+                SQL('  UNIQUE ({})').format(self.unique_sql(u))
+                for u in uniques
+            )
+        else:
+            None
+
+    def all_checks_sql(self):
+        checks = self.options.get('checks', ())
+        if len(checks):
+            return SQL(',\n').join(
+                SQL('  CHECK ({})').format(self.check_sql(c))
+                for c in checks
+            )
+        else:
+            None
 
     def iter_valid_fields(self):
         for field in self.fields:
@@ -71,6 +97,16 @@ class CreateModel(Operation):
 
     def field_sql(self, field):
         return field.get_create_sql()
+
+    def check_sql(self, check):
+        if isinstance(check, str):
+            return SQL(check)
+        raise NotImplemented('checks must be strings')
+
+    def unique_sql(self, unique):
+        if isinstance(unique, (tuple, list)):
+            return SQL(',').join(map(Identifier, unique))
+        raise NotImplemented('uniques must be iterable')
 
     def access_sql(self, table_name):
         access = getattr(self.options, 'access', None)

@@ -40,6 +40,9 @@ class Feedback:
     def warning(self, warning):
         pass
 
+    def info(self, message):
+        pass
+
     def exists(self):
         pass
 

@@ -1,8 +1,9 @@
+from ...utils import capitalize
 from .constants import ADMIN_CODE, MEDIA_PREFIX, SERVER_CODE
 
 
 def create_api_resources(project, deployment, bucket, environment):
-    project_deployment = f'{project}{deployment.capitalize()}'
+    project_deployment = f'{project}{capitalize(deployment)}'
     code_version = environment['code']['version']
     bundle_version = environment['bundle']['version']
     secrets = environment.get('secrets', {})
@@ -457,7 +458,7 @@ def create_api_resources(project, deployment, bucket, environment):
 
 
 def create_domain_resources(project, deployment, domain, certificate_arn):
-    project_deployment = f'{project}{deployment.capitalize()}'
+    project_deployment = f'{project}{capitalize(deployment)}'
     return {
         f'{project_deployment}DomainName': {
             'DependsOn': f'{project_deployment}ApiDeployment',
@@ -487,7 +488,7 @@ def create_domain_resources(project, deployment, domain, certificate_arn):
 
 
 def create_zone_resources(project, deployment, domain, zone):
-    project_deployment = f'{project}{deployment.capitalize()}'
+    project_deployment = f'{project}{capitalize(deployment)}'
     return {
         f'{project_deployment}RecordSet': {
             'DependsOn': f'{project_deployment}DomainName',
@@ -517,7 +518,7 @@ def create_zone_resources(project, deployment, domain, zone):
 
 
 def create_output_resources(project, deployment):
-    project_deployment = f'{project}{deployment.capitalize()}'
+    project_deployment = f'{project}{capitalize(deployment)}'
     return {
         f'{project_deployment}Url': {
             'Description': f'Root URL of the {project_deployment} API gateway',

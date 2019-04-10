@@ -1,7 +1,4 @@
-from psycopg2.sql import SQL, Identifier
-
 from ...utils import to_class
-from ..connection import cursor
 from .query import Query
 
 
@@ -19,57 +16,3 @@ class Q:
 
     def insert(self, *fields, **lookups):
         return Query(self.model).insert(*fields, **lookups)
-        # with cursor() as curs:
-        #     curs.execute(*self.get_insert_sql())
-        #     result = curs.fetchone()
-        #     self.model.id = result[0]
-
-    def get_insert_sql(self):
-        (
-            field_names_sql,
-            field_values_sql,
-            field_values,
-            returning
-        ) = self.get_insert_values_sql()
-        return (
-            SQL('INSERT INTO {} ({}) VALUES {} RETURNING {}').format(
-                Identifier(self.model_class.Meta.table),
-                field_names_sql,
-                field_values_sql,
-                returning
-            ),
-            field_values
-        )
-
-    def get_insert_values_sql(self):
-        field_names, field_values, returning = self.get_insert_values()
-        return (
-            SQL(',').join(map(Identifier, field_names)),
-            SQL('(' + ','.join(('%s',) * len(field_names)) + ')'),
-            field_values,
-            SQL(',').join(map(Identifier, returning))
-        )
-
-    def get_insert_values(self):
-        # TODO: Make this more functional.
-        field_names = []
-        field_values = []
-        returning = []
-        for field in self.model_class.Meta.fields.values():
-            # TODO: This should be auto fields, not primary key.
-            if getattr(field, 'primary_key', None):
-                returning.append(field.name)
-                continue
-            # TODO: There needs to be an abstraction for iterating
-            # over fields that are insertable. Ah, maybe
-            # MutableFields?  Reverse fields may need to be a
-            # different class of field. Damn it.
-            if getattr(field, 'reverse', False):
-                continue
-            fn, fv = self.get_value_for_field(field)
-            field_names.append(fn)
-            field_values.append(fv)
-        return (field_names, field_values, returning)
-
-    def get_value_for_field(self, field):
-        return (field.name, get_db_field(field).get_value(self.model))

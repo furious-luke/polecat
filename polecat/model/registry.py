@@ -111,7 +111,7 @@ def make_type_meta(name, bases, attrs, meta):
         for f in get_type_fields(attrs)
     }
     return type('Meta', (), {
-        'options': meta,
+        'options': meta.__dict__ if meta else {},
         'name': name,
         'fields': fields,
         'cc_fields': make_cc_fields(fields),
@@ -126,18 +126,20 @@ def make_model_meta(name, bases, attrs, meta):
         for f in get_model_fields(attrs)
     }
     return type('Meta', (), {
-        'options': meta,
+        'options': meta.__dict__ if meta else {},
         'name': name,
         'table': snakecase(name),  # TODO
         'fields': fields,
         'cc_fields': make_cc_fields(fields),
-        'plural': get_plural(name)
+        'plural': get_plural(name),
+        'uniques': getattr(meta, 'uniques', ()) if meta else (),
+        'checks': getattr(meta, 'checks', ()) if meta else ()
     })
 
 
 def make_role_meta(name, bases, attrs, meta):
     return type('Meta', (), {
-        'options': meta,
+        'options': meta.__dict__ if meta else {},
         'name': name,
         'role': make_role_from_name(name)
     })

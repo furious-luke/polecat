@@ -2,6 +2,8 @@ from itertools import chain
 
 from psycopg2.sql import SQL, Identifier
 
+from ...model.field import ReverseField
+
 # SELECT row_to_json(__tl)
 #   FROM (
 #     SELECT "t0"."first_name", "t0"."last_name", "t0"."id", "t0"."age", j1.array_agg AS "movies_by_star"
@@ -54,7 +56,7 @@ class LateralBackend:
             (
                 SQL('{} AS {}').format(
                     SQL('{}.array_agg').format(Identifier(sub_query.join_alias))  # TODO: Oh my god no.
-                    if query.model_class.Meta.fields[field_name].reverse
+                    if isinstance(query.model_class.Meta.fields[field_name], ReverseField)
                     else Identifier(sub_query.join_alias),
                     Identifier(field_name)
                 )
@@ -84,7 +86,7 @@ class LateralBackend:
     @classmethod
     def evaluate_join_clause(cls, query, field_name, sub_query):
         field = query.model_class.Meta.fields[field_name]
-        if not field.reverse:
+        if not isinstance(field, ReverseField):
             sub_sql, args = sub_query.evaluate(extra_fields=('id',))
             return SQL('LEFT JOIN LATERAL ({}) AS {} {}').format(
                 sub_sql,
@@ -112,7 +114,7 @@ class LateralBackend:
     @classmethod
     def evaluate_join_on_clause(cls, query, field_name, sub_query):
         field = query.model_class.Meta.fields[field_name]
-        if not field.reverse:
+        if not isinstance(field, ReverseField):
             return SQL('ON {}.{} = {}.{}').format(
                 Identifier(sub_query.join_alias),
                 Identifier('id'),

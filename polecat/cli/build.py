@@ -7,7 +7,8 @@ __all__ = ('build',)
 
 
 @main.command()
+@click.argument('project')
 @click.option('--source')
-def build(source):
+def build(project, source):
     from ..deploy.aws.build import build as aws_build
-    aws_build(source, feedback=HaloFeedback())
+    aws_build(project, source, feedback=HaloFeedback())

@@ -56,6 +56,13 @@ class Field(metaclass=FieldMetaclass):
     def default_resolver(self, obj, path):
         return obj[self.model_field.name]
 
+    def from_input(self, input):
+        result = {}
+        name = self.model_field.cc_name
+        if name in input:
+            result[self.model_field.name] = input[name]
+        return result
+
 
 class StringField(Field):
     graphql_type = GraphQLString
@@ -99,19 +106,55 @@ class ReverseField(RelatedField):
             name: super().make_graphql_field()
         }
         if self.input:
-            fields[f'create{capitalize(name)}'] = add_attribute(
-                GraphQLInputField(
-                    self.get_graphql_type(graphql_create_input_registry),
-                    # description=self.get_description()
-                ), '_field', self
-            )
-            fields[f'delete{capitalize(name)}'] = add_attribute(
-                GraphQLInputField(
-                    self.get_graphql_type(graphql_update_input_registry),
-                    # description=self.get_description()
-                ), '_field', self
-            )
+            # TODO: Inflections are duplicated.
+            # TODO: Assumes only one type returned.
+            fields[f'create{capitalize(name)}'] = CreateReverseField(self.model, self.model_field).make_graphql_field()
+                # add_attribute(
+                # GraphQLInputField(
+                #     self.get_graphql_type(graphql_create_input_registry),
+                #     # description=self.get_description()
+                # ), '_field', self
+            # )
+            fields[f'delete{capitalize(name)}'] = DeleteReverseField(self.model, self.model_field).make_graphql_field()
+            # add_attribute(
+            #     GraphQLInputField(
+            #         self.get_graphql_type(graphql_update_input_registry),
+            #         # description=self.get_description()
+            #     ), '_field', self
+            # )
         return fields
+
+    def get_create_inflection(self):
+        return f'create{capitalize(self.model_field.cc_name)}'
+
+    def get_delete_inflection(self):
+        return f'delete{capitalize(self.model_field.cc_name)}'
 
     def get_graphql_type(self, registry=None):
         return GraphQLList(super().get_graphql_type(registry))
+
+
+class CreateReverseField(RelatedField):
+    sources = ()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, input=True, registry=graphql_create_input_registry, **kwargs)
+
+    def get_graphql_type(self, registry=None):
+        return GraphQLList(super().get_graphql_type(registry))
+
+    def from_input(self, input):
+        return {}
+
+
+class DeleteReverseField(RelatedField):
+    sources = ()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, input=True, registry=graphql_update_input_registry, **kwargs)
+
+    def get_graphql_type(self, registry=None):
+        return GraphQLList(super().get_graphql_type(registry))
+
+    def from_input(self, input):
+        return {}

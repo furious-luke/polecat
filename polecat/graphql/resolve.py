@@ -3,7 +3,8 @@ from graphql.type import GraphQLList
 from ..db.connection import cursor
 from ..db.sql import Q, S
 from ..utils.exceptions import traceback
-from .field import RelatedField
+from .field import (CreateReverseField, DeleteReverseField, RelatedField,
+                    ReverseField)
 
 
 def resolve_all_query(obj, info):
@@ -57,12 +58,36 @@ def get_selector_from_node(graphql_type, node):
 
 
 def resolve_create_mutation(obj, info, **kwargs):
-    graphql_field = info.parent_type.fields[info.field_name]
-    model_class = graphql_field.type._model
+    mutation = info.parent_type.fields[info.field_name]
+    return_type = info.return_type
+    input_type = mutation.args['input'].type
+    model_class = return_type._model
     input = kwargs['input']
-    model = model_class(**translate_input(model_class, input))
-    query = Q(model).insert()
-    return resolve_get_query(obj, info, query=query)
+    model = model_class(**translate_input(input_type, input))
+    # TODO: We can optimise this operation for the case where there
+    # are no nested insertions like this...
+    #  query = Q(model).insert()
+    #  return resolve_get_query(obj, info, query=query)
+    Q(model).insert().execute()
+    # TODO: These operations are a bit inefficient.
+    for cc_name, graphql_field in input_type.fields.items():
+        field = graphql_field._field
+        if isinstance(field, ReverseField):
+            import pdb; pdb.set_trace()
+            print('h')
+        elif isinstance(field, CreateReverseField):
+            import pdb; pdb.set_trace()
+            print('h')
+        elif isinstance(field, DeleteReverseField):
+            import pdb; pdb.set_trace()
+            print('h')
+            # TODO: Creation is only one level deep right now.
+            # to_create = input.get(field.get_create_inflection(), ())
+            # for sub_input in to_create:
+            #     pass
+            # to_delete = input.get(field.get_delete_inflection(), ())
+            # for sub_input in to_delete:
+            #     pass
 
 
 def resolve_update_mutation(obj, info, **kwargs):
@@ -76,8 +101,9 @@ def resolve_mutation(obj, info, **kwargs):
     return mutation.resolve(**input)
 
 
-def translate_input(model, input):
-    return {
-        model.Meta.cc_fields[k].name: v
-        for k, v in input.items()
-    }
+def translate_input(type, input):
+    result = {}
+    for cc_name, graphql_field in type.fields.items():
+        field = graphql_field._field
+        result.update(field.from_input(input))
+    return result

@@ -3,7 +3,7 @@ from polecat.graphql.utils import print_schema
 
 from .models import *  # noqa
 from .queries import (all_actors_query, all_movies_query, authenticate_query,
-                      create_actors_query)
+                      create_actor_and_movies_query, create_actors_query)
 
 
 def test_schema():
@@ -39,6 +39,15 @@ def test_create(db):
     assert result.errors is None
     assert result.data['firstActor'] is not None
     assert result.data['secondActor'] is not None
+
+
+def test_create_reverse(db):
+    schema = build_graphql_schema()
+    result = execute_query(schema, create_actor_and_movies_query)
+    print(result)
+    # assert result.errors is None
+    # assert result.data['firstActor'] is not None
+    # assert result.data['secondActor'] is not None
 
 
 def test_mutation(db, factory):

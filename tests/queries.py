@@ -52,3 +52,18 @@ create_actors_query = '''mutation {
   }
 }
 '''
+
+create_actor_and_movies_query = '''mutation {
+  createActor(input: {
+    firstName: "a",
+    lastName: "b",
+    createMoviesByStar: [{title: "c"}, {title: "d"}]
+  }) {
+    firstName,
+    lastName,
+    moviesByStar {
+      title
+    }
+  }
+}
+'''

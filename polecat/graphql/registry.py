@@ -15,6 +15,9 @@ graphql_create_input_registry = {
 graphql_update_input_registry = {
 }
 
+graphql_reverse_input_registry = {
+}
+
 
 class FieldMetaclass(type):
     def __init__(cls, name, bases, dct):

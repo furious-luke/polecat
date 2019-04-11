@@ -1,16 +1,36 @@
-# from unittest import TestCase
-
-# from polecat.model import Model
+from .models import Actor, Address
 
 
-# def generate_test_models():
-#     yield type('TestModel', (Model,), {
-#     })
-#     yield type('TestModel', (Model,), {
-#     })
+def test_construct_related():
+    actor = Actor(
+        first_name='Johnny',
+        last_name='Depp',
+        address={
+            'country': 'USA'
+        }
+    )
+    assert isinstance(actor.address, Address)
+    assert actor.address.country == 'USA'
 
 
-# class SqlTests(TestCase):
-#     def test_create_table_sql(self):
-#         for TestModel in self.generate_test_models():
-#             TestModel.make_create_table_sql()
+def test_construct_reverse():
+    address = Address(
+        country='USA',
+        actors_by_address=[
+            {
+                'first_name': 'Johnny',
+                'last_name': 'Depp'
+            },
+            {
+                'first_name': 'Bill',
+                'last_name': 'Murray'
+            }
+        ]
+    )
+    assert isinstance(address.actors_by_address, list)
+    assert len(address.actors_by_address) == 2
+    for actor in address.actors_by_address:
+        assert isinstance(actor, Actor)
+        assert actor.first_name is not None
+        assert actor.last_name is not None
+        assert actor.address == address

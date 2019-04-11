@@ -1,13 +1,15 @@
 from graphql.type import (GraphQLArgument, GraphQLBoolean, GraphQLEnumType,
                           GraphQLEnumValue, GraphQLField, GraphQLFloat,
-                          GraphQLInputField, GraphQLInt, GraphQLInterfaceType,
-                          GraphQLList, GraphQLNonNull, GraphQLObjectType,
-                          GraphQLSchema, GraphQLString)
+                          GraphQLInputField, GraphQLInputObjectType,
+                          GraphQLInt, GraphQLInterfaceType, GraphQLList,
+                          GraphQLNonNull, GraphQLObjectType, GraphQLSchema,
+                          GraphQLString)
 
 from ..model import field
 from ..utils import add_attribute, capitalize
 from .registry import (FieldMetaclass, graphql_create_input_registry,
-                       graphql_type_registry, graphql_update_input_registry)
+                       graphql_reverse_input_registry, graphql_type_registry,
+                       graphql_update_input_registry)
 from .type import GraphQLDatetime
 
 __all__ = ('Field', 'StringField', 'IntField', 'RelatedField')
@@ -100,61 +102,32 @@ class RelatedField(Field):
 class ReverseField(RelatedField):
     sources = (field.ReverseField,)
 
-    def make_graphql_field(self):
-        name = self.model_field.cc_name
-        fields = {
-            name: super().make_graphql_field()
-        }
+    def make_graphql_field(self, builder):
         if self.input:
-            # TODO: Inflections are duplicated.
-            # TODO: Assumes only one type returned.
-            fields[f'create{capitalize(name)}'] = CreateReverseField(self.model, self.model_field).make_graphql_field()
-                # add_attribute(
-                # GraphQLInputField(
-                #     self.get_graphql_type(graphql_create_input_registry),
-                #     # description=self.get_description()
-                # ), '_field', self
-            # )
-            fields[f'delete{capitalize(name)}'] = DeleteReverseField(self.model, self.model_field).make_graphql_field()
-            # add_attribute(
-            #     GraphQLInputField(
-            #         self.get_graphql_type(graphql_update_input_registry),
-            #         # description=self.get_description()
-            #     ), '_field', self
-            # )
-        return fields
-
-    def get_create_inflection(self):
-        return f'create{capitalize(self.model_field.cc_name)}'
-
-    def get_delete_inflection(self):
-        return f'delete{capitalize(self.model_field.cc_name)}'
-
-    def get_graphql_type(self, registry=None):
-        return GraphQLList(super().get_graphql_type(registry))
-
-
-class CreateReverseField(RelatedField):
-    sources = ()
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, input=True, registry=graphql_create_input_registry, **kwargs)
+            name = f'{self.model_field.other.Meta.name}ReverseInput'
+            type = graphql_reverse_input_registry.get(name, None)
+            if not type:
+                # TODO: Noooooooo. Use the buidler getting passed in
+                # to provide it.
+                from .schema import ReverseModelInputBuilder
+                type = add_attribute(
+                    GraphQLInputObjectType(
+                        name=name,
+                        fields={
+                            'create': GraphQLList(
+                                ReverseModelInputBuilder(builder).build(
+                                    self.model_field.other,
+                                    self.model_field.other.Meta.fields[self.model_field.related_name]
+                                )
+                            ),
+                            'delete': GraphQLList(builder.delete_type)
+                        }
+                    ), '_model', self.model
+                )
+                graphql_reverse_input_registry[name] = type
+            return type
+        else:
+            return super().make_graphql_field()
 
     def get_graphql_type(self, registry=None):
         return GraphQLList(super().get_graphql_type(registry))
-
-    def from_input(self, input):
-        return {}
-
-
-class DeleteReverseField(RelatedField):
-    sources = ()
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, input=True, registry=graphql_update_input_registry, **kwargs)
-
-    def get_graphql_type(self, registry=None):
-        return GraphQLList(super().get_graphql_type(registry))
-
-    def from_input(self, input):
-        return {}

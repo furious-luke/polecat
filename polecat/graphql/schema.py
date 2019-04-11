@@ -1,12 +1,13 @@
 import inspect
 from functools import partial
 
-from graphql.type import (GraphQLField, GraphQLInputObjectType, GraphQLList,
+from graphql.type import (GraphQLField, GraphQLInputField,
+                          GraphQLInputObjectType, GraphQLInt, GraphQLList,
                           GraphQLObjectType, GraphQLSchema)
 
 from ..model import Model, model_registry, mutation_registry, type_registry
 from ..utils import add_attribute, capitalize, uncapitalize
-from .field import *  # noqa
+# from .field import *  # noqa
 from .registry import (add_graphql_create_input, add_graphql_type,
                        add_graphql_update_input, graphql_create_input_registry,
                        graphql_field_registry, graphql_type_registry,
@@ -41,12 +42,16 @@ class SchemaBuilder:
             types=scalars + self.types
         )
 
+    @property
+    def delete_type(self):
+        return self.build_delete_type()
+
     def build_models(self):
         builders = []
         for model in self.iter_models():
             builder_class = getattr(model.Meta, 'builder', ModelBuilder)
-            builder = builder_class()
-            builder.build(self, model)
+            builder = builder_class(self)
+            builder.build(model)
             builders.append(builder)
         for builder in builders:
             builder.post_build(self)
@@ -54,8 +59,8 @@ class SchemaBuilder:
     def build_mutations(self):
         for mutation in self.iter_mutations():
             builder_class = getattr(mutation, 'builder', MutationBuilder)
-            builder = builder_class()
-            builder.build(self, mutation)
+            builder = builder_class(self)
+            builder.build(mutation)
 
     def iter_models(self):
         for type in type_registry:
@@ -69,12 +74,28 @@ class SchemaBuilder:
         for mutation in mutation_registry:
             yield mutation
 
+    def build_delete_type(self):
+        # TODO: Use a function cache.
+        type = getattr(self, '_delete_type', None)
+        if not type:
+            type = GraphQLInputObjectType(
+                name='DeleteByIDInput',
+                fields={
+                    'id': GraphQLInputField(GraphQLInt)
+                }
+            )
+            self._delete_type = type
+        return type
+
 
 class ModelBuilder:
-    def build(self, schema_builder, model):
+    def __init__(self, schema_builder):
+        self.schema_builder = schema_builder
+
+    def build(self, model):
         self.model = model
         self.type = self.build_type(model)
-        schema_builder.types.append(self.type)
+        self.schema_builder.types.append(self.type)
 
     def post_build(self, schema_builder):
         if issubclass(self.model, Model):
@@ -83,9 +104,9 @@ class ModelBuilder:
 
     def build_type(self, model):
         if getattr(model.Meta, 'input', False):
-            return InputBuilder().build(model)
+            return InputBuilder(self.schema_builder).build(model)
         else:
-            return TypeBuilder().build(model)
+            return TypeBuilder(self.schema_builder).build(model)
 
     def build_queries(self, model, type):
         # TODO: Add the model to the GraphQLField?
@@ -100,14 +121,14 @@ class ModelBuilder:
             self.create_mutation_inflection(model): GraphQLField(
                 type,
                 {
-                    'input': CreateInputBuilder().build(model)
+                    'input': CreateInputBuilder(self.schema_builder).build(model)
                 },
                 resolve_create_mutation
             ),
             self.update_mutation_inflection(model): GraphQLField(
                 type,
                 {
-                    'input': UpdateInputBuilder().build(model)
+                    'input': UpdateInputBuilder(self.schema_builder).build(model)
                 },
                 resolve_update_mutation
             )
@@ -163,6 +184,9 @@ class ModelBuilder:
 class TypeBuilder:
     object_type_class = GraphQLObjectType
 
+    def __init__(self, schema_builder):
+        self.schema_builder = schema_builder
+
     def build(self, model):
         object_type_class = self.get_object_type_class()
         # TODO: Description?
@@ -185,7 +209,7 @@ class TypeBuilder:
     def build_all_fields(self, model):
         # TODO: Can I make this more functional?
         fields = {}
-        for name, field in model.Meta.cc_fields.items():
+        for name, field in self.iter_fields(model):
             result = self.build_field(model, field)
             if isinstance(result, dict):
                 fields.update(result)
@@ -205,13 +229,17 @@ class TypeBuilder:
 
     def get_graphql_field(self, model, field, my_graphql_field):
         # TODO: Maybe remove the function call and do it in __init__?
-        return my_graphql_field(model, field).make_graphql_field()
+        return my_graphql_field(model, field).make_graphql_field(self.schema_builder)
 
     def get_object_type_class(self):
         return self.object_type_class
 
     def register_type(self, model, type):
         add_graphql_type(model, type)
+
+    def iter_fields(self, model):
+        for name, field in model.Meta.cc_fields.items():
+            yield name, field
 
 
 class InputBuilder(TypeBuilder):
@@ -226,7 +254,7 @@ class InputBuilder(TypeBuilder):
 
     def get_graphql_field(self, model, field, my_graphql_field):
         # TODO: Maybe remove the function call and do it in __init__?
-        return my_graphql_field(model, field, input=True).make_graphql_field()
+        return my_graphql_field(model, field, input=True).make_graphql_field(self.schema_builder)
 
 
 class CreateInputBuilder(InputBuilder):
@@ -235,12 +263,16 @@ class CreateInputBuilder(InputBuilder):
 
     def get_graphql_field(self, model, field, my_graphql_field):
         # TODO: Maybe remove the function call and do it in __init__?
+        # TODO: Have to pass in a type because reverse fields generate
+        # a new object-type internally instead of just a type, so it
+        # needs a name. So, if I don't pass in a type string create,
+        # update, delete will produce identically named object-types.
         return my_graphql_field(
             model,
             field,
             input=True,
             registry=graphql_create_input_registry  # TODO: Yuck
-        ).make_graphql_field()
+        ).make_graphql_field(self.schema_builder)
 
     def register_type(self, model, type):
         add_graphql_create_input(model, type)
@@ -254,20 +286,43 @@ class UpdateInputBuilder(InputBuilder):
         # TODO: Maybe remove the function call and do it in __init__?
         # TODO: Check if it's not the ID field used for the update,
         # and if not, make the field optional.
+        # TODO: Have to pass in a type because reverse fields generate
+        # a new object-type internally instead of just a type, so it
+        # needs a name. So, if I don't pass in a type string create,
+        # update, delete will produce identically named object-types.
         return my_graphql_field(
             model,
             field,
             input=True,
             registry=graphql_update_input_registry  # TODO: Yuck
-        ).make_graphql_field()
+        ).make_graphql_field(self.schema_builder)
 
     def register_type(self, model, type):
         add_graphql_update_input(model, type)
 
 
+class ReverseModelInputBuilder(InputBuilder):
+    def build(self, model, source_field):
+        # TODO: Do I need to pass source_field around, or okay to
+        # store on the builder?
+        self.source_field = source_field
+        return super().build(model)
+
+    def get_type_name(self, model):
+        return f'{model.Meta.name}{capitalize(self.source_field.cc_name)}ReverseInput'
+
+    def iter_fields(self, model):
+        for name, field in model.Meta.cc_fields.items():
+            if field != self.source_field:
+                yield name, field
+
+
 class MutationBuilder:
-    def build(self, schema_builder, mutation):
-        schema_builder.mutations.update(self.build_mutations(mutation))
+    def __init__(self, schema_builder):
+        self.schema_builder = schema_builder
+
+    def build(self, mutation):
+        self.schema_builder.mutations.update(self.build_mutations(mutation))
 
     def build_mutations(self, mutation):
         return {

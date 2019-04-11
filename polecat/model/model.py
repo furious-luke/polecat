@@ -1,4 +1,5 @@
 from ..utils import to_tuple
+from .exceptions import InvalidFieldError
 from .registry import (ModelMetaclass, MutationMetaclass, QueryMetaclass,
                        RoleMetaclass, TypeMetaclass)
 
@@ -17,7 +18,11 @@ class Type(metaclass=TypeMetaclass):
 class Model(metaclass=ModelMetaclass):
     def __init__(self, **kwargs):
         for field_name, value in kwargs.items():
-            setattr(self, field_name, value)
+            try:
+                field = self.Meta.fields[field_name]
+            except KeyError:
+                raise InvalidFieldError(self.__class__, field_name)
+            setattr(self, field_name, field.from_incoming(self, value))
 
     def __repr__(self):
         return f'<{self.Meta.name}>'

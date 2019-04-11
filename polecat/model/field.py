@@ -1,4 +1,5 @@
 from ..utils.stringcase import camelcase, snakecase
+from .exceptions import InvalidModelDataError
 
 default_resolver = None
 
@@ -22,6 +23,9 @@ class Field:
 
     def use_get_query(self):
         return False
+
+    def from_incoming(self, instance, value):
+        return value
 
 
 class MutableField(Field):
@@ -74,6 +78,12 @@ class ReverseField(Field):
         self.other = other
         self.related_name = related_name
 
+    def from_incoming(self, instance, value):
+        return [
+            self.other(**{self.related_name: instance, **v})
+            for v in value
+        ]
+
 
 class RelatedField(MutableField):
     def __init__(self, other, related_name=Auto, *args, **kwargs):
@@ -113,6 +123,15 @@ class RelatedField(MutableField):
             return f'{snakecase(from_model.Meta.plural)}_by_{self.name}'
         else:
             return related_name
+
+    def from_incoming(self, instance, value):
+        if isinstance(value, self.other):
+            return value
+        else:
+            try:
+                return self.other(**value)
+            except TypeError:
+                raise InvalidModelDataError(self.other, value)
 
 
 class ComputedField(Field):

@@ -3,8 +3,7 @@ from graphql.type import GraphQLList
 from ..db.connection import cursor
 from ..db.sql import Q, S
 from ..utils.exceptions import traceback
-from .field import (CreateReverseField, DeleteReverseField, RelatedField,
-                    ReverseField)
+from .field import RelatedField, ReverseField
 
 
 def resolve_all_query(obj, info):
@@ -75,12 +74,12 @@ def resolve_create_mutation(obj, info, **kwargs):
         if isinstance(field, ReverseField):
             import pdb; pdb.set_trace()
             print('h')
-        elif isinstance(field, CreateReverseField):
-            import pdb; pdb.set_trace()
-            print('h')
-        elif isinstance(field, DeleteReverseField):
-            import pdb; pdb.set_trace()
-            print('h')
+        # elif isinstance(field, CreateReverseField):
+        #     import pdb; pdb.set_trace()
+        #     print('h')
+        # elif isinstance(field, DeleteReverseField):
+        #     import pdb; pdb.set_trace()
+        #     print('h')
             # TODO: Creation is only one level deep right now.
             # to_create = input.get(field.get_create_inflection(), ())
             # for sub_input in to_create:

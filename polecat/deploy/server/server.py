@@ -1,6 +1,6 @@
 from sanic import Sanic, response
 
-from ...project import load_project
+from ...project.project import load_project
 from ..event import HttpEvent
 
 

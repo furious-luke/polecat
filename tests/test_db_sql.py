@@ -6,8 +6,25 @@ from .models import Address, Movie
 def test_insert_sql(db):
     inst = Address(country='AU')
     assert getattr(inst, 'id', None) is None
-    result = Q(inst).insert().execute()
+    Q(inst).insert().execute()
     assert inst.id is not None
+
+
+def test_insert_reverse_sql(db):
+    inst = Address(country='AU', actors_by_address=[
+        {
+            'first_name': 'a'
+        },
+        {
+            'first_name': 'b'
+        }
+    ])
+    assert getattr(inst, 'id', None) is None
+    Q(inst).insert().select('country', actors_by_address=S('first_name')).execute()
+    assert inst.id is not None
+    assert len(inst.actors_by_address) == 2
+    for actor in inst.actors_by_address:
+        assert actor['first_name'] is not None
 
 
 def test_insert_and_select(db, factory):

@@ -44,10 +44,13 @@ def test_create(db):
 def test_create_reverse(db):
     schema = build_graphql_schema()
     result = execute_query(schema, create_actor_and_movies_query)
-    print(result)
-    # assert result.errors is None
-    # assert result.data['firstActor'] is not None
-    # assert result.data['secondActor'] is not None
+    assert result.errors is None
+    data = result.data['createActor']
+    assert data['id'] is not None
+    assert data['moviesByStar'] is not None
+    assert len(data['moviesByStar']) == 2
+    for movie in data['moviesByStar']:
+        assert movie['id'] is not None
 
 
 def test_mutation(db, factory):

@@ -1,5 +1,6 @@
-from psycopg2.sql import SQL
+from psycopg2.sql import SQL, Identifier, Placeholder
 
+from ...project import configuration
 from ...utils import to_class
 from ..connection import cursor
 from .filter import Filter
@@ -79,11 +80,23 @@ class Query:
         if not result:
             # TODO: Don't reconnect everytime, dufus.
             with cursor() as curs:
-                sql, args = self.evaluate()
-                curs.execute(sql, args)
-                result = tuple(map(lambda x: x[0], curs.fetchall()))
                 if self.is_insert:
+                    insert_sql, select_sql = self.evaluate()
+                    if configuration.log_sql:
+                        print(curs.mogrify(insert_sql[0], insert_sql[1]))
+                    curs.execute(*insert_sql)
+                    id = curs.fetchone()[0]
+                    if configuration.log_sql:
+                        print(curs.mogrify(select_sql[0], (id,)))
+                    curs.execute(select_sql[0], (id,))
+                    result = tuple(map(lambda x: x[0], curs.fetchall()))
                     self.update_model(result)
+                else:
+                    sql, args = self.evaluate()
+                    if configuration.log_sql:
+                        print(curs.mogrify(sql, args))
+                    curs.execute(sql, args)
+                    result = tuple(map(lambda x: x[0], curs.fetchall()))
                 # TODO: Move this above `update_model`.
                 if self.is_get:
                     if result:
@@ -99,18 +112,19 @@ class Query:
         sql = getattr(self, '_sql', None)
         if sql is None:
             if self.is_insert:
-                insert_sql = self.insert_class.evaluate(self, *args, **kwargs)
-                if self.is_select:
-                    sql = self.backend_class.evaluate(self, *args, **kwargs)
-                    sql = (
-                        SQL('WITH cte_mut AS ({}) {}').format(
+                insert_cte = self.insert_class.evaluate(self.model, self.selector)  # TODO: Need *args, **kwargs?
+                insert_sql = insert_cte.evaluate()
+                select_sql = self.backend_class.evaluate(self, *args, **kwargs)
+                sql = (
+                    (
+                        SQL('WITH {} SELECT id FROM {}').format(
                             insert_sql[0],
-                            sql[0]
+                            Identifier(insert_cte.alias)
                         ),
-                        insert_sql[1] + sql[1]
-                    )
-                else:
-                    sql = insert_sql
+                        insert_sql[1]
+                    ),
+                    select_sql
+                )
             else:
                 sql = self.backend_class.evaluate(self, *args, **kwargs)
             self._sql = sql
@@ -123,6 +137,9 @@ class Query:
             # TODO: Different PKs? What about auto-fields?
             if self.is_insert:
                 self.fields.add('id')
+                # TODO: This could come back to bite me, stomping on
+                # the filter like this.
+                self.filter = Filter({'id': Placeholder()})
             self.prepare_lookups()
             self._prepared = True
         return self
@@ -146,13 +163,8 @@ class Query:
         return sub_query
 
     def update_model(self, result):
-        # TODO: Shouldn't need this conditional.
-        if self.is_insert and not self.is_select:
-            for name, value in zip(self.fields, result):
+        result = result[0]
+        if result:
+            # TODO: Should recurse for each lookup.
+            for name, value in result.items():
                 setattr(self.model, name, value)
-        else:
-            result = result[0]
-            if result:
-                # TODO: Should recurse for each lookup.
-                for name, value in result.items():
-                    setattr(self.model, name, value)

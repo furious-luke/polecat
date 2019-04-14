@@ -3,7 +3,7 @@ import asyncio
 import ujson
 from graphql_server.error import HttpQueryError
 
-from ...project import load_project
+from ...project.project import load_project
 from .event import LambdaEvent
 
 

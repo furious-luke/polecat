@@ -57,11 +57,13 @@ create_actor_and_movies_query = '''mutation {
   createActor(input: {
     firstName: "a",
     lastName: "b",
-    createMoviesByStar: [{title: "c"}, {title: "d"}]
+    moviesByStar: {create: [{title: "c"}, {title: "d"}]}
   }) {
+    id,
     firstName,
     lastName,
     moviesByStar {
+      id,
       title
     }
   }

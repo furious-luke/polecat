@@ -7,6 +7,7 @@ from graphql.type import (GraphQLArgument, GraphQLBoolean, GraphQLEnumType,
 
 from ..model import field
 from ..utils import add_attribute, capitalize
+from .input import Input
 from .registry import (FieldMetaclass, graphql_create_input_registry,
                        graphql_reverse_input_registry, graphql_type_registry,
                        graphql_update_input_registry)
@@ -58,12 +59,15 @@ class Field(metaclass=FieldMetaclass):
     def default_resolver(self, obj, path):
         return obj[self.model_field.name]
 
-    def from_input(self, input):
-        result = {}
+    def from_input(self, input, graphql_type):
         name = self.model_field.cc_name
         if name in input:
-            result[self.model_field.name] = input[name]
-        return result
+            change = {
+                self.model_field.name: input[name]
+            }
+        else:
+            change = None
+        return change, None
 
 
 class StringField(Field):
@@ -98,6 +102,10 @@ class RelatedField(Field):
         registry = registry or self.registry
         return registry[self.model_field.other]
 
+    def from_input(self, input, graphql_type):
+        # TODO: Nesting.
+        return super().from_input(input, graphql_type)
+
 
 class ReverseField(RelatedField):
     sources = (field.ReverseField,)
@@ -125,9 +133,37 @@ class ReverseField(RelatedField):
                     ), '_model', self.model
                 )
                 graphql_reverse_input_registry[name] = type
-            return type
+            return add_attribute(
+                GraphQLInputField(
+                    type,
+                    description=self.get_description()
+                ), '_field', self
+            )
         else:
             return super().make_graphql_field()
 
     def get_graphql_type(self, registry=None):
         return GraphQLList(super().get_graphql_type(registry))
+
+    def from_input(self, input, graphql_type):
+        name = self.model_field.cc_name
+        if name in input:
+            # TODO: Nesting.
+            # TODO: Is this a bit inefficient? All the conditionls?
+            delete = input[name].get('delete', set())
+            change = input[name].get('create', None)
+            if change:
+                sub_type = graphql_type.fields[self.model_field.cc_name].type.fields['create'].type.of_type
+                new_change = []
+                for sub_args in change:
+                    sub_input = Input(sub_type, sub_args)
+                    sub_input.merge_delete(sub_input.delete, delete)
+                    new_change.append(sub_input.change)
+                change = {
+                    self.model_field.name: new_change
+                }
+            if not len(delete):
+                delete = None
+        else:
+            change, delete = None, None
+        return change, delete

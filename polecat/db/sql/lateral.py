@@ -16,8 +16,9 @@ from ...model.field import ReverseField
 
 
 class LateralBackend:
+    # TODO: Query and CTE should be the same kind of thing.
     @classmethod
-    def evaluate(cls, query, extra_fields=None, extra_where=None):
+    def evaluate(cls, query, extra_fields=None, extra_where=None, cte=None):
         # TODO: This extra_fields and extra_where business is a bit ugly.
         inner = (
             '{} {} {} {}'
@@ -28,7 +29,7 @@ class LateralBackend:
         where_sql, where_args = cls.evaluate_where_clause(query, extra_where=extra_where)
         return SQL(inner).format(
             cls.evaluate_select_clause(query, extra_fields=extra_fields),
-            cls.evaluate_from_clause(query),
+            cls.evaluate_from_clause(query, cte),
             join_sql,
             where_sql
         ), join_args + where_args
@@ -65,8 +66,8 @@ class LateralBackend:
         ))
 
     @classmethod
-    def evaluate_from_clause(cls, query):
-        table = 'cte_mut' if query.is_insert else query.model_class.Meta.table
+    def evaluate_from_clause(cls, query, cte=None):
+        table = cte.alias if cte else query.model_class.Meta.table
         sql = SQL('FROM {} AS {}').format(
             Identifier(table),
             Identifier(query.table_alias)

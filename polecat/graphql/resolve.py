@@ -80,6 +80,17 @@ def resolve_update_mutation(obj, info, **kwargs):
     pass
 
 
+def resolve_delete_mutation(obj, info, **kwargs):
+    return_type = info.return_type
+    id = kwargs['input']['id']
+    model_class = return_type._model
+    model = model_class(id=id)
+    Q(model).delete().execute()
+    return {
+        'id': id
+    }
+
+
 def resolve_mutation(obj, info, **kwargs):
     graphql_field = info.parent_type.fields[info.field_name]
     mutation = graphql_field._mutation

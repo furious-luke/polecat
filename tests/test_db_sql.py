@@ -54,3 +54,18 @@ def test_get_sql(db, factory):
     factory.Movie.create_batch(2)
     sql, args = Q(Movie).get(star__id=1).select('id', 'title').evaluate()
     # print(sql.as_string(db))
+
+
+def test_delete_sql(db, factory):
+    movie = factory.Movie.create()
+    sql, args = Q(movie).delete().evaluate()
+    # print(sql.as_string(db))
+
+
+def test_delete(db, factory):
+    movie = factory.Movie.create()
+    result = Q(movie).get(id=movie.id).execute()
+    assert result is not None
+    Q(movie).delete().execute()
+    result = Q(movie).get(id=movie.id).execute()
+    assert result is None

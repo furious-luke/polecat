@@ -13,8 +13,8 @@ from .registry import (add_graphql_create_input, add_graphql_type,
                        graphql_field_registry, graphql_type_registry,
                        graphql_update_input_registry)
 from .resolve import (resolve_all_query, resolve_create_mutation,
-                      resolve_get_query, resolve_mutation,
-                      resolve_update_mutation)
+                      resolve_delete_mutation, resolve_get_query,
+                      resolve_mutation, resolve_update_mutation)
 from .type import scalars
 
 
@@ -42,9 +42,14 @@ class SchemaBuilder:
             types=scalars + self.types
         )
 
+    # TODO: Should have called this "delete_input_type".
     @property
     def delete_type(self):
         return self.build_delete_type()
+
+    @property
+    def delete_output_type(self):
+        return self.build_delete_output_type()
 
     def build_models(self):
         builders = []
@@ -87,6 +92,19 @@ class SchemaBuilder:
             self._delete_type = type
         return type
 
+    def build_delete_output_type(self):
+        # TODO: Use a function cache.
+        type = getattr(self, '_delete_output_type', None)
+        if not type:
+            type = GraphQLObjectType(
+                name='DeleteByID',
+                fields={
+                    'id': GraphQLField(GraphQLInt)
+                }
+            )
+            self._delete_output_type = type
+        return type
+
 
 class ModelBuilder:
     def __init__(self, schema_builder):
@@ -97,6 +115,7 @@ class ModelBuilder:
         self.type = self.build_type(model)
         self.schema_builder.types.append(self.type)
 
+    # TODO: Can remove `schema_builder`?
     def post_build(self, schema_builder):
         if issubclass(self.model, Model):
             schema_builder.queries.update(self.build_queries(self.model, self.type))
@@ -131,6 +150,17 @@ class ModelBuilder:
                     'input': UpdateInputBuilder(self.schema_builder).build(model)
                 },
                 resolve_update_mutation
+            ),
+            # TODO: Need to use type instead of delete_output_type
+            # because it contains details about the model class
+            # used. Will need to think about how to handle situations
+            # where a type is shared amongst numerous models.
+            self.delete_mutation_inflection(model): GraphQLField(
+                type,
+                {
+                    'input': DeleteInputBuilder(self.schema_builder).build(model)
+                },
+                resolve_delete_mutation
             )
         }
 
@@ -179,6 +209,9 @@ class ModelBuilder:
 
     def update_mutation_inflection(self, model):
         return f'update{model.Meta.name}'
+
+    def delete_mutation_inflection(self, model):
+        return f'delete{model.Meta.name}'
 
 
 class TypeBuilder:
@@ -299,6 +332,29 @@ class UpdateInputBuilder(InputBuilder):
 
     def register_type(self, model, type):
         add_graphql_update_input(model, type)
+
+
+class DeleteInputBuilder(InputBuilder):
+    def build(self, model):
+        object_type_class = self.get_object_type_class()
+        # TODO: Description?
+        type = add_attribute(
+            object_type_class(
+                name=self.get_type_name(model),
+                fields={
+                    'id': GraphQLInt
+                }
+            ),
+            '_model', model
+        )
+        # TODO: Current assumption is that there's just one gql type
+        # per model. May need to alter this in the future. I'm not
+        # storing any of the model create, update, etc inputs.
+        # self.register_type(model, type)
+        return type
+
+    def get_type_name(self, model):
+        return f'{model.Meta.name}DeleteInput'
 
 
 class ReverseModelInputBuilder(InputBuilder):

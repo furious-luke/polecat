@@ -3,6 +3,7 @@ from psycopg2.sql import SQL, Identifier, Placeholder
 from ...project import configuration
 from ...utils import to_class
 from ..connection import cursor
+from .delete import Delete
 from .filter import Filter
 from .insert import Insert
 from .lateral import LateralBackend
@@ -15,6 +16,7 @@ class Query:
     backend_class = LateralBackend
     lookup_class = Lookup
     insert_class = Insert
+    delete_class = Delete
 
     def __init__(self, model, selector=None, parent=None, filter=None):
         self.model = model
@@ -30,6 +32,7 @@ class Query:
         self.is_get = False
         self.is_select = False
         self.is_insert = False
+        self.is_delete = False
 
     def __repr__(self):
         return f'<Query selector={self.selector}>'
@@ -75,6 +78,10 @@ class Query:
         #     ))
         return self
 
+    def delete(self):
+        self.is_delete = True
+        return self
+
     def execute(self):
         result = getattr(self, '_result', None)
         if not result:
@@ -96,7 +103,8 @@ class Query:
                     if configuration.log_sql:
                         print(curs.mogrify(sql, args))
                     curs.execute(sql, args)
-                    result = tuple(map(lambda x: x[0], curs.fetchall()))
+                    if not self.is_delete:
+                        result = tuple(map(lambda x: x[0], curs.fetchall()))
                 # TODO: Move this above `update_model`.
                 if self.is_get:
                     if result:
@@ -111,7 +119,9 @@ class Query:
         self.prepare()
         sql = getattr(self, '_sql', None)
         if sql is None:
-            if self.is_insert:
+            if self.is_delete:
+                sql = self.delete_class.evaluate(self.model)
+            elif self.is_insert:
                 insert_cte = self.insert_class.evaluate(self.model, self.selector)  # TODO: Need *args, **kwargs?
                 insert_sql = insert_cte.evaluate()
                 select_sql = self.backend_class.evaluate(self, *args, **kwargs)

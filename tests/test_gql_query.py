@@ -1,14 +1,16 @@
+from polecat.db.sql import Q
 from polecat.graphql import build_graphql_schema, execute_query
 from polecat.graphql.utils import print_schema
 
 from .models import *  # noqa
 from .queries import (all_actors_query, all_movies_query, authenticate_query,
-                      create_actor_and_movies_query, create_actors_query)
+                      create_actor_and_movies_query, create_actors_query,
+                      delete_movie_query)
 
 
 def test_schema():
     schema = build_graphql_schema()
-    print_schema(schema)
+    # print_schema(schema)
 
 
 def test_query(db, factory):
@@ -51,6 +53,17 @@ def test_create_reverse(db):
     assert len(data['moviesByStar']) == 2
     for movie in data['moviesByStar']:
         assert movie['id'] is not None
+
+
+def test_delete(db, factory):
+    schema = build_graphql_schema()
+    movie = factory.Movie.create()
+    result = execute_query(schema, delete_movie_query, {'id': movie.id})
+    assert result.errors is None
+    data = result.data['deleteMovie']
+    assert data['id'] == movie.id
+    result = Q(movie).get(id=movie.id).execute()
+    assert result is None
 
 
 def test_mutation(db, factory):

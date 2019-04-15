@@ -69,3 +69,10 @@ create_actor_and_movies_query = '''mutation {
   }
 }
 '''
+
+delete_movie_query = '''mutation($id: Int!) {
+  deleteMovie(input: {id: $id}) {
+    id
+  }
+}
+'''

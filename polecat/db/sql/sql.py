@@ -16,3 +16,6 @@ class Q:
 
     def insert(self, *fields, **lookups):
         return Query(self.model).insert(*fields, **lookups)
+
+    def delete(self):
+        return Query(self.model).delete()

@@ -1,6 +1,7 @@
 from ..utils import add_attribute
 from ..utils.stringcase import camelcase, snakecase
 from .field import Field, IntField
+from .omit import NONE
 
 type_registry = []
 model_registry = []
@@ -116,7 +117,8 @@ def make_type_meta(name, bases, attrs, meta):
         'fields': fields,
         'cc_fields': make_cc_fields(fields),
         'plural': get_plural(name),
-        'input': getattr(meta, 'input', False) if meta else False  # TODO: Ugly
+        'input': getattr(meta, 'input', False) if meta else False,  # TODO: Ugly
+        'omit': getattr(meta, 'omit', NONE) if meta else NONE  # TODO: Ugly
     })
 
 
@@ -133,7 +135,8 @@ def make_model_meta(name, bases, attrs, meta):
         'cc_fields': make_cc_fields(fields),
         'plural': get_plural(name),
         'uniques': getattr(meta, 'uniques', ()) if meta else (),
-        'checks': getattr(meta, 'checks', ()) if meta else ()
+        'checks': getattr(meta, 'checks', ()) if meta else (),
+        'omit': getattr(meta, 'omit', NONE) if meta else NONE  # TODO: Duplicate of above
     })
 
 
@@ -155,7 +158,8 @@ def make_query_meta(name, bases, attrs, meta):
 def make_mutation_meta(name, bases, attrs, meta):
     return type('Meta', (), {
         'options': meta,
-        'name': name
+        'name': name,
+        'omit': getattr(meta, 'omit', NONE) if meta else NONE  # TODO: Duplicate of above
     })
 
 

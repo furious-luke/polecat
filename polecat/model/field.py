@@ -11,8 +11,9 @@ class Auto:
 
 
 class Field:
-    def __init__(self, resolver=None):
+    def __init__(self, resolver=None, omit=None):
         self.resolver = resolver or default_resolver
+        self.omit = omit or 0
 
     def __repr__(self):
         name = getattr(self, 'name', '?')

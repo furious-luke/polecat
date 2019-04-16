@@ -5,7 +5,8 @@ from graphql.type import (GraphQLField, GraphQLInputField,
                           GraphQLInputObjectType, GraphQLInt, GraphQLList,
                           GraphQLObjectType, GraphQLSchema)
 
-from ..model import Model, model_registry, mutation_registry, type_registry
+from ..model import (Model, model_registry, mutation_registry, omit,
+                     type_registry)
 from ..utils import add_attribute, capitalize, uncapitalize
 # from .field import *  # noqa
 from .registry import (add_graphql_create_input, add_graphql_type,
@@ -69,11 +70,11 @@ class SchemaBuilder:
 
     def iter_models(self):
         for type in type_registry:
-            # TODO: Skip any set to be ignored.
-            yield type
+            if not type.Meta.omit == omit.ALL:
+                yield type
         for model in model_registry:
-            # TODO: Skip any set to be ignored.
-            yield model
+            if not model.Meta.omit == omit.ALL:
+                yield model
 
     def iter_mutations(self):
         for mutation in mutation_registry:
@@ -135,64 +136,71 @@ class ModelBuilder:
         }
 
     def build_mutations(self, model, type):
-        # TODO: Omitions.
-        return {
-            self.create_mutation_inflection(model): GraphQLField(
+        mutations = {}
+        if not model.Meta.omit & omit.CREATE:
+            mutations[self.create_mutation_inflection(model)] = GraphQLField(
                 type,
                 {
                     'input': CreateInputBuilder(self.schema_builder).build(model)
                 },
                 resolve_create_mutation
-            ),
-            self.update_mutation_inflection(model): GraphQLField(
+            )
+        if not model.Meta.omit & omit.UPDATE:
+            mutations[self.update_mutation_inflection(model)] = GraphQLField(
                 type,
                 {
                     'input': UpdateInputBuilder(self.schema_builder).build(model)
                 },
                 resolve_update_mutation
-            ),
+            )
+        if not model.Meta.omit & omit.DELETE:
             # TODO: Need to use type instead of delete_output_type
             # because it contains details about the model class
             # used. Will need to think about how to handle situations
             # where a type is shared amongst numerous models.
-            self.delete_mutation_inflection(model): GraphQLField(
+            mutations[self.delete_mutation_inflection(model)] = GraphQLField(
                 type,
                 {
                     'input': DeleteInputBuilder(self.schema_builder).build(model)
                 },
                 resolve_delete_mutation
             )
-        }
+        return mutations
 
     def build_all_queries(self, model, type):
-        return {
-            self.all_query_inflection(model): GraphQLField(
+        queries = {}
+        if not model.Meta.omit & omit.LIST:
+            queries[self.all_query_inflection(model)] = GraphQLField(
                 GraphQLList(type),
                 resolve=resolve_all_query
             )
-        }
+        return queries
 
     def build_get_queries(self, model, type):
-        # TODO: Need to add some details to the field to support
-        # getting by?
-        return {
-            self.get_query_inflection(model, field): add_attribute(
-                GraphQLField(
-                    type,
-                    {
-                        # TODO: What happens when the type linked is
-                        # something complicated, like a GraphQLObject?
-                        # Will need to use the PK of the
-                        # relationship. What if there's several?
-                        name: type.fields[name].type
-                    },
-                    resolve=resolve_get_query
-                ),
-                '_type', type
-            )
-            for name, field in model.Meta.cc_fields.items()
-            if field.use_get_query()
-        }
+        queries = {}
+        if not model.Meta.omit & omit.GET:
+            # TODO: Need to add some details to the field to support
+            # getting by?
+            for name, field in model.Meta.cc_fields.items():
+                if field.omit & omit.GET:
+                    continue
+                if not field.use_get_query():
+                    continue
+                queries[self.get_query_inflection(model, field)] = add_attribute(
+                    GraphQLField(
+                        type,
+                        {
+                            # TODO: What happens when the type linked is
+                            # something complicated, like a GraphQLObject?
+                            # Will need to use the PK of the
+                            # relationship. What if there's several?
+                            name: type.fields[name].type
+                        },
+                        resolve=resolve_get_query
+                    ),
+                    '_type', type
+                )
+        return queries
 
     def all_query_inflection(self, model):
         # TODO: Not sure I need to capitalize?
@@ -246,6 +254,8 @@ class TypeBuilder:
             result = self.build_field(model, field)
             if isinstance(result, dict):
                 fields.update(result)
+            elif result is None:
+                pass
             else:
                 fields[name] = result
         return fields
@@ -272,6 +282,8 @@ class TypeBuilder:
 
     def iter_fields(self, model):
         for name, field in model.Meta.cc_fields.items():
+            if field.omit & (omit.LIST | omit.GET):
+                continue
             yield name, field
 
 
@@ -288,6 +300,10 @@ class InputBuilder(TypeBuilder):
     def get_graphql_field(self, model, field, my_graphql_field):
         # TODO: Maybe remove the function call and do it in __init__?
         return my_graphql_field(model, field, input=True).make_graphql_field(self.schema_builder)
+
+    def iter_fields(self, model):
+        for name, field in model.Meta.cc_fields.items():
+            yield name, field
 
 
 class CreateInputBuilder(InputBuilder):
@@ -309,6 +325,12 @@ class CreateInputBuilder(InputBuilder):
 
     def register_type(self, model, type):
         add_graphql_create_input(model, type)
+
+    def iter_fields(self, model):
+        for name, field in model.Meta.cc_fields.items():
+            if field.omit & omit.CREATE:
+                continue
+            yield name, field
 
 
 class UpdateInputBuilder(InputBuilder):
@@ -333,6 +355,12 @@ class UpdateInputBuilder(InputBuilder):
     def register_type(self, model, type):
         add_graphql_update_input(model, type)
 
+    def iter_fields(self, model):
+        for name, field in model.Meta.cc_fields.items():
+            if field.omit & omit.UPDATE:
+                continue
+            yield name, field
+
 
 class DeleteInputBuilder(InputBuilder):
     def build(self, model):
@@ -355,6 +383,12 @@ class DeleteInputBuilder(InputBuilder):
 
     def get_type_name(self, model):
         return f'{model.Meta.name}DeleteInput'
+
+    def iter_fields(self, model):
+        for name, field in model.Meta.cc_fields.items():
+            if field.omit & omit.DELETE:
+                continue
+            yield name, field
 
 
 class ReverseModelInputBuilder(InputBuilder):
@@ -381,8 +415,9 @@ class MutationBuilder:
         self.schema_builder.mutations.update(self.build_mutations(mutation))
 
     def build_mutations(self, mutation):
-        return {
-            self.mutation_inflection(mutation): add_attribute(
+        mutations = {}
+        if not mutation.Meta.omit & omit.ALL:
+            mutations[self.mutation_inflection(mutation)] = add_attribute(
                 GraphQLField(
                     graphql_type_registry[mutation.returns],
                     {
@@ -392,7 +427,7 @@ class MutationBuilder:
                 ),
                 '_mutation', mutation()  # TODO: Don't actually need to instantiate here.
             )
-        }
+        return mutations
 
     def mutation_inflection(self, mutation):
         return uncapitalize(mutation.Meta.name)

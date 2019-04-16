@@ -5,7 +5,7 @@ from graphql.type import (GraphQLArgument, GraphQLBoolean, GraphQLEnumType,
                           GraphQLNonNull, GraphQLObjectType, GraphQLSchema,
                           GraphQLString)
 
-from ..model import field
+from ..model import field, omit
 from ..utils import add_attribute, capitalize
 from .input import Input
 from .registry import (FieldMetaclass, graphql_create_input_registry,
@@ -98,9 +98,20 @@ class FloatField(Field):
 class RelatedField(Field):
     sources = (field.RelatedField,)
 
+    # TODO: Should maybe have an extra function to avoid even getting
+    # here?  Like `should_build`?
+    def make_graphql_field(self, name=None, optional=False):
+        if self.model_field.other.Meta.omit == omit.ALL:
+            return None
+        else:
+            return super().make_graphql_field(name, optional)
+
     def get_graphql_type(self, registry=None):
         registry = registry or self.registry
-        return registry[self.model_field.other]
+        try:
+            return registry[self.model_field.other]
+        except KeyError:
+            raise KeyError(f'unknown GraphQL type {self.model_field.other.Meta.name}')
 
     def from_input(self, input, graphql_type):
         # TODO: Nesting.

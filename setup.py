@@ -37,6 +37,7 @@ setup(
     extras_require={
         'cli': [
             'pytest==4.3.1',
+            'pytest-asyncio==0.10.0',
             'factory-boy==2.11.1',
             'click==7.0',
             'termcolor==1.1.0',

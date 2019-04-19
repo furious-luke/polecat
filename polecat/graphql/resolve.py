@@ -91,6 +91,12 @@ def resolve_delete_mutation(obj, info, **kwargs):
     }
 
 
+def resolve_query(obj, info, **kwargs):
+    graphql_field = info.parent_type.fields[info.field_name]
+    query = graphql_field._query
+    return query.resolve(**kwargs)
+
+
 def resolve_mutation(obj, info, **kwargs):
     graphql_field = info.parent_type.fields[info.field_name]
     mutation = graphql_field._mutation

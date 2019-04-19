@@ -1,35 +1,55 @@
 import inspect
+import logging
 from functools import partial
 
 from graphql.type import (GraphQLField, GraphQLInputField,
                           GraphQLInputObjectType, GraphQLInt, GraphQLList,
-                          GraphQLObjectType, GraphQLSchema)
+                          GraphQLObjectType, GraphQLSchema, GraphQLString)
 
 from ..model import (Model, model_registry, mutation_registry, omit,
-                     type_registry)
+                     query_registry, type_registry)
 from ..utils import add_attribute, capitalize, uncapitalize
+from ..utils.stringcase import camelcase
 # from .field import *  # noqa
 from .registry import (add_graphql_create_input, add_graphql_type,
                        add_graphql_update_input, graphql_create_input_registry,
-                       graphql_field_registry, graphql_type_registry,
-                       graphql_update_input_registry)
+                       graphql_field_registry, graphql_reverse_input_registry,
+                       graphql_type_registry, graphql_update_input_registry)
 from .resolve import (resolve_all_query, resolve_create_mutation,
                       resolve_delete_mutation, resolve_get_query,
-                      resolve_mutation, resolve_update_mutation)
+                      resolve_mutation, resolve_query, resolve_update_mutation)
 from .type import scalars
+
+logger = logging.getLogger(__name__)
 
 
 def build_graphql_schema():
+    # TODO: I need to fix this nonsense. The registries need to be
+    # first-class citizens that can be cleared when needed.
+    global graphql_create_input_registry
+    global graphql_update_input_registry
+    global graphql_reverse_input_registry
+    all_keys = list(graphql_create_input_registry.keys())
+    for k in all_keys:
+        del graphql_create_input_registry[k]
+    all_keys = list(graphql_update_input_registry.keys())
+    for k in all_keys:
+        del graphql_update_input_registry[k]
+    all_keys = list(graphql_reverse_input_registry.keys())
+    for k in all_keys:
+        del graphql_reverse_input_registry[k]
     return SchemaBuilder().build()
 
 
 # TODO: Make the builders class only?
 class SchemaBuilder:
     def build(self):
+        logger.debug('Building GraphQL schema')
         self.types = []
         self.queries = {}
         self.mutations = {}
         self.build_models()
+        self.build_queries()
         self.build_mutations()
         return GraphQLSchema(
             query=GraphQLObjectType(
@@ -53,6 +73,7 @@ class SchemaBuilder:
         return self.build_delete_output_type()
 
     def build_models(self):
+        logger.debug('Building GraphQL models')
         builders = []
         for model in self.iter_models():
             builder_class = getattr(model.Meta, 'builder', ModelBuilder)
@@ -62,7 +83,15 @@ class SchemaBuilder:
         for builder in builders:
             builder.post_build(self)
 
+    def build_queries(self):
+        logger.debug('Building GraphQL queries')
+        for query in self.iter_queries():
+            builder_class = getattr(query, 'builder', QueryBuilder)
+            builder = builder_class(self)
+            builder.build(query)
+
     def build_mutations(self):
+        logger.debug('Building GraphQL mutations')
         for mutation in self.iter_mutations():
             builder_class = getattr(mutation, 'builder', MutationBuilder)
             builder = builder_class(self)
@@ -75,6 +104,10 @@ class SchemaBuilder:
         for model in model_registry:
             if not model.Meta.omit == omit.ALL:
                 yield model
+
+    def iter_queries(self):
+        for query in query_registry:
+            yield query
 
     def iter_mutations(self):
         for mutation in mutation_registry:
@@ -248,6 +281,7 @@ class TypeBuilder:
         return model.Meta.name
 
     def build_all_fields(self, model):
+        logger.debug(f'Building GraphQL fields for model {model.Meta.name} using builder {self.__class__.__name__}')
         # TODO: Can I make this more functional?
         fields = {}
         for name, field in self.iter_fields(model):
@@ -267,7 +301,10 @@ class TypeBuilder:
             # GraphQL type abstraction that doesn't clash with actual
             # graphql types.
             if my_graphql_field:
-                return self.get_graphql_field(model, field, my_graphql_field)
+                logger.debug(f'Building field {field.cc_name}')
+                field = self.get_graphql_field(model, field, my_graphql_field)
+                logger.debug('DONE')
+                return field
         raise Exception(f'unknown field type {field}')
 
     def get_graphql_field(self, model, field, my_graphql_field):
@@ -396,7 +433,23 @@ class ReverseModelInputBuilder(InputBuilder):
         # TODO: Do I need to pass source_field around, or okay to
         # store on the builder?
         self.source_field = source_field
+        logger.debug(f'Building GraphQL reverse model input {self.get_type_name(model)}')
         return super().build(model)
+
+    def get_graphql_field(self, model, field, my_graphql_field):
+        # TODO: Maybe remove the function call and do it in __init__?
+        # TODO: Check if it's not the ID field used for the update,
+        # and if not, make the field optional.
+        # TODO: Have to pass in a type because reverse fields generate
+        # a new object-type internally instead of just a type, so it
+        # needs a name. So, if I don't pass in a type string create,
+        # update, delete will produce identically named object-types.
+        return my_graphql_field(
+            model,
+            field,
+            input=True,
+            registry=graphql_create_input_registry  # TODO: Yuck
+        ).make_graphql_field(self.schema_builder)
 
     def get_type_name(self, model):
         return f'{model.Meta.name}{capitalize(self.source_field.cc_name)}ReverseInput'
@@ -405,6 +458,52 @@ class ReverseModelInputBuilder(InputBuilder):
         for name, field in model.Meta.cc_fields.items():
             if field != self.source_field:
                 yield name, field
+
+
+class QueryBuilder:
+    def __init__(self, schema_builder):
+        self.schema_builder = schema_builder
+
+    def build(self, query):
+        self.schema_builder.queries.update(self.build_queries(query))
+
+    def build_queries(self, query):
+        queries = {}
+        if not query.Meta.omit & omit.ALL:
+            queries[self.query_inflection(query)] = add_attribute(
+                GraphQLField(
+                    self.build_return_type(query),
+                    self.build_arguments(query),
+                    resolve_query
+                ),
+                '_query', query()  # TODO: Don't actually need to instantiate here.
+            )
+        return queries
+
+    def build_return_type(self, query):
+        if isinstance(query.returns, list):
+            return GraphQLList(graphql_type_registry[query.returns[0]])
+        else:
+            return graphql_type_registry[query.returns]
+
+    def build_arguments(self, query):
+        args = {}
+        for name, type in getattr(query, 'arguments', ()):
+            # TODO: This should be looking up from a table.
+            args[camelcase(name)] = self.map_type(type)
+        return args
+
+    def map_type(self, type):
+        if type == str:
+            return GraphQLString
+        elif type == int:
+            return GraphQLInt
+        else:
+            raise NotImplementedError(f'invalid GraphQL argument: {type}')
+                
+
+    def query_inflection(self, query):
+        return uncapitalize(query.Meta.name)
 
 
 class MutationBuilder:

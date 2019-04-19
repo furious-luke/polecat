@@ -59,7 +59,11 @@ class ModelMetaclass(type):
     def __init__(cls, name, bases, attrs):
         meta = getattr(cls, 'Meta', None)
         if meta:
-            for field in meta.fields.values():
+            # Must first dump all fields as any related field that
+            # references "self" will cause an added reverse field to
+            # be added.
+            all_fields = tuple(meta.fields.values())
+            for field in all_fields:
                 field.prepare(cls)
 
 
@@ -151,7 +155,8 @@ def make_role_meta(name, bases, attrs, meta):
 def make_query_meta(name, bases, attrs, meta):
     return type('Meta', (), {
         'options': meta,
-        'name': name
+        'name': name,
+        'omit': getattr(meta, 'omit', NONE) if meta else NONE  # TODO: Duplicate of above
     })
 
 

@@ -78,6 +78,9 @@ class Field(metaclass=FieldMetaclass):
             return None
         return SQL(' ').join(elems)
 
+    def translate_default(self, default):
+        return default
+
 
 class TextField(Field):
     db_type = 'text'
@@ -119,6 +122,17 @@ class IntField(Field):
 class PasswordField(TextField):
     db_type = 'chkpass'
     sources = (mf.PasswordField,)
+
+
+class UUIDField(Field):
+    db_type = 'uuid'
+    sources = (mf.UUIDField,)
+
+    def translate_default(self, default):
+        if self.auto:
+            return 'uuid_generate_v4()'
+        else:
+            return default
 
 
 class RelatedField(IntField):

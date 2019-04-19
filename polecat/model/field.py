@@ -57,6 +57,10 @@ class PasswordField(TextField):
     pass
 
 
+class PhoneField(TextField):
+    pass
+
+
 class BoolField(MutableField):
     pass
 
@@ -70,6 +74,20 @@ class FloatField(MutableField):
 
 
 class DatetimeField(MutableField):
+    pass
+
+
+class UUIDField(MutableField):
+    def __init__(self, *args, auto=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.auto = auto
+
+
+class PointField(MutableField):
+    pass
+
+
+class GCSPointField(PointField):
     pass
 
 
@@ -93,6 +111,8 @@ class RelatedField(MutableField):
         self.related_name = related_name
 
     def prepare(self, model):
+        if self.other == 'self':
+            self.other = model
         self.add_related_field(model)
         return self
 

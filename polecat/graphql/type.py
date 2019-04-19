@@ -1,4 +1,4 @@
-from datetime import datetime
+from uuid import UUID
 
 from graphql.error import INVALID
 from graphql.language.ast import (BooleanValueNode, FloatValueNode,
@@ -50,5 +50,46 @@ GraphQLDatetime = GraphQLScalarType(
 )
 
 
+def serialize_uuid(value):
+    if isinstance(value, str):
+        # TODO: Confirm value is a UUID?
+        return value
+    if isinstance(value, UUID):
+        # TODO: Which format?
+        return str(value)
+    # Do not serialize builtin types as strings, but allow
+    # serialization of custom types via their `__str__` method.
+    if type(value).__module__ == 'builtins':
+        raise TypeError(f'UUID cannot represent value: {inspect(value)}')
+    return str(value)
+
+
+def coerce_uuid(value):
+    if not isinstance(value, str):
+        raise TypeError(
+            f'UUID cannot represent a non string value: {inspect(value)}'
+        )
+    return value
+
+
+def parse_uuid_literal(ast, _variables=None):
+    """ Parse a string value node in the AST.
+    """
+    if isinstance(ast, StringValueNode):
+        # TODO: Must be a UUID.
+        return ast.value
+    return INVALID
+
+
+GraphQLUUID = GraphQLScalarType(
+    name="UUID",
+    description="The `UUID` scalar type represents"
+    " a UUID.",
+    serialize=serialize_uuid,
+    parse_value=coerce_uuid,
+    parse_literal=parse_uuid_literal,
+)
+
+
 # TODO: Prefer tuple, but we add it to a list in `./schema.py`.
-scalars = [GraphQLDatetime]
+scalars = [GraphQLDatetime, GraphQLUUID]

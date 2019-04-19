@@ -1,3 +1,6 @@
+import logging
+from functools import partial
+
 from graphql.type import (GraphQLArgument, GraphQLBoolean, GraphQLEnumType,
                           GraphQLEnumValue, GraphQLField, GraphQLFloat,
                           GraphQLInputField, GraphQLInputObjectType,
@@ -11,9 +14,11 @@ from .input import Input
 from .registry import (FieldMetaclass, graphql_create_input_registry,
                        graphql_reverse_input_registry, graphql_type_registry,
                        graphql_update_input_registry)
-from .type import GraphQLDatetime
+from .type import GraphQLDatetime, GraphQLUUID
 
 __all__ = ('Field', 'StringField', 'IntField', 'RelatedField')
+
+logger = logging.getLogger(__name__)
 
 
 class Field(metaclass=FieldMetaclass):
@@ -80,6 +85,16 @@ class DatetimeField(Field):
     sources = (field.DatetimeField,)
 
 
+class UUIDField(Field):
+    graphql_type = GraphQLUUID
+    sources = (field.UUIDField,)
+
+
+class PointField(Field):
+    graphql_type = GraphQLList(GraphQLFloat)
+    sources = (field.PointField,)
+
+
 class BoolField(Field):
     graphql_type = GraphQLBoolean
     sources = (field.BoolField,)
@@ -123,24 +138,16 @@ class ReverseField(RelatedField):
 
     def make_graphql_field(self, builder):
         if self.input:
-            name = f'{self.model_field.other.Meta.name}ReverseInput'
+            name = f'{self.model.Meta.name}{capitalize(self.model_field.cc_name)}Input'
             type = graphql_reverse_input_registry.get(name, None)
             if not type:
+                logger.debug(f'Building reverse input for model {name} coming from {self.model.Meta.name}.{self.model_field.name}')
                 # TODO: Noooooooo. Use the buidler getting passed in
                 # to provide it.
-                from .schema import ReverseModelInputBuilder
                 type = add_attribute(
                     GraphQLInputObjectType(
                         name=name,
-                        fields={
-                            'create': GraphQLList(
-                                ReverseModelInputBuilder(builder).build(
-                                    self.model_field.other,
-                                    self.model_field.other.Meta.fields[self.model_field.related_name]
-                                )
-                            ),
-                            'delete': GraphQLList(builder.delete_type)
-                        }
+                        fields=partial(self.build_reverse_fields, builder)
                     ), '_model', self.model
                 )
                 graphql_reverse_input_registry[name] = type
@@ -152,6 +159,18 @@ class ReverseField(RelatedField):
             )
         else:
             return super().make_graphql_field()
+
+    def build_reverse_fields(self, builder):
+        from .schema import ReverseModelInputBuilder
+        return {
+            'create': GraphQLList(
+                ReverseModelInputBuilder(builder).build(
+                    self.model_field.other,
+                    self.model_field.other.Meta.fields[self.model_field.related_name]
+                )
+            ),
+            'delete': GraphQLList(builder.delete_type)
+        }
 
     def get_graphql_type(self, registry=None):
         return GraphQLList(super().get_graphql_type(registry))

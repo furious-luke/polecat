@@ -3,13 +3,15 @@ import re
 import ujson
 from psycopg2.sql import SQL, Composable, Identifier
 
+from ...utils import to_tuple
+
 
 class Filter:
     FILTER_PROG = re.compile(r'^([a-zA-Z]+(?:__[a-zA-Z]+)*)$')
     FILTER_TYPES = None
 
-    def __init__(self, args):
-        self.root = self.parse_args(args)
+    def __init__(self, *args, **kwargs):
+        self.root = self.parse_input(args, kwargs)
 
     def get_sql(self, model, table_alias=None):
         self.table_alias = table_alias
@@ -19,20 +21,22 @@ class Filter:
         else:
             return None
 
-    def parse_args(self, args):
+    def parse_input(self, args, kwargs):
         root = None
-        if args:
-            for k, v in args.items():
-                m = self.FILTER_PROG.match(k)
-                if not m:
-                    continue
-                target = m.group(1)
-                lookup, flt_cls = self.parse_target(target)
-                flt = flt_cls(self, lookup, v)
-                if root is None:
-                    root = flt
-                else:
-                    root = And(root, flt)
+        for k, v in kwargs.items():
+            m = self.FILTER_PROG.match(k)
+            if not m:
+                continue
+            target = m.group(1)
+            lookup, flt_cls = self.parse_target(target)
+            flt = flt_cls(self, lookup, v)
+            if root is None:
+                root = flt
+            else:
+                root = And(root, flt)
+        for a in args:
+            # TODO: Confirm that `a` is a proper FilterType.
+            root = And(root, a)
         return root
 
     def parse_target(self, target):
@@ -130,7 +134,7 @@ class FilterType:
             format_string = format_string % '{}'
             return SQL(format_string).format(*(args + (self.value,))), ()
         else:
-            return SQL(format_string).format(*args), (self.value,)
+            return SQL(format_string).format(*args), to_tuple(self.value)
 
 
 class Equal(FilterType):
@@ -248,6 +252,20 @@ class Overlap(FilterType):
         except KeyError:
             raise ValueError(f'invalid attribute: {self.field}')
         return self.format('{}.{} && %s', tbl, col)
+
+
+class WithinDistance(FilterType):
+    def __init__(self, filter, lookup, point, distance):
+        super().__init__(filter, lookup, distance)
+        self.value = (point, self.value)
+
+    def eval(self, filter):
+        super().eval(filter)
+        try:
+            tbl, col = self.get_table_column(filter)
+        except KeyError:
+            raise ValueError(f'invalid attribute: {self.field}')
+        return self.format('{}.{} <@> %s < %s', tbl, col)
 
 
 class Operator:

@@ -61,7 +61,7 @@ class Query:
         object.
         """
         self.is_get = True
-        self.filter = Filter(filters)
+        self.filter = Filter(**filters)
         return self
 
     def insert(self, *fields, **lookups):
@@ -149,7 +149,7 @@ class Query:
                 self.fields.add('id')
                 # TODO: This could come back to bite me, stomping on
                 # the filter like this.
-                self.filter = Filter({'id': Placeholder()})
+                self.filter = Filter(id=Placeholder())
             self.prepare_lookups()
             self._prepared = True
         return self

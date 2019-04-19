@@ -3,6 +3,7 @@ from polecat.cli.build import *  # noqa
 from polecat.cli.deploy import *  # noqa
 from polecat.cli.deployment import *  # noqa
 from polecat.cli.example import *  # noqa
+from polecat.cli.graphql import *  # noqa
 from polecat.cli.main import main
 from polecat.cli.project import *  # noqa
 from polecat.cli.publish import *  # noqa

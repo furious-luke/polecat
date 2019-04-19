@@ -37,6 +37,7 @@ class Actor(model.Model):
     last_name = model.TextField()
     age = model.IntField()
     address = model.RelatedField(Address)
+    user = model.RelatedField(User)
 
     class Meta:
         uniques = (

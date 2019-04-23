@@ -133,6 +133,7 @@ def make_model_meta(name, bases, attrs, meta):
     }
     return type('Meta', (), {
         'options': meta.__dict__ if meta else {},
+        'app': None,
         'name': name,
         'table': snakecase(name),  # TODO
         'fields': fields,
@@ -147,6 +148,7 @@ def make_model_meta(name, bases, attrs, meta):
 def make_role_meta(name, bases, attrs, meta):
     return type('Meta', (), {
         'options': meta.__dict__ if meta else {},
+        'app': None,
         'name': name,
         'role': make_role_from_name(name)
     })

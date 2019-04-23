@@ -1,3 +1,4 @@
+from polecat.cli.app import *  # noqa
 from polecat.cli.aws import *  # noqa
 from polecat.cli.build import *  # noqa
 from polecat.cli.deploy import *  # noqa

@@ -1,8 +1,11 @@
 import os
+import re
 from importlib import import_module
 
 from graphql_server import HttpQueryError
 
+from ..model.registry import model_registry, role_registry, type_registry
+from .app import app_registry
 from .config import default_config
 from .index import IndexHandler, get_index_html
 
@@ -44,7 +47,13 @@ class Project:
         global active_project
         active_project = self
 
+    @property
+    def apps(self):
+        # TODO: Cache.
+        return list(app_registry)
+
     def prepare(self):
+        self.prepare_apps()
         # TODO: If not in DEBUG mode, validate settings.
         if not len(self.handlers):
             # TODO: Hmm, don't like the internal import so
@@ -55,6 +64,37 @@ class Project:
         for handler in self.handlers:
             handler.prepare()
         self.index_html = self.get_index_html()
+
+    def prepare_apps(self):
+        items = []
+        for app in app_registry:
+            items.append(
+                r'\.'.join(app.__module__.split('.')[:-1])
+            )
+        if not items:
+            return
+        prog = re.compile('(' + ')|('.join(items) + ')')
+        for model in model_registry:
+            module_name = r'.'.join(model.__module__.split('.')[:-1])
+            match = prog.search(module_name)
+            try:
+                app = app_registry[match.lastindex - 1]
+            except AttributeError:
+                raise Exception(f'model {model.Meta.name} has no app')
+            app.models.append(model)
+            model.Meta.app = app
+        for type in type_registry:
+            module_name = r'.'.join(type.__module__.split('.')[:-1])
+            match = prog.search(module_name)
+            app = app_registry[match.lastindex - 1]
+            app.types.append(model)
+            type.Meta.app = app
+        for role in role_registry:
+            module_name = r'.'.join(role.__module__.split('.')[:-1])
+            match = prog.search(module_name)
+            app = app_registry[match.lastindex - 1]
+            app.roles.append(model)
+            role.Meta.app = app
 
     def get_index_html(self):
         return get_index_html(

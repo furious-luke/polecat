@@ -38,6 +38,10 @@ class Field(metaclass=FieldMetaclass):
     db_type = None
     sources = ()
 
+    @classmethod
+    def match(cls, field):
+        return True
+
     def __init__(self, source):
         self.source = source
 
@@ -45,9 +49,21 @@ class Field(metaclass=FieldMetaclass):
     def name(self):
         return self.source.name
 
-    @classmethod
-    def match(cls, field):
-        return True
+    @property
+    def type(self):
+        return self.db_type
+
+    @property
+    def unique(self):
+        return self.source.unique
+
+    @property
+    def null(self):
+        return self.source.null
+
+    @property
+    def primary_key(self):
+        return getattr(self.source, 'primary_key', None)
 
     def is_concrete(self):
         return True
@@ -63,7 +79,7 @@ class Field(metaclass=FieldMetaclass):
         )))
 
     def get_type_sql(self):
-        return SQL(self.db_type)
+        return SQL(self.type)
 
     def get_constraints_sql(self, extra=()):
         src = self.source
@@ -87,15 +103,16 @@ class TextField(Field):
     sources = (mf.TextField,)
 
     @property
-    def length(self):
-        return self.source.length
-
-    def get_type_sql(self):
+    def type(self):
         if self.length:
             # TODO: Validate length.
-            return SQL(f'varchar({self.length})')
+            return f'varchar({self.length})'
         else:
-            return super().get_type_sql()
+            return super().type
+
+    @property
+    def length(self):
+        return self.source.length
 
 
 class IntField(Field):
@@ -103,14 +120,11 @@ class IntField(Field):
     sources = (mf.IntField,)
 
     @property
-    def primary_key(self):
-        return getattr(self.source, 'primary_key', None)
-
-    def get_type_sql(self):
+    def type(self):
         if self.primary_key:
-            return SQL('serial')
+            return 'serial'
         else:
-            return super().get_type_sql()
+            return super().type
 
     def get_constraints_sql(self, extra=()):
         return super().get_constraints_sql((
@@ -137,6 +151,15 @@ class UUIDField(Field):
 
 class RelatedField(IntField):
     sources = (mf.RelatedField,)
+
+    @property
+    def references(self):
+        other_table = self.source.other.Meta.table
+        result = f'{other_table}.id'
+        app = self.source.other.Meta.app
+        if app:
+            result = f'{app.name}.{result}'
+        return result
 
     # def get_other(self):
     #     # TODO: Cache this?

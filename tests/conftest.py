@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+
 import pytest
 from polecat.db.connection import cursor
 from polecat.db.migration import migrate
@@ -9,8 +11,8 @@ from polecat.test.utils import environ
 from polecat.utils import random_ident
 
 
-@pytest.fixture(scope='session')
-def testdb():
+@contextmanager
+def create_database():
     dbinfo = parse_url()
     test_dbname = random_ident()
     with cursor() as curs:
@@ -25,10 +27,17 @@ def testdb():
             curs.execute(f'drop database {test_dbname}')
 
 
+@pytest.fixture
+def testdb():
+    with create_database() as curs:
+        yield curs
+
+
 @pytest.fixture(scope='session')
-def migrateddb(testdb):
-    migrate(cursor=testdb)
-    yield testdb
+def migrateddb():
+    with create_database() as curs:
+        migrate(cursor=curs)
+        yield curs
 
 
 @pytest.fixture

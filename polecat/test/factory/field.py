@@ -4,9 +4,9 @@ from factory import declarations
 from factory.fuzzy import FuzzyInteger, FuzzyText
 
 from ...model import field as mf
-from ...utils.registry import Registry, RegistryMetaclass
+from ...utils.registry import MappedRegistry, RegistryMetaclass
 
-factory_field_registry = Registry('factory field')
+factory_field_registry = MappedRegistry('factory field')
 
 
 class FactoryWrapper(declarations._FactoryWrapper):

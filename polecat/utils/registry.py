@@ -11,8 +11,26 @@ class RegistryMetaclass(type):
 
 
 class Registry:
-    def __init__(self, type=None):
+    def __init__(self, type=None, construct=False):
         self.type = type or 'registry'
+        self.values = []
+        self.construct = construct
+
+    def __iter__(self):
+        return self.values.__iter__()
+
+    def __getitem__(self, index):
+        return self.values[index]
+
+    def add(self, value):
+        if self.construct:
+            value = value()
+        self.values.append(value)
+
+
+class MappedRegistry(Registry):
+    def __init__(self, type=None):
+        super().__init__(type)
         self.values = {}
 
     def __getitem__(self, value):

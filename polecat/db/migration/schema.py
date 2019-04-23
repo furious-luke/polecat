@@ -52,12 +52,12 @@ class Schema:
 class Table:
     @classmethod
     def from_model(cls, model):
-        columns = {}
+        columns = []
         for field in model.Meta.fields.values():
             if not isinstance(field, MutableField):
                 continue
             col = Column.from_model_field(field)
-            columns[col.name] = col
+            columns.append(col)
         app = model.Meta.app
         app_name = app.name if app else None
         return cls(model.Meta.name, columns, model.Meta.options, app=app_name)
@@ -65,7 +65,8 @@ class Table:
     def __init__(self, name, columns=None, options=None, app=None):
         self.app = app
         self.name = name
-        self.columns = columns or {}
+        # TODO: Validate columns.
+        self.columns = columns or []
         self.options = options or {}
 
     def __eq__(self, other):

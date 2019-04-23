@@ -70,7 +70,7 @@ class CreateTable(Operation):
 
     @property
     def dependencies(self):
-        for col in self.table.columns.values():
+        for col in self.table.columns:
             for dep in col.dependencies:
                 yield dep
 
@@ -125,7 +125,7 @@ class CreateTable(Operation):
             None
 
     def iter_valid_columns(self):
-        for column in self.table.columns.values():
+        for column in self.table.columns:
             yield column
 
     def column_sql(self, column):

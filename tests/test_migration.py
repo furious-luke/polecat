@@ -20,13 +20,13 @@ def test_migration_from_models(testdb):
 
 def test_dependencies(testdb):
     schema = Schema(tables=[
-        Table('t0', columns={
-            'id': Column('id', 'int', unique=True),
-            'other': RelatedColumn('other', 'int', 'a1.t1.id')
-        }, app='a0'),
-        Table('t1', columns={
-            'id': Column('id', 'int', unique=True)
-        }, app='a1')
+        Table('t0', columns=[
+            Column('id', 'int', unique=True),
+            RelatedColumn('other', 'int', 'a1.t1.id')
+        ], app='a0'),
+        Table('t1', columns=[
+            Column('id', 'int', unique=True)
+        ], app='a1')
     ])
     migrations = schema.diff()
     assert len(migrations) == 2

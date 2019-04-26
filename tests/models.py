@@ -28,8 +28,10 @@ class User(model.Model):
 class Address(model.Model):
     country = model.TextField()
 
-    class Meta:
-        access = model.Access(UserRole)
+
+class AddressAccess(model.Access):
+    entity = Address
+    all = (UserRole,)
 
 
 class Actor(model.Model):
@@ -46,22 +48,24 @@ class Actor(model.Model):
         checks = (
             'first_name is not null or last_name is not null',
         )
-        access = model.Access(
-            all=UserRole,
-            insert=DefaultRole,
-            update=DefaultRole
-        )
+
+
+class ActorAccess(model.Access):
+    entity = Actor
+    all = (UserRole,)
+    insert = (DefaultRole,)
+    update = (DefaultRole,)
 
 
 class Movie(model.Model):
     title = model.TextField(unique=True)
     star = model.RelatedField(Actor)
 
-    class Meta:
-        access = model.Access(
-            all=UserRole,
-            select=DefaultRole
-        )
+
+class MovieAccess(model.Access):
+    entity = Movie
+    all = (UserRole,)
+    select = (DefaultRole,)
 
 
 class AuthenticateInput(model.Type):

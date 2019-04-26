@@ -1,18 +1,24 @@
 from psycopg2.sql import SQL, Identifier
 
 from ...model.registry import make_role_from_name
+from ...utils import indent
 from ...utils.predicates import not_empty
 from ...utils.stringcase import snakecase
 from ..decorators import dbcursor
-from .schema import Role, Table
+from .schema import Access, Role, Table
 
-CREATE_ROLE_SQL = '''do $$
+create_role_sql = '''do $$
   BEGIN
     IF NOT EXISTS(SELECT FROM pg_catalog.pg_roles WHERE rolname = %s) THEN
       CREATE ROLE {};
     END IF;
   END
 $$;'''
+
+create_table_template = '''CreateTable(
+    '{}',
+    columns=[{}]{}
+)'''
 
 
 class Operation:
@@ -48,6 +54,9 @@ class CreateExtension(Operation):
             ),
             ()
         )
+
+    def serialize(self):
+        return f"CreateExtension('{self.name}')"
 
 
 class CreateTable(Operation):
@@ -167,7 +176,73 @@ class CreateTable(Operation):
 
     def get_table_name(self):
         # TODO: Same operation in models/registry.py.
+        # TODO: Also, not sure this should even exist... should I be
+        # just setting the actual table name instead of the model
+        # name?
         return self.table.options.get('name', snakecase(self.table.name))
+
+    def serialize(self):
+        columns = self.serialize_columns()
+        if columns:
+            columns = indent(f'\n{columns}', 8)
+            columns += indent('\n')
+        options = []
+        access = self.serialize_access()
+        if access:
+            options.append(f'access={access}')
+        checks = self.serialize_checks()
+        if checks:
+            options.append(f'checks={checks}')
+        uniques = self.serialize_uniques()
+        if uniques:
+            options.append(f'uniques={uniques}')
+        options = ',\n'.join(options)
+        if options:
+            options = indent(f'\n{options}', 4)
+        return create_table_template.format(
+            self.table.name,
+            columns,
+            options
+        )
+
+    def serialize_columns(self):
+        cols = []
+        for col in self.table.columns:
+            cols.append(col.serialize())
+        return ',\n'.join(cols)
+
+    def serialize_access(self):
+        access = self.table.options.get('access')
+        if access:
+            access = {
+                'all': [a.Meta.role for a in access.all],
+                'select': [a.Meta.role for a in access.select],
+                'insert': [a.Meta.role for a in access.insert],
+                'update': [a.Meta.role for a in access.update],
+                'delete': [a.Meta.role for a in access.delete]
+            }
+            access = {
+                k: v
+                for k, v in access.items()
+                if len(v) > 0
+            }
+            # TODO: Maybe try make it indented and pretty?
+            access = str(access)
+        return access
+
+    def serialize_checks(self):
+        opts = self.table.options
+        checks = opts.get('checks')
+        if checks:
+            checks = str(checks)
+        return checks
+
+    def serialize_uniques(self):
+        opts = self.table.options
+        uniques = opts.get('uniques')
+        if uniques:
+            uniques = str(uniques)
+        return uniques
 
 
 class DeleteTable(Operation):
@@ -189,6 +264,13 @@ class CreateRole(Operation):
     #     return f'<CreateRole name="{self.role.name}">'
 
     @property
+    def dependencies(self):
+        return [
+            Role(p)
+            for p in self.role.parents
+        ]
+
+    @property
     def signature(self):
         return self.role.signature
 
@@ -202,7 +284,7 @@ class CreateRole(Operation):
         role_name_ident = Identifier(role_name)
         return (
             SQL('\n').join(
-                (SQL(CREATE_ROLE_SQL).format(role_name_ident),) +
+                (SQL(create_role_sql).format(role_name_ident),) +
                 self.grants_sql(role_name_ident)
             ),
             (role_name,)
@@ -224,6 +306,9 @@ class CreateRole(Operation):
         # TODO: Same operation in models/registry.py.
         return self.role.options.get('role', make_role_from_name(self.role.name))
 
+    def serialize(self):
+        return self.role.serialize('CreateRole')
+
 
 class DeleteRole(Operation):
     pass
@@ -231,6 +316,80 @@ class DeleteRole(Operation):
 
 class AlterRole(Operation):
     pass
+
+
+class GrantAccess(Operation):
+    def __init__(self, entity_or_access, *args, **kwargs):
+        super().__init__()
+        if not isinstance(entity_or_access, Access):
+            entity_or_access = Access(entity_or_access, *args, **kwargs)
+        self.access = entity_or_access
+
+    @property
+    def signature(self):
+        return (GrantAccess, self.access.signature)
+
+    @property
+    def app(self):
+        return self.access.app
+
+    @property
+    def sql(self):
+        access_sql = filter(not_empty, [
+            self.get_access_sql(access, roles)
+            for access, roles in [
+                ('SELECT', set(self.access.all) | set(self.access.select)),
+                ('INSERT', set(self.access.all) | set(self.access.insert)),
+                ('UPDATE', set(self.access.all) | set(self.access.update)),
+                ('DELETE', set(self.access.all) | set(self.access.delete)),
+            ]
+        ])
+        return SQL('\n').join(access_sql), ()
+
+    @property
+    def entity_sql(self):
+        return SQL('%s {}' % self.access.entity.tag).format(
+            Identifier(self.access.entity.dbname)
+        )
+
+    def get_access_sql(self, access, roles):
+        if not roles:
+            return None
+        return SQL('GRANT %s ON {} TO {};' % access).format(
+            self.entity_sql,
+            SQL(', ').join([
+                Identifier(r.name)
+                for r in roles
+            ])
+        )
+
+    def serialize(self):
+        entity = self.access.entity.serialize()
+        access = [
+            ('all', [r.name for r in self.access.all]),
+            ('select', [r.name for r in self.access.select]),
+            ('insert', [r.name for r in self.access.insert]),
+            ('update', [r.name for r in self.access.update]),
+            ('delete', [r.name for r in self.access.delete])
+        ]
+        access = ', '.join([f'{a[0]}={a[1]}' for a in access if len(a[1])])
+        return f'GrantAccess({entity}, {access})'
+
+
+class RevokeAccess(Operation):
+    def __init__(self, entity_or_access, *args, **kwargs):
+        super().__init__()
+        if not isinstance(entity_or_access, Access):
+            entity_or_access = Access(entity_or_access, *args, **kwargs)
+        self.access = entity_or_access
+
+    @property
+    def signature(self):
+        return (RevokeAccess, self.access.signature)
+
+    @property
+    def app(self):
+        return self.access.app
 
 
 class RunPython(Operation):

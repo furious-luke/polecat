@@ -18,6 +18,16 @@ def test_migration_from_models(testdb):
         mgr.forward()
 
 
+def test_serialize_migration(testdb):
+    schema = Schema.from_models()
+    migrations = schema.diff()
+    for mgr in migrations:
+        result = mgr.serialize()
+        # TODO: Better test.
+        assert result is not None
+        assert len(result) > 0
+
+
 def test_dependencies(testdb):
     schema = Schema(tables=[
         Table('t0', columns=[

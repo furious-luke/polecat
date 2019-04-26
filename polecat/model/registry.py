@@ -8,6 +8,7 @@ model_registry = []
 role_registry = []
 query_registry = []
 mutation_registry = []
+access_registry = []
 
 
 # TODO: Too much overlap between types and models.
@@ -78,6 +79,20 @@ class RoleMetaclass(type):
         cls = super().__new__(meta, name, bases, make_role_attrs(attrs))
         if is_sub:
             role_registry.append(cls)
+        return cls
+
+
+class AccessMetaclass(type):
+    def __new__(meta, name, bases, attrs):
+        is_sub = bases and name != 'Access'
+        # if is_sub:
+        #     attrs['Meta'] = make_role_meta(
+        #         name, bases, attrs,
+        #         attrs.get('Meta')
+        #     )
+        cls = super().__new__(meta, name, bases, make_access_attrs(attrs))
+        if is_sub:
+            access_registry.append(cls)
         return cls
 
 
@@ -172,8 +187,20 @@ def make_mutation_meta(name, bases, attrs, meta):
 
 def make_role_attrs(attrs):
     return {
+        'app': None,
         **attrs,
         'parents': attrs.get('parents', ())
+    }
+
+
+def make_access_attrs(attrs):
+    return {
+        'app': None,
+        'select': (),
+        'insert': (),
+        'update': (),
+        'delete': (),
+        **attrs
     }
 
 

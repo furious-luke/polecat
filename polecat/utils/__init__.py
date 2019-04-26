@@ -79,3 +79,7 @@ def set_path(destination, path, value, separator='.'):
 
 def get_data_dir():
     return Path(__file__).parent.parent / 'data'
+
+
+def indent(text, size=4):
+    return ('\n' + ' ' * size).join(text.split('\n'))

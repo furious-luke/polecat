@@ -1,7 +1,9 @@
 from psycopg2.sql import SQL, Identifier
 
 from ...model.field import MutableField, RelatedField
-from ...model.registry import model_registry, role_registry
+from ...model.model import Model
+from ...model.registry import access_registry, model_registry, role_registry
+from ...utils.stringcase import snakecase
 from ..field import get_db_field
 
 
@@ -18,11 +20,16 @@ class Schema:
             Role.from_model_role(role)
             for role in role_registry
         ]
-        return cls(tables, roles)
+        access = [
+            Access.from_model_access(access)
+            for access in access_registry
+        ]
+        return cls(tables, roles, access)
 
-    def __init__(self, tables=None, roles=None):
+    def __init__(self, tables=None, roles=None, access=None):
         self.tables = tables or []
         self.roles = roles or []
+        self.access = access or []
 
     def diff(self, from_schema=None):
         if from_schema is None:
@@ -34,6 +41,12 @@ class Schema:
 
     def forward(self, operation):
         pass
+
+    def merge_access(self):
+        all_access = {}
+        for access in self.access:
+            all_access[access.signature] = access
+        return tuple(all_access.values())
 
     def add_table(self, table):
         # TODO: Validate.
@@ -49,7 +62,14 @@ class Schema:
         return (self.differ_class or Differ)()
 
 
-class Table:
+class Entity:
+    def __eq__(self, other):
+        return self.signature == other.signature
+
+
+class Table(Entity):
+    tag = 'TABLE'
+
     @classmethod
     def from_model(cls, model):
         columns = []
@@ -69,7 +89,18 @@ class Table:
         self.columns = columns or []
         self.options = options or {}
 
-    def __eq__(self, other):
+    def __hash__(self):
+        return hash(self.signature)
+
+    @property
+    def signature(self):
+        return (Table, self.app, self.name)
+
+    @property
+    def dbname(self):
+        return self.options.get('name', snakecase(self.name))
+
+    def has_changed(self, other):
         return (
             self.app == other.app and
             self.name == other.name and
@@ -77,12 +108,11 @@ class Table:
             self.columns == other.columns
         )
 
-    @property
-    def signature(self):
-        return (Table, self.app, self.name)
+    def serialize(self):
+        return f"Table('{self.name}')"
 
 
-class Column:
+class Column(Entity):
     @classmethod
     def from_model_field(cls, field):
         db_field = get_db_field(field)
@@ -107,7 +137,10 @@ class Column:
     def __repr__(self):
         return f'<Column name="{self.name}" type="{self.type}">'
 
-    def __eq__(self, other):
+    def __hash__(self):
+        return hash(self.signature)
+
+    def has_changed(self, other):
         return (
             self.__class__ == other.__class__ and
             self.name == other.name and
@@ -142,6 +175,30 @@ class Column:
                 constraints.append('UNIQUE')
         return constraints
 
+    def serialize(self):
+        cls = self.serialize_class()
+        type = self.serialize_type()
+        args = self.serialize_args()
+        if args:
+            args = f', {args}'
+        return f"{cls}('{self.name}', '{type}'{args})"
+
+    def serialize_class(self):
+        return self.__class__.__name__
+
+    def serialize_type(self):
+        return self.type
+
+    def serialize_args(self):
+        args = []
+        if not self.null:
+            args.append('null=False')
+        if self.unique:
+            args.append('unique=True')
+        if self.primary_key:
+            args.append('primary_key=True')
+        return ', '.join(args) or ''
+
 
 class RelatedColumn(Column):
     def __init__(self, name, type, references, *args, **kwargs):
@@ -151,9 +208,12 @@ class RelatedColumn(Column):
     def __repr__(self):
         return f'<RelatedColumn name="{self.name}" references="{self.references}">'
 
-    def __eq__(self, other):
+    def __hash__(self):
+        return hash(self.signature)
+
+    def has_changed(self, other):
         return (
-            super().__eq__(other) and
+            super().has_changed(other) and
             self.references == other.references
         )
 
@@ -189,8 +249,17 @@ class RelatedColumn(Column):
             field = parts[2]
         return (app, table, field)
 
+    def serialize_args(self):
+        args = super().serialize_args()
+        if args:
+            args += ', '
+        args += f"'{self.references}'"
+        return args
 
-class Role:
+
+class Role(Entity):
+    tag = 'ROLE'
+
     @classmethod
     def from_model_role(cls, role):
         parents = [
@@ -207,13 +276,77 @@ class Role:
         self.parents = set(parents or ())
         self.options = options or {}
 
-    def __eq__(self, other):
+    def __hash__(self):
+        return hash(self.signature)
+
+    def has_changed(self, other):
         return (
-            self.app == other.app and
+            # self.app == other.app and
             self.name == other.name and
             self.parents == other.parents
         )
 
     @property
     def signature(self):
-        return (Role, self.app, self.name)
+        # TODO: I've removed `sel.app` from the signature for now,
+        # meaning roles are across apps.
+        return (Role, self.name)
+
+    def serialize(self, operation=None):
+        if not operation:
+            operation = 'Role'
+        parents = self.serialize_parents()
+        if parents:
+            parents = f', parents={parents}'
+        return f"{operation}('{self.name}'{parents})"
+
+    def serialize_parents(self):
+        parents = '[' + ', '.join(f"'{p}'" for p in self.parents) + ']'
+        return parents
+
+
+class Access(Entity):
+    @classmethod
+    def from_model_access(cls, access):
+        entity = access.entity
+        if issubclass(entity, Model):
+            entity = Table.from_model(entity)
+        else:
+            raise NotImplementedError
+        # TODO: Hmm, this is a bit ugly.
+        return cls(
+            entity,
+            all=[Role(a.Meta.role, app=a.app) for a in access.all],
+            select=[Role(a.Meta.role, app=a.app) for a in access.select],
+            insert=[Role(a.Meta.role, app=a.app) for a in access.insert],
+            update=[Role(a.Meta.role, app=a.app) for a in access.update],
+            delete=[Role(a.Meta.role, app=a.app) for a in access.delete],
+            app=getattr(access, 'app', None)
+        )
+
+    def __init__(self, entity, all=None, select=None, insert=None, update=None,
+                 delete=None, app=None):
+        self.entity = entity
+        self.all = all
+        self.select = select
+        self.insert = insert
+        self.update = update
+        self.delete = delete
+        self.app = app
+
+    def __hash__(self):
+        return hash(self.signature)
+
+    def has_changed(self, other):
+        return (
+            self.entity != other.entity and
+            self.all == other.all and
+            self.select == other.select and
+            self.insert == other.insert and
+            self.update == other.update and
+            self.delete == other.delete
+        )
+
+    @property
+    def signature(self):
+        return (Access, self.entity.signature)

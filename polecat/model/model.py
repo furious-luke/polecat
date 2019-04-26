@@ -1,7 +1,7 @@
 from ..utils import to_tuple
 from .exceptions import InvalidFieldError
-from .registry import (ModelMetaclass, MutationMetaclass, QueryMetaclass,
-                       RoleMetaclass, TypeMetaclass)
+from .registry import (AccessMetaclass, ModelMetaclass, MutationMetaclass,
+                       QueryMetaclass, RoleMetaclass, TypeMetaclass)
 
 
 # TODO: Types and models are soooo similar, perhaps use a better
@@ -32,16 +32,17 @@ class Role(metaclass=RoleMetaclass):
     pass
 
 
-class Access:
-    def __init__(self, all=None,
-                 select=None,
-                 insert=None, update=None,
-                 delete=None):
-        self.all = to_tuple(all)
-        self.select = to_tuple(select)
-        self.insert = to_tuple(insert)
-        self.update = to_tuple(update)
-        self.delete = to_tuple(delete)
+class Access(metaclass=AccessMetaclass):
+    pass
+    # def __init__(self, all=None,
+    #              select=None,
+    #              insert=None, update=None,
+    #              delete=None):
+    #     self.all = to_tuple(all)
+    #     self.select = to_tuple(select)
+    #     self.insert = to_tuple(insert)
+    #     self.update = to_tuple(update)
+    #     self.delete = to_tuple(delete)
 
 
 class Query(metaclass=QueryMetaclass):

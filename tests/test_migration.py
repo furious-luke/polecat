@@ -1,6 +1,6 @@
 from tempfile import TemporaryDirectory
 
-from polecat.db.migration import migrate
+from polecat.db.migration import bootstrap_migrations, migrate
 from polecat.db.migration.operation import CreateExtension
 from polecat.db.migration.schema import Column, RelatedColumn, Schema, Table
 
@@ -8,6 +8,7 @@ from .models import *  # noqa
 
 
 def test_migration_from_models(testdb):
+    bootstrap_migrations()
     schema = Schema.from_models()
     migrations = schema.diff()
     migrations = [
@@ -42,6 +43,7 @@ def test_run_migrations(testdb):
 
 
 def test_dependencies(testdb):
+    bootstrap_migrations()
     schema = Schema(tables=[
         Table('t0', columns=[
             Column('id', 'int', unique=True),

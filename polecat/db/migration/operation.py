@@ -34,7 +34,7 @@ class Operation:
 
     @dbcursor
     def forward(self, cursor):
-        cursor.execute(*self.forward_sql)
+        cursor.execute(*self.sql)
 
 
 class CreateExtension(Operation):

@@ -14,18 +14,35 @@ def migrate(migration_paths=None, cursor=None):
     migrations = {}
     for app in app_registry:
         migrations.update(load_app_migrations(app))
-    for path in migration_paths:
+    for path in migration_paths or ():
         migrations.update(load_path_migrations(path))
     for migration in migrations.values():
         migration.forward(migrations, cursor=cursor)
+    # # TODO: Need to execute all migrations instead of this.
+    # schema = Schema.from_models()
+    # migrations = schema.diff()
+    # # TODO: Where the hell to put these...
+    # migrations = [
+    #     CreateExtension('chkpass'),
+    #     *migrations
+    # ]
+    # for mgr in migrations:
+    #     mgr.forward()
 
 
 @dbcursor
 def sync(migration_paths=None, cursor=None):
-    migrate(migration_paths, cursor)
+    migrate(migration_paths, cursor=cursor)
     # TODO: Build schema from migrations.
-    # TODO: Build schema from models.
-    # TODO: Diff the schemas and apply.
+    to_schema = Schema.from_models()
+    migrations = to_schema.diff()  # TODO: Add in "from_schema"
+    # # TODO: Where the hell to put these...
+    migrations = [
+        CreateExtension('chkpass'),
+        *migrations
+    ]
+    for mgr in migrations:
+        mgr.forward()
 
 
 @dbcursor

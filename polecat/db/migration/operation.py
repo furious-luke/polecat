@@ -47,7 +47,7 @@ class CreateExtension(Operation):
         return (CreateExtension, self.name)
 
     @property
-    def forward_sql(self):
+    def sql(self):
         return (
             SQL('CREATE EXTENSION IF NOT EXISTS {};').format(
                 Identifier(self.name)
@@ -114,7 +114,7 @@ class CreateTable(Operation):
         )
 
     def all_uniques_sql(self):
-        uniques = self.table.options.get('uniques', ())
+        uniques = self.table.uniques
         if len(uniques):
             return SQL(',\n').join(
                 SQL('  UNIQUE ({})').format(self.unique_sql(u))
@@ -124,7 +124,7 @@ class CreateTable(Operation):
             None
 
     def all_checks_sql(self):
-        checks = self.table.options.get('checks', ())
+        checks = self.table.checks
         if len(checks):
             return SQL(',\n').join(
                 SQL('  CHECK ({})').format(self.check_sql(c))
@@ -151,7 +151,7 @@ class CreateTable(Operation):
         raise NotImplemented('uniques must be iterable')
 
     def access_sql(self, table_name):
-        access = getattr(self.table.options, 'access', None)
+        access = self.table.access
         if access:
             grants = tuple(self.iter_grants(access, table_name))
         else:
@@ -179,7 +179,7 @@ class CreateTable(Operation):
         # TODO: Also, not sure this should even exist... should I be
         # just setting the actual table name instead of the model
         # name?
-        return self.table.options.get('name', snakecase(self.table.name))
+        return self.table.name
 
     def serialize(self):
         columns = self.serialize_columns()
@@ -212,7 +212,7 @@ class CreateTable(Operation):
         return ',\n'.join(cols)
 
     def serialize_access(self):
-        access = self.table.options.get('access')
+        access = self.table.access
         if access:
             access = {
                 'all': [a.Meta.role for a in access.all],
@@ -231,15 +231,13 @@ class CreateTable(Operation):
         return access
 
     def serialize_checks(self):
-        opts = self.table.options
-        checks = opts.get('checks')
+        checks = self.table.checks
         if checks:
             checks = str(checks)
         return checks
 
     def serialize_uniques(self):
-        opts = self.table.options
-        uniques = opts.get('uniques')
+        uniques = self.table.uniques
         if uniques:
             uniques = str(uniques)
         return uniques
@@ -349,7 +347,7 @@ class GrantAccess(Operation):
     @property
     def entity_sql(self):
         return SQL('%s {}' % self.access.entity.tag).format(
-            Identifier(self.access.entity.dbname)
+            Identifier(self.access.entity.name)
         )
 
     def get_access_sql(self, access, roles):
@@ -358,7 +356,7 @@ class GrantAccess(Operation):
         return SQL('GRANT %s ON {} TO {};' % access).format(
             self.entity_sql,
             SQL(', ').join([
-                Identifier(r.name)
+                Identifier(r if isinstance(r, str) else r.name)  # TODO: Explain
                 for r in roles
             ])
         )

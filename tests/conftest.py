@@ -2,7 +2,7 @@ from contextlib import contextmanager
 
 import pytest
 from polecat.db.connection import cursor
-from polecat.db.migration import migrate
+from polecat.db.migration import sync
 from polecat.db.utils import parse_url, push_database_url, unparse_url
 from polecat.deploy.aws.server import LambdaServer
 from polecat.deploy.server.server import Server
@@ -36,7 +36,7 @@ def testdb():
 @pytest.fixture(scope='session')
 def migrateddb():
     with create_database() as curs:
-        migrate(cursor=curs)
+        sync(cursor=curs)
         yield curs
 
 

@@ -1,4 +1,6 @@
-# from polecat.db.migration import from_models
+from tempfile import TemporaryDirectory
+
+from polecat.db.migration import migrate
 from polecat.db.migration.operation import CreateExtension
 from polecat.db.migration.schema import Column, RelatedColumn, Schema, Table
 
@@ -26,7 +28,17 @@ def test_serialize_migration(testdb):
         # TODO: Better test.
         assert result is not None
         assert len(result) > 0
-        mgr.save()
+
+
+def test_run_migrations(testdb):
+    schema = Schema.from_models()
+    migrations = schema.diff()
+    with TemporaryDirectory() as root:
+        migrations[0].operations.insert(0, CreateExtension('chkpass'))
+        for mgr in migrations:
+            mgr.save(root)
+        migrate([root])
+        # TODO: Test something?
 
 
 def test_dependencies(testdb):

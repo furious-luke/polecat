@@ -80,14 +80,23 @@ class Table(Entity):
             columns.append(col)
         app = model.Meta.app
         app_name = app.name if app else None
-        return cls(model.Meta.name, columns, model.Meta.options, app=app_name)
+        return cls(
+            model.Meta.table,
+            columns,
+            checks=model.Meta.checks,
+            uniques=model.Meta.uniques,
+            access=getattr(model.Meta, 'access', None),
+            app=app_name
+        )
 
-    def __init__(self, name, columns=None, options=None, app=None):
+    def __init__(self, name, columns=None, checks=None, uniques=None, access=None, app=None):
         self.app = app
         self.name = name
         # TODO: Validate columns.
         self.columns = columns or []
-        self.options = options or {}
+        self.checks = checks or []
+        self.uniques = uniques or []
+        self.access = access
 
     def __hash__(self):
         return hash(self.signature)
@@ -96,15 +105,12 @@ class Table(Entity):
     def signature(self):
         return (Table, self.app, self.name)
 
-    @property
-    def dbname(self):
-        return self.options.get('name', snakecase(self.name))
-
     def has_changed(self, other):
         return (
             self.app == other.app and
             self.name == other.name and
-            self.options == other.options and
+            self.checks == other.checks and
+            self.uniques == other.uniques and
             self.columns == other.columns
         )
 
@@ -327,11 +333,11 @@ class Access(Entity):
     def __init__(self, entity, all=None, select=None, insert=None, update=None,
                  delete=None, app=None):
         self.entity = entity
-        self.all = all
-        self.select = select
-        self.insert = insert
-        self.update = update
-        self.delete = delete
+        self.all = all or ()
+        self.select = select or ()
+        self.insert = insert or ()
+        self.update = update or ()
+        self.delete = delete or ()
         self.app = app
 
     def __hash__(self):

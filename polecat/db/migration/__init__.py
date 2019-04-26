@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from ...model.registry import model_registry, role_registry
 from ...project.app import app_registry
 from ..decorators import dbcursor
@@ -7,17 +9,58 @@ from .schema import Schema
 
 
 @dbcursor
-def migrate(cursor):
-    # TODO: Need to execute all migrations instead of this.
-    schema = Schema.from_models()
-    migrations = schema.diff()
-    # TODO: Where the hell to put these...
-    migrations = [
-        CreateExtension('chkpass'),
-        *migrations
-    ]
-    for mgr in migrations:
-        mgr.forward()
+def migrate(migration_paths=None, cursor=None):
+    bootstrap_migrations()
+    migrations = {}
+    for app in app_registry:
+        migrations.update(load_app_migrations(app))
+    for path in migration_paths:
+        migrations.update(load_path_migrations(path))
+    for migration in migrations.values():
+        migration.forward(migrations, cursor=cursor)
+
+
+@dbcursor
+def sync(migration_paths=None, cursor=None):
+    migrate(migration_paths, cursor)
+    # TODO: Build schema from migrations.
+    # TODO: Build schema from models.
+    # TODO: Diff the schemas and apply.
+
+
+@dbcursor
+def bootstrap_migrations(cursor):
+    sql = (
+        'CREATE TABLE IF NOT EXISTS polecat_migrations ('
+        '  id serial primary key,'
+        '  app varchar(256),'
+        '  name text,'
+        '  applied timestamptz'
+        ');'
+    )
+    cursor.execute(sql)
+
+
+def load_app_migrations(app):
+    migrations = {}
+    for path in (app.path / 'migrations').iterdir():
+        match = Migration.filename_prog.match(path.filename)
+        if match:
+            migration_class = Migration.load_migration_class(path)
+            migration = migration_class(app=app.name, name=path.filename)
+            migrations[f'{app.name}.{path.filename}'] = migration
+    return migrations
+
+
+def load_path_migrations(path):
+    migrations = {}
+    for file_path in Path(path).iterdir():
+        match = Migration.filename_prog.match(file_path.name)
+        if match:
+            migration_class = Migration.load_migration_class(file_path)
+            migration = migration_class(name=file_path.name)
+            migrations[f'{file_path.name}'] = migration
+    return migrations
 
 
 def make_migrations():

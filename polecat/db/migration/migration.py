@@ -1,4 +1,5 @@
 import re
+from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 
 from psycopg2.sql import SQL
@@ -8,7 +9,7 @@ from ...utils import indent
 from ..decorators import dbcursor
 
 migration_template = '''from polecat.db.migration.migration import Migration as BaseMigration
-from polecat.db.migration.operation import CreateRole, CreateTable, GrantAccess
+from polecat.db.migration.operation import CreateRole, CreateTable, GrantAccess, CreateExtension
 from polecat.db.migration.schema import Table, Role, Column, RelatedColumn
 
 
@@ -19,9 +20,22 @@ class Migration(BaseMigration):
 
 
 class Migration:
-    def __init__(self, operations=None, app=None, dependencies=None):
+    filename_prog = re.compile(r'(\d{4})_[a-zA-Z_0-9]+\.py')
+
+    @classmethod
+    def load_migration_class(cls, path, app=None):
+        module_path = path.name[:-3]
+        if app:
+            module_path = f'{app}.{module_path}'
+        spec = spec_from_file_location(module_path, str(path))
+        module = module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module.Migration
+
+    def __init__(self, operations=None, app=None, dependencies=None, name=None):
         self.operations = operations or getattr(self, 'operations', [])
         self.app = app
+        self.name = name
         self.dependencies = dependencies or getattr(self, 'dependencies', [])
 
     # def apply(self, schema):
@@ -34,12 +48,36 @@ class Migration:
         return (SQL('\n\n').join(sql), sum(args, ()))
 
     @dbcursor
-    def forward(self, cursor):
+    def forward(self, migrations=None, cursor=None):
         if not getattr(self, '_applied', False):
             self._applied = True
+            if self.app:
+                args = [self.app]
+            else:
+                args = []
+            args.append(self.name)
+            sql = (
+                'SELECT EXISTS('
+                '  SELECT 1 FROM polecat_migrations'
+                '    WHERE app {}'
+                '      AND name = %s'
+                ');'
+            ).format(
+                '= %s' if self.app else 'IS NULL'
+            )
+            cursor.execute(sql, args)
+            result = cursor.fetchone()
+            if result[0]:
+                return
+            migrations = migrations or {}
             for dep in self.dependencies:
-                dep.forward(cursor=cursor)
+                dep.forward(migrations, cursor=cursor)
             cursor.execute(*self.forward_sql)
+            sql = (
+                'INSERT INTO polecat_migrations (app, name, applied)'
+                '  VALUES(%s, %s, now());'
+            )
+            cursor.execute(sql, (self.app, self.name))
 
     @property
     def filename(self):
@@ -50,9 +88,12 @@ class Migration:
             next_number = 1
         return f'{next_number:04}_migration.py'
 
-    @property
-    def file_path(self):
-        return self.migrations_path / self.filename
+    def get_file_path(self, root=None):
+        if not root:
+            root = self.migrations_path
+        else:
+            root = Path(root)
+        return root / self.filename
 
     @property
     def migrations_path(self):
@@ -65,11 +106,12 @@ class Migration:
     def dependency_string(self):
         return f'{self.app}.{self.filename[:-3]}'
 
-    def save(self):
+    def save(self, output_path=None):
         if not getattr(self, '_saved', False):
             self._saved = True
-            Path(self.file_path).parent.mkdir(parents=True, exist_ok=True)
-            with open(self.file_path, 'w') as f:
+            file_path = self.get_file_path(output_path)
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(file_path, 'w') as f:
                 f.write(self.serialize())
 
     def serialize(self):
@@ -91,12 +133,11 @@ class Migration:
         return migration_template.format(dep_strs, op_strs)
 
     def find_existing_migrations(self):
-        prog = re.compile(r'(\d{4})_[a-zA-Z_0-9]+\.py')
         path = self.migrations_path
         migrations = []
         try:
             for filename in path.iterdir():
-                match = prog.match(filename.name)
+                match = self.filename_prog.match(filename.name)
                 if match:
                     migrations.append((int(match.group(1)), filename.name))
         except FileNotFoundError:

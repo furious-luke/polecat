@@ -1,14 +1,18 @@
+import re
+from pathlib import Path
+
 from psycopg2.sql import SQL
 
 from ...project.app import app_registry
 from ...utils import indent
 from ..decorators import dbcursor
 
-migration_template = '''from polecat.db.migration.migration import Migration
-from polecat.db.migration.operation import *  # noqa
-from polecat.db.migration.schema import *  # noqa
+migration_template = '''from polecat.db.migration.migration import Migration as BaseMigration
+from polecat.db.migration.operation import CreateRole, CreateTable, GrantAccess
+from polecat.db.migration.schema import Table, Role, Column, RelatedColumn
 
-class Migration:
+
+class Migration(BaseMigration):
     dependencies = [{}]
     operations = [{}]
 '''
@@ -39,12 +43,23 @@ class Migration:
 
     @property
     def filename(self):
-        filename = '0001_initial.py'
-        return filename
+        existing_migrations = self.find_existing_migrations()
+        if existing_migrations:
+            next_number = existing_migrations[-1][0] + 1
+        else:
+            next_number = 1
+        return f'{next_number:04}_migration.py'
 
     @property
     def file_path(self):
-        return app_registry[self.app].path / 'migrations' / self.filename
+        return self.migrations_path / self.filename
+
+    @property
+    def migrations_path(self):
+        try:
+            return app_registry[self.app].path / 'migrations'
+        except TypeError:
+            return Path('.') / 'migrations'
 
     @property
     def dependency_string(self):
@@ -53,7 +68,8 @@ class Migration:
     def save(self):
         if not getattr(self, '_saved', False):
             self._saved = True
-            with open(self.filename, 'w') as f:
+            Path(self.file_path).parent.mkdir(parents=True, exist_ok=True)
+            with open(self.file_path, 'w') as f:
                 f.write(self.serialize())
 
     def serialize(self):
@@ -73,3 +89,16 @@ class Migration:
             op_strs = indent(f'\n{op_strs}', 8)
             op_strs += indent('\n')
         return migration_template.format(dep_strs, op_strs)
+
+    def find_existing_migrations(self):
+        prog = re.compile(r'(\d{4})_[a-zA-Z_0-9]+\.py')
+        path = self.migrations_path
+        migrations = []
+        try:
+            for filename in path.iterdir():
+                match = prog.match(filename.name)
+                if match:
+                    migrations.append((int(match.group(1)), filename.name))
+        except FileNotFoundError:
+            pass
+        return sorted(migrations, key=lambda x: x[0])

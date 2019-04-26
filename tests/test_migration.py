@@ -26,6 +26,7 @@ def test_serialize_migration(testdb):
         # TODO: Better test.
         assert result is not None
         assert len(result) > 0
+        mgr.save()
 
 
 def test_dependencies(testdb):

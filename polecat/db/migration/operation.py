@@ -198,7 +198,7 @@ class CreateTable(Operation):
             options.append(f'uniques={uniques}')
         options = ',\n'.join(options)
         if options:
-            options = indent(f'\n{options}', 4)
+            options = indent(f',\n{options}', 4)
         return create_table_template.format(
             self.table.name,
             columns,

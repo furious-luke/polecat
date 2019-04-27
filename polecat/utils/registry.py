@@ -11,10 +11,12 @@ class RegistryMetaclass(type):
 
 
 class Registry:
-    def __init__(self, type=None, construct=False):
+    def __init__(self, type=None, construct=False, mapper=None):
         self.type = type or 'registry'
         self.values = []
         self.construct = construct
+        self.mapper = mapper
+        self.map = {}
 
     def __iter__(self):
         return self.values.__iter__()
@@ -26,6 +28,8 @@ class Registry:
         if self.construct:
             value = value()
         self.values.append(value)
+        if self.mapper:
+            self.map[self.mapper(value)] = value
 
 
 class MappedRegistry(Registry):

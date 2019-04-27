@@ -3,7 +3,7 @@ from psycopg2.sql import SQL, Identifier
 from ...model.field import MutableField, RelatedField
 from ...model.model import Model
 from ...model.registry import access_registry, model_registry, role_registry
-from ...utils.stringcase import snakecase
+from ...project.app import app_registry
 from ..field import get_db_field
 
 
@@ -79,14 +79,13 @@ class Table(Entity):
             col = Column.from_model_field(field)
             columns.append(col)
         app = model.Meta.app
-        app_name = app.name if app else None
         return cls(
             model.Meta.table,
             columns,
             checks=model.Meta.checks,
             uniques=model.Meta.uniques,
             access=getattr(model.Meta, 'access', None),
-            app=app_name
+            app=app
         )
 
     def __init__(self, name, columns=None, checks=None, uniques=None, access=None, app=None):
@@ -250,7 +249,7 @@ class RelatedColumn(Column):
             table = parts[0]
             field = parts[1]
         else:
-            app = parts[0]
+            app = app_registry.map[parts[0]]
             table = parts[1]
             field = parts[2]
         return (app, table, field)
@@ -258,8 +257,8 @@ class RelatedColumn(Column):
     def serialize_args(self):
         args = super().serialize_args()
         if args:
-            args += ', '
-        args += f"'{self.references}'"
+            args = f', {args}'
+        args = f"'{self.references}'" + args
         return args
 
 
@@ -273,8 +272,7 @@ class Role(Entity):
             for parent in role.parents
         ]
         app = role.Meta.app
-        app_name = app.name if app else None
-        return cls(role.Meta.role, parents, app=app_name)
+        return cls(role.Meta.role, parents, app=app)
 
     def __init__(self, name, parents=None, options=None, app=None):
         self.app = app

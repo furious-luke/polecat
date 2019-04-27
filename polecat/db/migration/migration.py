@@ -4,7 +4,6 @@ from pathlib import Path
 
 from psycopg2.sql import SQL
 
-from ...project.app import app_registry
 from ...utils import indent
 from ..decorators import dbcursor
 
@@ -88,23 +87,27 @@ class Migration:
             next_number = 1
         return f'{next_number:04}_migration.py'
 
+    @property
+    def migrations_path(self):
+        try:
+            return self.app.path / 'migrations'
+        except AttributeError:
+            return Path('.') / 'migrations'
+
+    @property
+    def dependency_string(self):
+        return f'{self.app.name}.{self.filename[:-3]}'
+
+    def set_app(self, app):
+        self.app = app
+        # TODO: Set app in everywhere else.
+
     def get_file_path(self, root=None):
         if not root:
             root = self.migrations_path
         else:
             root = Path(root)
         return root / self.filename
-
-    @property
-    def migrations_path(self):
-        try:
-            return app_registry[self.app].path / 'migrations'
-        except TypeError:
-            return Path('.') / 'migrations'
-
-    @property
-    def dependency_string(self):
-        return f'{self.app}.{self.filename[:-3]}'
 
     def save(self, output_path=None):
         if not getattr(self, '_saved', False):
@@ -118,7 +121,7 @@ class Migration:
         dep_strs = []
         for dep in self.dependencies:
             dep.save()
-            dep_strs.append(dep.dependency_string)
+            dep_strs.append(f"'{dep.dependency_string}'")
         dep_strs = ',\n'.join(dep_strs)
         if dep_strs:
             dep_strs = indent(f'\n{dep_strs}', 8)

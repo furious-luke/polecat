@@ -11,11 +11,7 @@ from .schema import Schema
 @dbcursor
 def migrate(migration_paths=None, cursor=None):
     bootstrap_migrations()
-    migrations = {}
-    for app in app_registry:
-        migrations.update(load_app_migrations(app))
-    for path in migration_paths or ():
-        migrations.update(load_path_migrations(path))
+    migrations = load_migrations(migration_paths)
     for migration in migrations.values():
         migration.forward(migrations, cursor=cursor)
     # # TODO: Need to execute all migrations instead of this.
@@ -28,6 +24,15 @@ def migrate(migration_paths=None, cursor=None):
     # ]
     # for mgr in migrations:
     #     mgr.forward()
+
+
+def load_migrations(migration_paths=None):
+    migrations = {}
+    for app in app_registry:
+        migrations.update(load_app_migrations(app))
+    for path in migration_paths or ():
+        migrations.update(load_path_migrations(path))
+    return migrations
 
 
 @dbcursor
@@ -60,12 +65,16 @@ def bootstrap_migrations(cursor):
 
 def load_app_migrations(app):
     migrations = {}
-    for path in (app.path / 'migrations').iterdir():
-        match = Migration.filename_prog.match(path.filename)
-        if match:
-            migration_class = Migration.load_migration_class(path)
-            migration = migration_class(app=app.name, name=path.filename)
-            migrations[f'{app.name}.{path.filename}'] = migration
+    try:
+        for path in (app.path / 'migrations').iterdir():
+            match = Migration.filename_prog.match(path.name)
+            if match:
+                migration_class = Migration.load_migration_class(path)
+                migration = migration_class(app=app.name, name=path.name)
+                migrations[f'{app.name}.{path.name}'] = migration
+                migration.set_app(app)
+    except FileNotFoundError:
+        pass
     return migrations
 
 
@@ -81,8 +90,13 @@ def load_path_migrations(path):
 
 
 def make_migrations():
-    for app in app_registry:
-        make_migrations_for_app(app)
+    migrations = load_migrations()
+    # TODO: Make schema from migrations.
+    to_schema = Schema.from_models()
+    new_migrations = to_schema.diff()  # TODO: Add in "from_schema"
+    for mgr in new_migrations:
+        # TODO: Feedback?
+        mgr.save()
 
 
 def make_migrations_for_app(app):
@@ -98,36 +112,3 @@ def make_migrations_for_role(role):
 
 def make_migrations_for_model(model):
     pass
-
-
-# def from_models():
-#     operations = [
-#         CreateExtension('chkpass')
-#     ]
-#     operations.extend(
-#         operation_from_role(role)
-#         for role in role_registry
-#     )
-#     # TODO: Chain with above?
-#     operations.extend(
-#         operation_from_model(model)
-#         for model in model_registry
-#     )
-#     return Migration(operations)
-
-
-# def operation_from_model(model):
-#     # TODO
-#     return CreateModel(
-#         model.__name__,
-#         model.Meta.fields.values(),
-#         model.Meta.options
-#     )
-
-
-# def operation_from_role(role):
-#     return CreateRole(
-#         role.Meta.name,
-#         role.parents,
-#         role.Meta.options
-#     )

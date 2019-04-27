@@ -1,6 +1,6 @@
 import click
 
-from ..db.migration import make_migrations
+from ..db.migration import make_migrations as db_make_migrations
 from ..project.project import load_project
 from .main import main
 
@@ -21,4 +21,4 @@ def empty_migration():
 def make_migrations():
     project = load_project()
     project.prepare()
-    make_migrations()
+    db_make_migrations()

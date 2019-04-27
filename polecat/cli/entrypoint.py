@@ -6,6 +6,7 @@ from polecat.cli.deployment import *  # noqa
 from polecat.cli.example import *  # noqa
 from polecat.cli.graphql import *  # noqa
 from polecat.cli.main import main
+from polecat.cli.migrate import *  # noqa
 from polecat.cli.project import *  # noqa
 from polecat.cli.publish import *  # noqa
 from polecat.cli.secret import *  # noqa

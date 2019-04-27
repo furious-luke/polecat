@@ -4,7 +4,8 @@ from importlib import import_module
 
 from graphql_server import HttpQueryError
 
-from ..model.registry import model_registry, role_registry, type_registry
+from ..model.registry import (access_registry, model_registry, role_registry,
+                              type_registry)
 from .app import app_registry
 from .config import default_config
 from .index import IndexHandler, get_index_html
@@ -66,6 +67,7 @@ class Project:
         self.index_html = self.get_index_html()
 
     def prepare_apps(self):
+        # TODO: This desperately needs to be cleaned up.
         items = []
         for app in app_registry:
             items.append(
@@ -95,6 +97,12 @@ class Project:
             app = app_registry[match.lastindex - 1]
             app.roles.append(model)
             role.Meta.app = app
+        for access in access_registry:
+            module_name = r'.'.join(access.__module__.split('.')[:-1])
+            match = prog.search(module_name)
+            app = app_registry[match.lastindex - 1]
+            app.access.append(access)
+            access.app = app
 
     def get_index_html(self):
         return get_index_html(

@@ -149,6 +149,11 @@ class UUIDField(Field):
             return default
 
 
+class PointField(Field):
+    db_type = 'point'
+    sources = (mf.PointField,)
+
+
 class RelatedField(IntField):
     sources = (mf.RelatedField,)
 

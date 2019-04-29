@@ -21,6 +21,7 @@ async def test_index_handler():
         'path': '/'
     })
     result = await project.handle_event(HttpEvent(event, request))
-    assert len(result) == 2
+    assert len(result) == 3
     assert result[1] == 200
     assert len(result[0]) > 0
+    assert result[2] == 'text/html'

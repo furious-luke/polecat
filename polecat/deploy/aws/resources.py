@@ -1,5 +1,6 @@
 from ...utils import capitalize
-from .constants import ADMIN_CODE, MEDIA_PREFIX, SERVER_CODE
+# from .constants import ADMIN_CODE, MEDIA_PREFIX, SERVER_CODE
+from .constants import MEDIA_PREFIX, SERVER_CODE
 
 
 def create_api_resources(project, deployment, bucket, environment):
@@ -57,55 +58,55 @@ def create_api_resources(project, deployment, bucket, environment):
                 ]
             }
         },
-        f'{project_deployment}AdminLambda': {
-            'Type': 'AWS::Lambda::Function',
-            'Properties': {
-                'Code': {
-                    'S3Bucket': bucket,
-                    'S3Key': ADMIN_CODE.format(project, code_version)
-                },
-                'Description': f'Admin functions for {project_deployment}',
-                'FunctionName': f'{project_deployment}Admin',
-                'Handler': 'main.handler',
-                'Timeout': 900,
-                'Role': {
-                    'Fn::GetAtt': [
-                        f'{project_deployment}ExecutionRole',
-                        'Arn'
-                    ]
-                },
-                'Runtime': 'python3.7',
-                'Environment': {
-                    'Variables': {
-                        'PROJECT': project,
-                        'DEPLOYMENT': deployment,
-                        'BUCKET': bucket,
-                        'MEDIA_PREFIX': MEDIA_PREFIX.format(
-                            project,
-                            deployment
-                        ),
-                        'CODE_VERSION': code_version,
-                        'BUNDLE_VERSION': bundle_version,
-                        'POLECAT_PROJECT': f'{project}.project.Project',
-                        **secrets
-                    }
-                },
-                'Tags': [
-                    {
-                        'Key': 'Builder',
-                        'Value': 'Polecat'
-                    },
-                    {
-                        'Key': 'PolecatProject',
-                        'Value': project
-                    },
-                    {
-                        'Key': 'PolecatDeployment',
-                        'Value': deployment
-                    }
-                ]
-            }
-        },
+        # f'{project_deployment}AdminLambda': {
+        #     'Type': 'AWS::Lambda::Function',
+        #     'Properties': {
+        #         'Code': {
+        #             'S3Bucket': bucket,
+        #             'S3Key': ADMIN_CODE.format(project, code_version)
+        #         },
+        #         'Description': f'Admin functions for {project_deployment}',
+        #         'FunctionName': f'{project_deployment}Admin',
+        #         'Handler': 'main.handler',
+        #         'Timeout': 900,
+        #         'Role': {
+        #             'Fn::GetAtt': [
+        #                 f'{project_deployment}ExecutionRole',
+        #                 'Arn'
+        #             ]
+        #         },
+        #         'Runtime': 'python3.7',
+        #         'Environment': {
+        #             'Variables': {
+        #                 'PROJECT': project,
+        #                 'DEPLOYMENT': deployment,
+        #                 'BUCKET': bucket,
+        #                 'MEDIA_PREFIX': MEDIA_PREFIX.format(
+        #                     project,
+        #                     deployment
+        #                 ),
+        #                 'CODE_VERSION': code_version,
+        #                 'BUNDLE_VERSION': bundle_version,
+        #                 'POLECAT_PROJECT': f'{project}.project.Project',
+        #                 **secrets
+        #             }
+        #         },
+        #         'Tags': [
+        #             {
+        #                 'Key': 'Builder',
+        #                 'Value': 'Polecat'
+        #             },
+        #             {
+        #                 'Key': 'PolecatProject',
+        #                 'Value': project
+        #             },
+        #             {
+        #                 'Key': 'PolecatDeployment',
+        #                 'Value': deployment
+        #             }
+        #         ]
+        #     }
+        # },
         f'{project_deployment}ExecutionRole': {
             'Type': 'AWS::IAM::Role',
             'Properties': {
@@ -205,39 +206,39 @@ def create_api_resources(project, deployment, bucket, environment):
                 }
             }
         },
-        f'{project_deployment}AdminLambdaPermission': {
-            'Type': 'AWS::Lambda::Permission',
-            'Properties': {
-                'Action': 'lambda:invokeFunction',
-                'FunctionName': {
-                    'Fn::GetAtt': [
-                        f'{project_deployment}AdminLambda',
-                        'Arn'
-                    ]
-                },
-                'Principal': 'apigateway.amazonaws.com',
-                'SourceArn': {
-                    'Fn::Join': [
-                        '',
-                        [
-                            'arn:aws:execute-api:',
-                            {
-                                'Ref': 'AWS::Region'
-                            },
-                            ':',
-                            {
-                                'Ref': 'AWS::AccountId'
-                            },
-                            ':',
-                            {
-                                'Ref': f'{project_deployment}Api'
-                            },
-                            '/*'
-                        ]
-                    ]
-                }
-            }
-        },
+        # f'{project_deployment}AdminLambdaPermission': {
+        #     'Type': 'AWS::Lambda::Permission',
+        #     'Properties': {
+        #         'Action': 'lambda:invokeFunction',
+        #         'FunctionName': {
+        #             'Fn::GetAtt': [
+        #                 f'{project_deployment}AdminLambda',
+        #                 'Arn'
+        #             ]
+        #         },
+        #         'Principal': 'apigateway.amazonaws.com',
+        #         'SourceArn': {
+        #             'Fn::Join': [
+        #                 '',
+        #                 [
+        #                     'arn:aws:execute-api:',
+        #                     {
+        #                         'Ref': 'AWS::Region'
+        #                     },
+        #                     ':',
+        #                     {
+        #                         'Ref': 'AWS::AccountId'
+        #                     },
+        #                     ':',
+        #                     {
+        #                         'Ref': f'{project_deployment}Api'
+        #                     },
+        #                     '/*'
+        #                 ]
+        #             ]
+        #         }
+        #     }
+        # },
         f'{project_deployment}ApiGatewayCloudWatchLogsRole': {
             'Type': 'AWS::IAM::Role',
             'Properties': {

@@ -27,7 +27,7 @@ def upload(project, bucket, source=None, version=None, feedback=None):
         else:
             version = current_version + 1
         fb.message = f'Using version {colored(version, "blue")}'
-    for file in ('server.zip', 'admin.zip'):
+    for file in ('server.zip',):  # 'admin.zip'):
         with feedback(f'Upload {colored(file, "blue")}'):
             s3.upload_file(
                 str(source / file),
@@ -67,6 +67,10 @@ def upload_bundle(project, bucket, source=None, version=None, feedback=None):
             if dst_file[0] == '/':
                 dst_file = dst_file[1:]
             params = {}
+            if '.map.' in dst_file or dst_file.endswith('.map'):
+                continue
+            if dst_file.endswith('.br'):
+                continue
             if dst_file.endswith('.gz'):
                 params['ExtraArgs'] = {
                     'ContentEncoding': 'gzip'

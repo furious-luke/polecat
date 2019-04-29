@@ -40,7 +40,11 @@ def get_handler_func(handler):
 
 class Project:
     def __init__(self, name=None):
-        self.name = name or self.__class__.__name__.lower()
+        self.name = name
+        if not self.name:
+            self.name = self.__class__.__name__.lower()
+            if self.name.endswith('project'):
+                self.name = self.name[:-7]
         self.bucket = os.environ.get('BUCKET')
         self.bundle_version = os.environ.get('BUNDLE_VERSION')
         self.config = default_config

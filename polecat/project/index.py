@@ -6,12 +6,13 @@ index_html = '''<!DOCTYPE html>
     <title>{default_title}</title>
   </head>
   <body>
+    <div id="mount"></div>
     <script type="text/javascript">
       window.publicPath = 'https://s3-{region}.amazonaws.com/{bucket}/projects/{project}/bundle/{bundle_version}/'
     </script>
     <script
       type="text/javascript"
-      src="https://s3-{region}.amazonaws.com/{bucket}/projects/{project}/bundle/{bundle_version}/bundle.min.js.gz"
+      src="https://s3-{region}.amazonaws.com/{bucket}/projects/{project}/bundle/{bundle_version}/{bundle}"
     >
     </script>
   </body>
@@ -20,7 +21,7 @@ index_html = '''<!DOCTYPE html>
 
 
 def get_index_html(bucket, project, bundle_version, region='ap-southeast-2',
-                   bundle='bundle.min.js.gz', default_title=''):
+                   bundle='index.js.gz', default_title=''):
     return index_html.format(
         bucket=bucket,
         project=project,
@@ -44,4 +45,4 @@ class IndexHandler:
            event.request.method != 'GET' or \
            event.request.path != '/':
             return None
-        return (self.index_html, 200)
+        return (self.index_html, 200, 'text/html')

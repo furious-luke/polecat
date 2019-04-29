@@ -6,7 +6,7 @@ bucket_policy = '''{
             "Effect": "Allow",
             "Principal": "*",
             "Action": "s3:GetObject",
-            "Resource": "arn:aws:s3:::$bucket/apps/*/bundle/*"
+            "Resource": "arn:aws:s3:::$bucket/projects/*/bundle/*"
         },
         {
             "Effect": "Allow",
@@ -14,7 +14,7 @@ bucket_policy = '''{
                 "Service": "serverlessrepo.amazonaws.com"
             },
             "Action": "s3:GetObject",
-            "Resource": "arn:aws:s3:::$bucket/apps/*/code/*"
+            "Resource": "arn:aws:s3:::$bucket/projects/*/code/*"
         }
     ]
 }
@@ -212,7 +212,7 @@ project_policy = '''{
                 "ssm:GetParameters",
                 "ssm:GetParameter"
             ],
-            "Resource": "arn:aws:ssm:*:*:parameter/polecat/apps/$project/*"
+            "Resource": "arn:aws:ssm:*:*:parameter/polecat/projects/$project/*"
         },
         {
             "Sid": "VisualEditor2",
@@ -232,8 +232,8 @@ project_policy = '''{
                 "s3:GetObject"
             ],
             "Resource": [
-                "arn:aws:s3:::$bucket/apps/$project",
-                "arn:aws:s3:::$bucket/apps/$project/*"
+                "arn:aws:s3:::$bucket/projects/$project",
+                "arn:aws:s3:::$bucket/projects/$project/*"
             ]
         }
     ]

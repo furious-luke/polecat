@@ -32,5 +32,5 @@ def list_secrets(project, deployment):
     if len(secrets) == 0:
         print(colored('    No secrets', 'grey'))
     else:
-        for secret in secrets:
-            print(f'    {secret}')
+        for secret, value in secrets.items():
+            print(f'    {secret} = {value}')

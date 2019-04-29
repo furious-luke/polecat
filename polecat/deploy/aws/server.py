@@ -26,7 +26,15 @@ class LambdaServer:
         return self.encode_result(result)
 
     def encode_result(self, result):
+        body = result[0]
+        headers = {}
+        content_type = result[2] if len(result) > 2 else None
+        if content_type != 'text/html':
+            body = ujson.dumps(body)
+        elif content_type is not None:
+            headers['content-type'] = 'text/html'
         return {
             'statusCode': result[1],
-            'body': ujson.dumps(result[0])
+            'body': body,
+            'headers': headers
         }

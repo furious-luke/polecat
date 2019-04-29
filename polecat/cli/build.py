@@ -9,6 +9,7 @@ __all__ = ('build',)
 @main.command()
 @click.argument('project')
 @click.option('--source')
-def build(project, source):
+@click.option('--local-package', '-l', multiple=True)
+def build(project, source, local_package):
     from ..deploy.aws.build import build as aws_build
-    aws_build(project, source, feedback=HaloFeedback())
+    aws_build(project, source, local_package, feedback=HaloFeedback())

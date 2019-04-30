@@ -82,11 +82,15 @@ class Query:
         self.is_delete = True
         return self
 
-    def execute(self):
+    def execute(self, session=None, role=None):
         result = getattr(self, '_result', None)
         if not result:
             # TODO: Don't reconnect everytime, dufus.
-            with cursor() as curs:
+            with cursor(autocommit=False) as curs:
+                if role:
+                    curs.execute(SQL('SET LOCAL ROLE {}').format(
+                        Identifier(role.Meta.role))
+                    )
                 if self.is_insert:
                     insert_sql, select_sql = self.evaluate()
                     if configuration.log_sql:

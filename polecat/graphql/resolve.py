@@ -1,22 +1,16 @@
 from graphql.type import GraphQLList
 
-from ..db.connection import cursor
 from ..db.sql import Q, S
 from ..utils.exceptions import traceback
-from .field import RelatedField, ReverseField
+from .field import RelatedField
 from .input import Input
 
 
 def resolve_all_query(obj, info):
-    # TODO: Remove this in production.
-    with traceback():
-        graphql_type = info.return_type.of_type
-        query = build_all_query(graphql_type, info.field_nodes[0])
-        # TODO: Ensure cursor is cached. Or at least connection.
-        with cursor() as curs:
-            sql = query.evaluate()
-            curs.execute(*sql)
-            return map(lambda x: x[0], curs.fetchall())
+    graphql_type = info.return_type.of_type
+    query = build_all_query(graphql_type, info.field_nodes[0])
+    options = info.context or {}
+    return query.execute(**options)
 
 
 def resolve_get_query(obj, info, query=None):
@@ -24,7 +18,8 @@ def resolve_get_query(obj, info, query=None):
     query = build_all_query(graphql_type, info.field_nodes[0], query=query)
     query.is_get = True  # TODO: Must be a better way.
     # TODO: Should use execute above.
-    return query.execute()
+    options = info.context or {}
+    return query.execute(**options)
 
 
 def build_all_query(graphql_type, node, query=None):
@@ -67,7 +62,8 @@ def resolve_create_mutation(obj, info, **kwargs):
     # TODO: This can one day be merged together. Before then, I need to create a CTE system
     # that allows me to combine queries more elegantly.
     for delete_class, ids in input.delete.items():
-        Q(delete_class).delete(ids).execute()
+        options = info.context or {}
+        Q(delete_class).delete(ids).execute(**options)
     model = model_class(**input.change)
     # TODO: We can optimise this operation for the case where there
     # are no nested insertions like this...
@@ -85,7 +81,8 @@ def resolve_delete_mutation(obj, info, **kwargs):
     id = kwargs['input']['id']
     model_class = return_type._model
     model = model_class(id=id)
-    Q(model).delete().execute()
+    options = info.context or {}
+    Q(model).delete().execute(**options)
     return {
         'id': id
     }
@@ -94,6 +91,7 @@ def resolve_delete_mutation(obj, info, **kwargs):
 def resolve_query(obj, info, **kwargs):
     graphql_field = info.parent_type.fields[info.field_name]
     query = graphql_field._query
+    # TODO: Need to pass the context.
     return query.resolve(**kwargs)
 
 
@@ -101,4 +99,5 @@ def resolve_mutation(obj, info, **kwargs):
     graphql_field = info.parent_type.fields[info.field_name]
     mutation = graphql_field._mutation
     input = kwargs['input']
+    # TODO: Need to pass the context.
     return mutation.resolve(**input)

@@ -5,6 +5,20 @@ authenticate_query = '''mutation($email: String!, $password: String!) {
 }
 '''
 
+all_addresses_query = '''query {
+  allAddresss {
+    id
+  }
+}
+'''
+
+get_address_query = '''query($id: Int) {
+  getAddress(id: $id) {
+    id
+  }
+}
+'''
+
 all_movies_query = '''query {
   allMovies {
     id,

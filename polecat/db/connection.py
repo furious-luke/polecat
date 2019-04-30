@@ -6,18 +6,21 @@ from .utils import database_url
 
 
 @contextmanager
-def connection(url):
+def connection(url, autocommit=True):
     conn = psycopg2.connect(database_url(url))
-    conn.autocommit = True
+    if autocommit:
+        conn.autocommit = True
     try:
         yield conn
+        if not autocommit:
+            conn.commit()
     finally:
         conn.close()
 
 
 @contextmanager
-def cursor(url=None):
-    with connection(url) as conn:
+def cursor(url=None, **kwargs):
+    with connection(url, **kwargs) as conn:
         curs = conn.cursor()
         try:
             yield curs

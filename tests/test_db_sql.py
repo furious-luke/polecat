@@ -1,6 +1,8 @@
+import pytest
 from polecat.db.sql import Q, S
+from psycopg2 import ProgrammingError
 
-from .models import Address, Movie
+from .models import Address, DefaultRole, Movie, UserRole
 
 
 def test_insert_sql(db):
@@ -69,3 +71,10 @@ def test_delete(db, factory):
     Q(movie).delete().execute()
     result = Q(movie).get(id=movie.id).execute()
     assert result is None
+
+
+def test_set_role(db):
+    with pytest.raises(ProgrammingError):
+        Q(Address).select('id').execute(role=DefaultRole)
+    Q(Address).select('id').execute()
+    Q(Address).select('id').execute(role=UserRole)

@@ -30,16 +30,8 @@ def load_project():
     return project
 
 
-# TODO: MOve to utils?
-def get_handler_func(handler):
-    if callable(handler):
-        return handler
-    else:
-        return handler.handle_event
-
-
 class Project:
-    def __init__(self, name=None):
+    def __init__(self, name=None, default_role=None):
         self.name = name
         if not self.name:
             self.name = self.__class__.__name__.lower()
@@ -49,6 +41,7 @@ class Project:
         self.bundle_version = os.environ.get('BUNDLE_VERSION')
         self.config = default_config
         self.handlers = []
+        self.default_role = default_role
         global active_project
         active_project = self
 
@@ -63,8 +56,13 @@ class Project:
         if not len(self.handlers):
             # TODO: Hmm, don't like the internal import so
             # much... better way to set default handlers?
+            from polecat.auth.middleware import RoleMiddleware
             from polecat.graphql.api import GraphqlAPI
-            self.handlers.append(GraphqlAPI())
+            self.handlers.append(
+                GraphqlAPI(middleware=[
+                    RoleMiddleware(self.default_role)
+                ])
+            )
         self.handlers.append(IndexHandler(self))
         for handler in self.handlers:
             handler.prepare()
@@ -117,9 +115,9 @@ class Project:
 
     async def handle_event(self, event):
         for handler in self.handlers:
-            result = await get_handler_func(handler)(event)
-            if result is not None:
-                return result
+            if not handler.match(event):
+                continue
+            return await handler.run(event)
         return await self.default_handler(event)
 
     async def default_handler(self, event):

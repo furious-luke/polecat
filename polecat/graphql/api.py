@@ -1,19 +1,22 @@
 from graphql_server import (default_format_error, encode_execution_results,
                             run_http_query)
 
+from ..project.handler import Handler
 from .schema import build_graphql_schema
 
 
-class GraphqlAPI:
+class GraphqlAPI(Handler):
     def prepare(self):
         self.schema = build_graphql_schema()
 
-    async def handle_event(self, event):
+    def match(self, event):
         # TODO: Use regex
-        if not event.is_http() or \
-           event.request.method != 'POST' or \
-           (event.request.path != '/graphql' and event.request.path != '/graphql/'):
-            return None
+        return event.is_http() and \
+           event.request.method == 'POST' and \
+           (event.request.path == '/graphql' or
+            event.request.path == '/graphql/')
+
+    async def handle_event(self, event):
         # TODO: There's no sync version of this for some reason...
         result = await run_http_query(
             self.schema,

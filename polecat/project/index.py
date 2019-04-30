@@ -1,3 +1,5 @@
+from .handler import Handler
+
 index_html = '''<!DOCTYPE html>
 <html>
   <head>
@@ -32,17 +34,19 @@ def get_index_html(bucket, project, bundle_version, region='ap-southeast-2',
     )
 
 
-class IndexHandler:
+class IndexHandler(Handler):
     def __init__(self, project):
+        super().__init__()
         self.project = project
 
     def prepare(self):
         self.index_html = self.project.get_index_html()
 
-    async def handle_event(self, event):
+    def match(self, event):
         # TODO: Use regex
-        if not event.is_http() or \
-           event.request.method != 'GET' or \
-           event.request.path != '/':
-            return None
+        return event.is_http() and \
+           event.request.method == 'GET' or \
+           event.request.path == '/'
+
+    async def handle_event(self, event):
         return (self.index_html, 200, 'text/html')

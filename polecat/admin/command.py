@@ -4,7 +4,7 @@ from ..cli.feedback import HaloFeedback
 from ..utils.registry import Registry, RegistryMetaclass
 from ..utils.stringcase import snakecase
 
-command_registry = Registry('command', mapper=lambda x: x.name)
+command_registry = Registry('command')
 
 
 class CommandMetaclass(RegistryMetaclass):

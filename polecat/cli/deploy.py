@@ -9,11 +9,12 @@ __all__ = ('deploy', 'undeploy')
 @main.command()
 @click.argument('project')
 @click.option('--deployment')
+@click.option('--dry-run', is_flag=True)
 @click.pass_context
-def deploy(ctx, project, deployment):
+def deploy(ctx, project, deployment, dry_run):
     from ..deploy.aws.deploy import deploy as aws_deploy
     bucket = ctx.obj['bucket']
-    aws_deploy(project, bucket, deployment, feedback=HaloFeedback())
+    aws_deploy(project, bucket, deployment, dry_run, feedback=HaloFeedback())
 
 
 @main.command()

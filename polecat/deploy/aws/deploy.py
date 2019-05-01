@@ -4,6 +4,7 @@ from termcolor import colored
 
 from ...utils import get_path, set_path
 from ...utils.feedback import feedback
+from .deployment import assert_deployment_exists
 from .exceptions import KnownError
 from .operations import get_parameter, get_parameters_by_path
 from .resources import (create_api_resources, create_domain_resources,
@@ -12,12 +13,18 @@ from .utils import aws_client
 
 
 @feedback
-def deploy(project, bucket, deployment=None, feedback=None):
+def deploy(project, bucket, deployment=None, dry_run=False, feedback=None):
     cf = aws_client('cloudformation')
-    with feedback(f'Deploy {colored(project, "blue")}'):
+    msg = f'Deploy {colored(project, "blue")}'
+    if deployment:
+        msg += f'/{colored(deployment, "green")}'
+    with feedback(msg):
+        template = create_template(project, bucket, deployment, cf=cf)
+        if dry_run:
+            raise Warning('dry run')
         params = {
             'StackName': project,
-            'TemplateBody': create_template(project, bucket, deployment),
+            'TemplateBody': template,
             'Capabilities': ['CAPABILITY_IAM']
         }
         wait_command = 'stack_update_complete'
@@ -49,19 +56,27 @@ def undeploy(project, deployment):
     # })
 
 
-def create_template(project, bucket, deployment=None):
+def create_template(project, bucket, deployment=None, cf=None):
     env = get_environment(project, deployment)
+    resources, outputs = get_existing_template(project, cf=cf)
     data = {
         'AWSTemplateFormatVersion': '2010-09-09',
         'Description': f'Polecat {project} CloudFormation template',
-        'Resources': create_resources(project, bucket, env),
-        'Outputs': create_outputs(project, env)
+        'Resources': create_resources(project, bucket, env, resources=resources),
+        'Outputs': create_outputs(project, env, outputs=outputs)
     }
     return ujson.dumps(data, indent=2)
 
 
-def create_resources(project, bucket, environment):
-    resources = {}
+def get_existing_template(project, cf=None):
+    cf = aws_client('cloudformation', client=cf)
+    response = cf.get_template(StackName=project, TemplateStage='Original')
+    template = response['TemplateBody']
+    return template['Resources'], template['Outputs']
+
+
+def create_resources(project, bucket, environment, resources=None):
+    resources = resources or {}
     for dep, env in environment.items():
         resources.update(create_api_resources(project, dep, bucket, env))
         for domain, info in env.get('domains', {}).items():
@@ -77,8 +92,8 @@ def create_resources(project, bucket, environment):
     return resources
 
 
-def create_outputs(project, environment):
-    outputs = {}
+def create_outputs(project, environment, outputs=None):
+    outputs = outputs or {}
     for dep, env in environment.items():
         outputs.update(create_output_resources(project, dep))
     return outputs
@@ -86,6 +101,8 @@ def create_outputs(project, environment):
 
 def get_environment(project, deployment=None):
     deployment = deployment or ''
+    if deployment:
+        assert_deployment_exists(project, deployment)
     prefix = f'/polecat/projects/{project}'  # TODO: Constant.
     project_code_version = get_parameter(f'{prefix}/code/version')  # TODO: Constant.
     if project_code_version is None:

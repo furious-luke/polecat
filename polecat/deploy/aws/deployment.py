@@ -2,7 +2,7 @@ from termcolor import colored
 
 from ...utils.feedback import feedback
 from .constants import DEPLOYMENT_REGISTRY
-from .exceptions import EntityExists
+from .exceptions import EntityDoesNotExist, EntityExists
 from .operations import get_parameter, set_parameter
 from .project import assert_project_exists
 from .utils import aws_client
@@ -32,3 +32,15 @@ def list_deployments(project, feedback):
         assert_project_exists(project, ssm=ssm)
         name = DEPLOYMENT_REGISTRY.format(project)
         return get_parameter(name, default=[], ssm=ssm)
+
+
+def deployment_exists(project, deployment, ssm=None):
+    registry = get_parameter(DEPLOYMENT_REGISTRY.format(project), ssm=ssm)
+    return deployment in registry
+
+
+def assert_deployment_exists(project, deployment, ssm=None):
+    if not deployment_exists(project, deployment, ssm=ssm):
+        raise EntityDoesNotExist(
+            f'deployment {deployment} does not exist'
+        )

@@ -5,6 +5,9 @@ class Event:
     def is_http(self):
         return False
 
+    def is_admin(self):
+        return self.event.get('event') == 'admin'
+
 
 class HttpEvent(Event):
     def __init__(self, event, request=None):

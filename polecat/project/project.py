@@ -4,6 +4,7 @@ from importlib import import_module
 
 from graphql_server import HttpQueryError
 
+from ..admin.commands import *  # noqa
 from ..model.registry import (access_registry, model_registry, role_registry,
                               type_registry)
 from .app import app_registry
@@ -64,6 +65,8 @@ class Project:
                 ])
             )
         self.handlers.append(IndexHandler(self))
+        from polecat.admin.handler import AdminHandler  # TODO: Ugh.
+        self.handlers.append(AdminHandler())
         for handler in self.handlers:
             handler.prepare()
         self.index_html = self.get_index_html()

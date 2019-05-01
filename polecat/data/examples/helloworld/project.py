@@ -1,5 +1,5 @@
-from polecat.project import Project
+from polecat.project import Project as BaseProject
 
 
-class HelloWorldProject(Project):
+class Project(BaseProject):
     pass

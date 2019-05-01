@@ -66,41 +66,6 @@ The extras keyword `cli` indicates that the command line interface and
 its dependencies should be installed. For production deployments those
 dependencies are omitted.
 
-## Getting Started
-
-Getting started with Polecat is designed to be a trivial
-excercise. Once installed, the `polecat` command should now be
-accessible from your command line:
-
-``` bash
-polecat --help
-```
-
-Everything you'll need is available using the Polecat command. Let's
-start by generating a basic "hello world" project.
-
-``` bash
-polecat example helloworld
-```
-
-The above command will create a `helloworld` folder in your current
-directory, populated with a minimal project. Within, you'll find just
-two files:
-
- * `models.py` - the data/API definition.
- * `project.py` - the entrypoint for your project.
- * `bundle.js` - the client side application.
-
-To see your project working, from within the `helloworld` directory
-run:
-
-``` bash
-polecat server
-```
-
-A local development server will be launched, navigate to
-`http://localhost:8000` to see your new hello world project.
-
 ## Documentation
 
 Coming soon (slowly).

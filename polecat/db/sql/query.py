@@ -9,6 +9,7 @@ from .insert import Insert
 from .lateral import LateralBackend
 from .lookup import Lookup
 from .selector import Selector
+from .update import Update
 
 
 class Query:
@@ -16,6 +17,7 @@ class Query:
     backend_class = LateralBackend
     lookup_class = Lookup
     insert_class = Insert
+    update_class = Update
     delete_class = Delete
 
     def __init__(self, model, selector=None, parent=None, filter=None):
@@ -32,6 +34,7 @@ class Query:
         self.is_get = False
         self.is_select = False
         self.is_insert = False
+        self.is_update = False
         self.is_delete = False
 
     def __repr__(self):
@@ -78,6 +81,10 @@ class Query:
         #     ))
         return self
 
+    def update(self, *fields, **lookups):
+        self.is_update = True
+        return self
+
     def delete(self):
         self.is_delete = True
         return self
@@ -91,7 +98,7 @@ class Query:
                     curs.execute(SQL('SET LOCAL ROLE {}').format(
                         Identifier(role.Meta.role))
                     )
-                if self.is_insert:
+                if self.is_insert or self.is_update:
                     insert_sql, select_sql = self.evaluate()
                     if configuration.log_sql:
                         print(curs.mogrify(insert_sql[0], insert_sql[1]))
@@ -139,6 +146,20 @@ class Query:
                     ),
                     select_sql
                 )
+            elif self.is_update:
+                update_cte = self.update_class.evaluate(self.model, self.selector)  # TODO: Need *args, **kwargs?
+                update_sql = update_cte.evaluate()
+                select_sql = self.backend_class.evaluate(self, *args, **kwargs)
+                sql = (
+                    (
+                        SQL('WITH {} SELECT id FROM {}').format(
+                            update_sql[0],
+                            Identifier(update_cte.alias)
+                        ),
+                        update_sql[1]
+                    ),
+                    select_sql
+                )
             else:
                 sql = self.backend_class.evaluate(self, *args, **kwargs)
             self._sql = sql
@@ -149,7 +170,7 @@ class Query:
             self.selector = self.selector or Selector()
             self.fields = self.selector.fields
             # TODO: Different PKs? What about auto-fields?
-            if self.is_insert:
+            if self.is_insert or self.is_update:
                 self.fields.add('id')
                 # TODO: This could come back to bite me, stomping on
                 # the filter like this.

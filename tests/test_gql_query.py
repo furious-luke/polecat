@@ -7,7 +7,7 @@ from .models import *  # noqa
 from .queries import (all_actors_query, all_addresses_query, all_movies_query,
                       authenticate_query, create_actor_and_movies_query,
                       create_actors_query, delete_movie_query,
-                      get_address_query)
+                      get_address_query, update_actors_query)
 
 
 def test_schema():
@@ -55,6 +55,18 @@ def test_create_reverse(db):
     assert len(data['moviesByStar']) == 2
     for movie in data['moviesByStar']:
         assert movie['id'] is not None
+
+
+def test_update(db):
+    schema = build_graphql_schema()
+    result = execute_query(schema, create_actors_query)
+    result = execute_query(schema, update_actors_query, variables={
+        'id1': result.data['firstActor']['id'],
+        'id2': result.data['secondActor']['id']
+    })
+    assert result.errors is None
+    assert result.data['firstActor']['age'] == 60
+    assert result.data['secondActor']['age'] == 80
 
 
 def test_delete(db, factory):

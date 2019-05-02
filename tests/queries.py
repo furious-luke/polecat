@@ -84,6 +84,22 @@ create_actor_and_movies_query = '''mutation {
 }
 '''
 
+update_actors_query = '''mutation($id1: Int!, $id2: Int!) {
+  firstActor: updateActor(input: {id: $id1, age: 60}) {
+    id,
+    firstName,
+    lastName,
+    age
+  }
+  secondActor: updateActor(input: {id: $id2, age: 80}) {
+    id,
+    firstName,
+    lastName,
+    age
+  }
+}
+'''
+
 delete_movie_query = '''mutation($id: Int!) {
   deleteMovie(input: {id: $id}) {
     id

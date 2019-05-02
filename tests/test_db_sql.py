@@ -43,6 +43,16 @@ def test_insert_and_select(db, factory):
     # assert inst.id is not None
 
 
+def test_update_sql(db):
+    inst = Address(country='AU')
+    Q(inst).insert().execute()
+    init_id = inst.id
+    inst.country = 'NZ'
+    Q(inst).update().execute()
+    assert inst.id == init_id
+    assert inst.country == 'NZ'
+
+
 def test_select_sql(db, factory):
     factory.Movie.create_batch(10)
     sql, args = Q(Movie).select('id', 'title', star=S('id', 'first_name', 'last_name', address=S('id', 'country'))).evaluate()

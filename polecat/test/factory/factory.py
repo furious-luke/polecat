@@ -10,7 +10,6 @@ from .field import factory_field_registry
 #                             base_factory=None, params=None):
 #         super().contribute_to_class(factory, meta=meta, base_meta=base_meta,
 #                                     base_factory=base_factory, params=params)
-#         import pdb; pdb.set_trace()
 #         print('h')
 
 

@@ -2,7 +2,7 @@ import os
 from contextlib import contextmanager
 from urllib.parse import urlparse
 
-database_url_stack = [os.environ['DATABASE_URL']]
+database_url_stack = [x for x in [os.environ.get('DATABASE_URL')] if x is not None]
 
 
 @contextmanager

@@ -43,6 +43,24 @@ def upload(project, bucket, source=None, version=None, feedback=None):
 def upload_bundle(project, bucket, source=None, version=None, feedback=None):
     s3 = aws_client('s3')
     source = Path(source or (Path(os.getcwd()) / 'dist'))
+    def _upload(path, dst_file):
+        params = {}
+        if '.map.' in dst_file or dst_file.endswith('.map'):
+            return
+        if dst_file.endswith('.br'):
+            return
+        if dst_file.endswith('.gz'):
+            params['ExtraArgs'] = {
+                'ContentEncoding': 'gzip'
+            }
+        with feedback(f'Upload {colored(dst_file, "blue")}'):
+            s3.upload_file(
+                path,
+                Bucket=bucket,
+                Key=f'projects/{project}/bundle/{version}/{dst_file}',  # TODO: Constant.
+                **params
+            )
+        uploaded.append(dst_file)
     # TODO: This is duplication of above.
     version_path = f'/polecat/projects/{project}/bundle/version'  # TODO: Constant.
     current_version = None
@@ -59,6 +77,8 @@ def upload_bundle(project, bucket, source=None, version=None, feedback=None):
             version = current_version + 1
         fb.message = f'Using version {colored(version, "blue")}'
     uploaded = []
+    if source.is_file():
+        _upload(str(source), source.name)
     for root, dirs, files in os.walk(source):
         for file in files:
             # TODO: Filter out certain files?
@@ -66,23 +86,7 @@ def upload_bundle(project, bucket, source=None, version=None, feedback=None):
             dst_file = path[len(str(source)):]
             if dst_file[0] == '/':
                 dst_file = dst_file[1:]
-            params = {}
-            if '.map.' in dst_file or dst_file.endswith('.map'):
-                continue
-            if dst_file.endswith('.br'):
-                continue
-            if dst_file.endswith('.gz'):
-                params['ExtraArgs'] = {
-                    'ContentEncoding': 'gzip'
-                }
-            with feedback(f'Upload {colored(dst_file, "blue")}'):
-                s3.upload_file(
-                    path,
-                    Bucket=bucket,
-                    Key=f'projects/{project}/bundle/{version}/{dst_file}',  # TODO: Constant.
-                    **params
-                )
-            uploaded.append(dst_file)
+            _upload(path, dst_file)
     # TODO: Duplication of above.
     if version > current_version:
         with feedback(f'Set current version to {colored(version, "blue")}'):

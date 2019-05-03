@@ -18,13 +18,12 @@ login credentials, of the form `AWS_ACCESS_KEY_ID` AND
 
 ## Method
 
-Begin by creating the standard "hello world" example:
+Begin by creating the "hello world" example:
 
 ```bash
 polecat example helloworld
 cd helloworld
 ```
-
 
 Polecat requires an AWS bucket to store server code archives, frontend
 bundles, and media. This bucket may be shared between any number of
@@ -59,6 +58,14 @@ our project:
 polecat deployment create helloworld production
 ```
 
+When deploying Polecat projects, the entrypoint for the project must be specified
+as a "secret". Secrets are environmental values supplied to deployments to configure
+the behvior of Polecat. To specify the project entrypoint:
+
+```bash
+polecat secret create helloworld production POLECAT_PROJECT helloworld.project.HelloWorldProject
+```
+
 Before we can deploy our project and deployment, we need to build and
 upload both the server archive and the frontend bundle. Let's start by
 building and uploading our server:
@@ -81,15 +88,25 @@ We're now ready to deploy our project. To redeploy all deployments,
 use:
 
 ```bash
-polecat deploy
+polecat deploy helloworld
 ```
 
 If you happened to have multiple deployments, let's say staging and
 production, you could deploy just staging with:
 
 ```bash
-polecat deploy staging
+polecat deploy helloworld staging
 ```
 
 This command will return an internal URL you may use to view your
 newly deployed Lambda.
+
+## Cleanup
+
+Cleanup all provisioned resources with:
+
+```bash
+polecat undeploy helloworld
+polecat deployment delete production
+polecat project delete helloworld
+```

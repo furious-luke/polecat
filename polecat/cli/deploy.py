@@ -1,4 +1,5 @@
 import click
+from termcolor import colored
 
 from .feedback import HaloFeedback
 from .main import main
@@ -14,13 +15,14 @@ __all__ = ('deploy', 'undeploy')
 def deploy(ctx, project, deployment, dry_run):
     from ..deploy.aws.deploy import deploy as aws_deploy
     bucket = ctx.obj['bucket']
-    aws_deploy(project, bucket, deployment, dry_run, feedback=HaloFeedback())
+    urls = aws_deploy(project, bucket, deployment, dry_run, feedback=HaloFeedback())
+    for deployment, url in urls.items():
+        print(f'  {deployment}: {colored(url, "green")}')
 
 
 @main.command()
 @click.argument('project')
-@click.argument('deployment')
-@click.argument('domain')
-def undeploy(project, deployment, domain):
-    from ..deploy.aws.publish import unpublish as aws_unpublish
-    aws_unpublish(project, deployment, domain, feedback=HaloFeedback())
+@click.option('--deployment')
+def undeploy(project, deployment):
+    from ..deploy.aws.deploy import undeploy as aws_undeploy
+    aws_undeploy(project, deployment, feedback=HaloFeedback())

@@ -43,7 +43,7 @@ class Feedback:
     def info(self, message):
         pass
 
-    def exists(self):
+    def exists(self, error):
         pass
 
 

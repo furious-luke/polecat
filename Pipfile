@@ -21,6 +21,7 @@ halo = "==0.0.23"
 sanic = "==19.3.1"
 boto3 = "==1.9.125"
 pytest-asyncio = "==0.10.0"
+cached-property = "==1.5.1"
 
 [requires]
 python_version = "3.7"

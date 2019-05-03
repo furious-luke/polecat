@@ -38,7 +38,6 @@ def create_api_resources(project, deployment, bucket, environment):
                         ),
                         'CODE_VERSION': code_version,
                         'BUNDLE_VERSION': bundle_version,
-                        'POLECAT_PROJECT': f'{project}.project.Project',
                         **secrets
                     }
                 },
@@ -87,7 +86,6 @@ def create_api_resources(project, deployment, bucket, environment):
         #                 ),
         #                 'CODE_VERSION': code_version,
         #                 'BUNDLE_VERSION': bundle_version,
-        #                 'POLECAT_PROJECT': f'{project}.project.Project',
         #                 **secrets
         #             }
         #         },
@@ -535,7 +533,7 @@ def create_output_resources(project, deployment):
                         {
                             'Ref': 'AWS::Region'
                         },
-                        '.amazonaws.com'
+                        '.amazonaws.com/LATEST/'
                     ]
                 ]
             }

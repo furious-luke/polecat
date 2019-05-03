@@ -42,18 +42,23 @@ def deploy(project, bucket, deployment=None, dry_run=False, feedback=None):
             waiter.wait(StackName=project)
         except WaiterError:
             raise KnownError('failed')
+    response = cf.describe_stacks(StackName=project)
+    outputs = {}
+    for output in response['Stacks'][0]['Outputs']:
+        project_deployment = output['OutputKey']
+        deployment = project_deployment[len(project):-3].lower()
+        url = output['OutputValue']
+        outputs[deployment] = url
+    return outputs
 
 
 @feedback
-def undeploy(project, deployment):
-    pass
-    #     const app = getConfig('app')
-    # await loggedOperation(`Undeploying ${app.blue} ... `, async () => {
-    #   const cf = new AWS.CloudFormation()
-    #   const response = await cf.deleteStack({
-    #     StackName: app
-    #   }).promise()
-    # })
+def undeploy(project, deployment=None, feedback=None):
+    with feedback(f'Undeploy {colored(project, "blue")}'):
+        cf = aws_client('cloudformation')
+        cf.delete_stack(StackName=project)
+        # TODO: Wait for delete to be finished.
+        # TODO: Undeploy individual deployment?
 
 
 def create_template(project, bucket, deployment=None, cf=None):
@@ -70,9 +75,14 @@ def create_template(project, bucket, deployment=None, cf=None):
 
 def get_existing_template(project, cf=None):
     cf = aws_client('cloudformation', client=cf)
-    response = cf.get_template(StackName=project, TemplateStage='Original')
-    template = response['TemplateBody']
-    return template['Resources'], template['Outputs']
+    try:
+        response = cf.get_template(StackName=project, TemplateStage='Original')
+        template = response['TemplateBody']
+        return template['Resources'], template['Outputs']
+    except ClientError as e:
+        if 'does not exist' not in str(e):
+            raise
+        return {}, {}
 
 
 def create_resources(project, bucket, environment, resources=None):

@@ -32,13 +32,17 @@ def load_project():
 
 
 class Project:
+    name = None
+    bundle = None
+
     def __init__(self, name=None, default_role=None):
-        self.name = name
+        self.name = name or self.name
         if not self.name:
             self.name = self.__class__.__name__.lower()
             if self.name.endswith('project'):
                 self.name = self.name[:-7]
         self.bucket = os.environ.get('BUCKET')
+        self.bundle = os.environ.get('BUNDLE', self.bundle)
         self.bundle_version = os.environ.get('BUNDLE_VERSION')
         self.config = default_config
         self.handlers = []
@@ -110,10 +114,14 @@ class Project:
             access.app = app
 
     def get_index_html(self):
+        kwargs = {}
+        if self.bundle is not None:
+            kwargs['bundle'] = self.bundle
         return get_index_html(
             bucket=self.bucket,
             project=self.name,
-            bundle_version=self.bundle_version
+            bundle_version=self.bundle_version,
+            **kwargs
         )
 
     async def handle_event(self, event):

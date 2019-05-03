@@ -23,6 +23,11 @@ def create_deployment(project, deployment, feedback):
             pass
         deployments.append(deployment)
         set_parameter(name, deployments, ssm=ssm)
+        # The active flag is here really only to ensure when
+        # deployments are carried out for deployments without secrets
+        # etc, they are still used.
+        name = DEPLOYMENT_PREFIX.format(project, deployment) + 'active'
+        set_parameter(name, '1', ssm=ssm)
 
 
 @feedback

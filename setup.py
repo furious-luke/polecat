@@ -32,16 +32,17 @@ setup(
         'psycopg2-binary==2.7.7',
         'graphql-core-next==1.0.2',
         # 'graphql-server-core @ https://github.com/norman-thomas/graphql-server-core/tarball/master',
-        'pyjwt==1.7.1'
+        'pyjwt==1.7.1',
+        # Used to be in extras...
+        'click==7.0',
+        'halo==0.0.23',
+        'termcolor==1.1.0'
     ],
     extras_require={
         'cli': [
             'pytest==4.3.1',
             'pytest-asyncio==0.10.0',
             'factory-boy==2.11.1',
-            'click==7.0',
-            'termcolor==1.1.0',
-            'halo==0.0.23',
             'sanic==19.3.1',
             'boto3==1.9.125'
         ]

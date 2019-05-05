@@ -91,25 +91,39 @@ class Project:
             try:
                 app = app_registry[match.lastindex - 1]
             except AttributeError:
-                raise Exception(f'model {model.Meta.name} has no app')
+                # TODO: Should we require apps?
+                # raise Exception(f'model {model.Meta.name} has no app')
+                continue
             app.models.append(model)
             model.Meta.app = app
         for type in type_registry:
             module_name = r'.'.join(type.__module__.split('.')[:-1])
             match = prog.search(module_name)
-            app = app_registry[match.lastindex - 1]
+            try:
+                app = app_registry[match.lastindex - 1]
+            except AttributeError:
+                # TODO: Should we require apps?
+                continue
             app.types.append(model)
             type.Meta.app = app
         for role in role_registry:
             module_name = r'.'.join(role.__module__.split('.')[:-1])
             match = prog.search(module_name)
-            app = app_registry[match.lastindex - 1]
+            try:
+                app = app_registry[match.lastindex - 1]
+            except AttributeError:
+                # TODO: Should we require apps?
+                continue
             app.roles.append(model)
             role.Meta.app = app
         for access in access_registry:
             module_name = r'.'.join(access.__module__.split('.')[:-1])
             match = prog.search(module_name)
-            app = app_registry[match.lastindex - 1]
+            try:
+                app = app_registry[match.lastindex - 1]
+            except AttributeError:
+                # TODO: Should we require apps?
+                continue
             app.access.append(access)
             access.app = app
 

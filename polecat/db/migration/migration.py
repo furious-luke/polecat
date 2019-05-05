@@ -6,6 +6,8 @@ from psycopg2.sql import SQL
 
 from ...utils import indent
 from ..decorators import dbcursor
+from ..connection import transaction
+from .utils import project_migrations_path
 
 migration_template = '''from polecat.db.migration.migration import Migration as BaseMigration
 from polecat.db.migration.operation import CreateRole, CreateTable, GrantAccess, CreateExtension
@@ -41,10 +43,10 @@ class Migration:
     #     for operation in self.operations:
     #         operation.apply(schema)
 
-    @property
-    def forward_sql(self):
-        sql, args = zip(*(op.sql for op in self.operations))
-        return (SQL('\n\n').join(sql), sum(args, ()))
+    # @property
+    # def forward_sql(self):
+    #     sql, args = zip(*(op.sql for op in self.operations))
+    #     return (SQL('\n\n').join(sql), sum(args, ()))
 
     @dbcursor
     def forward(self, migrations=None, cursor=None):
@@ -71,7 +73,10 @@ class Migration:
             migrations = migrations or {}
             for dep in self.dependencies:
                 dep.forward(migrations, cursor=cursor)
-            cursor.execute(*self.forward_sql)
+            # TODO: This transaction is slightly inefficient.
+            with transaction(cursor):
+                for op in self.operations:
+                    op.forward(cursor=cursor)
             sql = (
                 'INSERT INTO polecat_migrations (app, name, applied)'
                 '  VALUES(%s, %s, now());'
@@ -92,7 +97,7 @@ class Migration:
         try:
             return self.app.path / 'migrations'
         except AttributeError:
-            return Path('.') / 'migrations'
+            return project_migrations_path()
 
     @property
     def dependency_string(self):

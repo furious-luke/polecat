@@ -19,10 +19,25 @@ def connection(url, autocommit=True):
 
 
 @contextmanager
-def cursor(url=None, **kwargs):
-    with connection(url, **kwargs) as conn:
-        curs = conn.cursor()
-        try:
-            yield curs
-        finally:
-            curs.close()
+def cursor(url=None, cursor=None, **kwargs):
+    # TODO: This conditional is ugly.
+    if cursor:
+        yield cursor
+    else:
+        with connection(url, **kwargs) as conn:
+            curs = conn.cursor()
+            try:
+                yield curs
+            finally:
+                curs.close()
+
+
+
+@contextmanager
+def transaction(cursor):
+    cursor.execute('BEGIN')
+    try:
+        yield
+        cursor.execute('COMMIT')
+    finally:
+        cursor.execute('ROLLBACK')

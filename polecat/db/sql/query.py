@@ -2,7 +2,7 @@ from psycopg2.sql import SQL, Identifier, Placeholder
 
 from ...project import configuration
 from ...utils import to_class
-from ..connection import cursor
+from ..connection import cursor as conn_cursor
 from .delete import Delete
 from .filter import Filter
 from .insert import Insert
@@ -89,11 +89,11 @@ class Query:
         self.is_delete = True
         return self
 
-    def execute(self, session=None, role=None):
+    def execute(self, session=None, role=None, cursor=None):
         result = getattr(self, '_result', None)
         if not result:
             # TODO: Don't reconnect everytime, dufus.
-            with cursor(autocommit=False) as curs:
+            with conn_cursor(autocommit=False, cursor=cursor) as curs:
                 if role:
                     curs.execute(SQL('SET LOCAL ROLE {}').format(
                         Identifier(role.Meta.role))

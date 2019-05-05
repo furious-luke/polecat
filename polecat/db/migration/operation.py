@@ -29,9 +29,6 @@ class Operation:
     def dependencies(self):
         return ()
 
-    def apply(self, app, schema):
-        pass
-
     @dbcursor
     def forward(self, cursor):
         cursor.execute(*self.sql)
@@ -82,9 +79,6 @@ class CreateTable(Operation):
         for col in self.table.columns:
             for dep in col.dependencies:
                 yield dep
-
-    # def apply(self, app, schema):
-    #     schema.add_model(app, self.name, self.columns, self.options)
 
     @property
     def sql(self):
@@ -288,9 +282,6 @@ class CreateRole(Operation):
             (role_name,)
         )
 
-    # def apply(self, app, schema):
-    #     schema.add_role(app, self.role.name, self.role.parents)
-
     def grants_sql(self, role_name):
         return tuple(
             SQL('GRANT {} TO {};').format(
@@ -394,5 +385,6 @@ class RunPython(Operation):
     def __init__(self, forward_func):
         self.forward_func = forward_func
 
-    def foward(self):
-        self.forward_func()
+    @dbcursor
+    def forward(self, cursor):
+        self.forward_func(cursor)

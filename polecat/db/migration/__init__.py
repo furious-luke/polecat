@@ -6,6 +6,7 @@ from ..decorators import dbcursor
 from .migration import Migration
 from .operation import CreateExtension
 from .schema import Schema
+from .utils import project_migrations_path
 
 
 @dbcursor
@@ -32,6 +33,7 @@ def load_migrations(migration_paths=None):
         migrations.update(load_app_migrations(app))
     for path in migration_paths or ():
         migrations.update(load_path_migrations(path))
+    migrations.update(load_path_migrations(project_migrations_path()))
     return migrations
 
 

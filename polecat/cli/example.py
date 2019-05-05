@@ -20,3 +20,10 @@ def helloworld():
     src = get_data_dir() / 'examples' / 'helloworld'
     dst = Path.cwd() / 'helloworld'
     shutil.copytree(src, dst)
+
+
+@example.command()
+def starwars():
+    src = get_data_dir() / 'examples' / 'starwars'
+    dst = Path.cwd() / 'starwars'
+    shutil.copytree(src, dst)

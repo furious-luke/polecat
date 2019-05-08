@@ -57,7 +57,10 @@ def resolve_create_mutation(obj, info, **kwargs):
     return_type = info.return_type
     input_type = mutation.args['input'].type
     model_class = return_type._model
-    input = Input(input_type, kwargs['input'])
+    try:
+        input = Input(input_type, kwargs['input'])
+    except KeyError:
+        raise Exception('Missing "input" argument')
     # Perform any deletes.
     # TODO: This can one day be merged together. Before then, I need to create a CTE system
     # that allows me to combine queries more elegantly.
@@ -77,7 +80,10 @@ def resolve_update_mutation(obj, info, **kwargs):
     return_type = info.return_type
     input_type = mutation.args['input'].type
     model_class = return_type._model
-    input = Input(input_type, kwargs['input'])
+    try:
+        input = Input(input_type, kwargs['input'])
+    except KeyError:
+        raise Exception('Missing "input" argument')
     # Perform any deletes.
     # TODO: This can one day be merged together. Before then, I need
     # to create a CTE system that allows me to combine queries more

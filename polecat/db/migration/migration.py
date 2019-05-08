@@ -53,7 +53,7 @@ class Migration:
         if not getattr(self, '_applied', False):
             self._applied = True
             if self.app:
-                args = [self.app]
+                args = [self.app.name]
             else:
                 args = []
             args.append(self.name)
@@ -71,17 +71,18 @@ class Migration:
             if result[0]:
                 return
             migrations = migrations or {}
-            for dep in self.dependencies:
+            for dep_str in self.dependencies:
+                dep = migrations[dep_str]
                 dep.forward(migrations, cursor=cursor)
             # TODO: This transaction is slightly inefficient.
             with transaction(cursor):
                 for op in self.operations:
                     op.forward(cursor=cursor)
-            sql = (
-                'INSERT INTO polecat_migrations (app, name, applied)'
-                '  VALUES(%s, %s, now());'
-            )
-            cursor.execute(sql, (self.app, self.name))
+                sql = (
+                    'INSERT INTO polecat_migrations (app, name, applied)'
+                    '  VALUES(%s, %s, now());'
+                )
+                cursor.execute(sql, (self.app.name if self.app else None, self.name))
 
     @property
     def filename(self):

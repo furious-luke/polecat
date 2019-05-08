@@ -14,6 +14,10 @@ def connection(url, autocommit=True):
         yield conn
         if not autocommit:
             conn.commit()
+    except Exception:
+        # TODO: Do I really need this?
+        conn.rollback()
+        raise
     finally:
         conn.close()
 

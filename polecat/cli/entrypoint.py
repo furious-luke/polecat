@@ -15,6 +15,7 @@ from polecat.cli.server import *  # noqa
 from polecat.cli.start import *  # noqa
 from polecat.cli.test import *  # noqa
 from polecat.cli.upload import *  # noqa
+from polecat.cli.db import *  # noqa
 
 
 def entrypoint():

@@ -72,8 +72,8 @@ def load_app_migrations(app):
             match = Migration.filename_prog.match(path.name)
             if match:
                 migration_class = Migration.load_migration_class(path)
-                migration = migration_class(app=app.name, name=path.name)
-                migrations[f'{app.name}.{path.name}'] = migration
+                migration = migration_class(app=app.name, name=path.name[:-3])
+                migrations[f'{app.name}.{path.name[:-3]}'] = migration
                 migration.set_app(app)
     except FileNotFoundError:
         pass
@@ -82,12 +82,15 @@ def load_app_migrations(app):
 
 def load_path_migrations(path):
     migrations = {}
-    for file_path in Path(path).iterdir():
-        match = Migration.filename_prog.match(file_path.name)
-        if match:
-            migration_class = Migration.load_migration_class(file_path)
-            migration = migration_class(name=file_path.name)
-            migrations[f'{file_path.name}'] = migration
+    try:
+        for file_path in Path(path).iterdir():
+            match = Migration.filename_prog.match(file_path.name)
+            if match:
+                migration_class = Migration.load_migration_class(file_path)
+                migration = migration_class(name=file_path.name[:-3])
+                migrations[f'{file_path.name[:-3]}'] = migration
+    except FileNotFoundError:
+        pass
     return migrations
 
 

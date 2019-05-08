@@ -1,3 +1,4 @@
+from base64 import b64decode
 import ujson
 
 from ...utils import capitalize
@@ -14,8 +15,14 @@ def run_command(project, deployment, args, kwargs, feedback):
         'args': args,
         'kwargs': kwargs
     }).encode()
-    lmd.invoke(
-        FunctionName=project_deployment,
+    response = lmd.invoke(
+        FunctionName=f'{project_deployment}Server',
         LogType='Tail',
         Payload=payload
     )
+    logs = response.get('LogResult')
+    if logs:
+        # TODO: Move to somewhere better.
+        logs = b64decode(logs)
+        logs = logs.replace(b'\r\xc2\xa0\xc2\xa0', b'\n')
+        print(logs.decode())

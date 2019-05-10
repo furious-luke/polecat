@@ -1,14 +1,15 @@
+from coolname import generate_slug
 from psycopg2.sql import SQL, Identifier
 from termcolor import colored
-from coolname import generate_slug
 
 from ...db.connection import cursor
 from ...utils import capitalize, random_ident
 from ...utils.feedback import feedback
-from .operations import set_parameter, get_parameters_by_path, delete_parameter, get_parameter
 from .exceptions import KnownError
-from .utils import aws_client
+from .operations import (delete_parameter, get_parameter,
+                         get_parameters_by_path, set_parameter)
 from .secret import create_secret
+from .utils import aws_client
 
 
 def get_db_name(project, deployment):
@@ -36,6 +37,10 @@ def get_db_url_components(url):
         'address': url[url.find('@') + 1:url.rfind('/')],
         'db_name': url[url.rfind('/'):]
     }
+
+
+def replace_db_name(url, db_name):
+    return url[url.rfind('/'):] + db_name
 
 
 @feedback
@@ -141,6 +146,12 @@ def create_db(project, deployment, instance_name=None, instance_class='db.t2.mic
                     db_name=Identifier(db_name)
                 )
             )
+        with cursor(replace_db_name(instance_url, db_name)) as curs:
+            # TODO: Allow specification of other extensions.
+            curs.execute((
+                'CREATE EXTENSION IF NOT EXISTS chkpass;'
+                'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
+            ))
         set_parameter(
             f'/polecat/aws/db/instances/{instance_name}/databases/{db_name}/url',
             url

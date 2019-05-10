@@ -13,19 +13,24 @@ class LambdaServer:
         self.project.prepare()
 
     def handle(self, event, context=None):
+        event = LambdaEvent(event)
         loop = asyncio.get_event_loop()
         try:
             result = loop.run_until_complete(
-                self.project.handle_event(LambdaEvent(event))
+                self.project.handle_event(event)
             )
         except HttpQueryError as e:
             result = (
                 {'errors': [e.message]},
                 e.status_code
             )
-        return self.encode_result(result)
+        return self.encode_result(event, result)
 
-    def encode_result(self, result):
+    def encode_result(self, event, result):
+        # TODO: I think separating admin from server makes more sense.
+        # I'll come back here and split this out.
+        if event.is_admin():
+            return result
         body = result[0]
         headers = {}
         content_type = result[2] if len(result) > 2 else None

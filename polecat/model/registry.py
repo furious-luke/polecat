@@ -196,6 +196,7 @@ def make_role_attrs(attrs):
 def make_access_attrs(attrs):
     return {
         'app': None,
+        'all': (),
         'select': (),
         'insert': (),
         'update': (),

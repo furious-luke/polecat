@@ -8,6 +8,5 @@ class Migrate(Command):
         )
 
     def run(self, skip):
-        # from polecat.db.migration import migrate
-        # migrate()
-        print('yooo')
+        from polecat.db.migration import migrate
+        migrate()

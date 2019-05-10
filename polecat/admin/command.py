@@ -4,17 +4,19 @@ from ..cli.feedback import HaloFeedback
 from ..utils.registry import Registry, RegistryMetaclass
 from ..utils.stringcase import snakecase
 
-command_registry = Registry('command')
+command_registry = Registry('command', mapper=lambda x: x.name)
 
 
 class CommandMetaclass(RegistryMetaclass):
     def __init__(cls, name, bases, dct):
+        if bases and name != getattr(cls, '_registry_base', name):
+            command_name = getattr(cls, 'name', snakecase(name))
+            cls.name = command_name
         super().__init__(name, bases, dct)
         if bases and name != getattr(cls, '_registry_base', name):
             from ..cli.admin import admin  # TODO: Ugh.
-            command_name = getattr(cls, 'name', snakecase(name))
             params = list(cls().get_params() or ())
-            command = click.Command(name=command_name, params=params, callback=cls._run)
+            command = click.Command(name=cls.name, params=params, callback=cls._run)
             admin.add_command(command)
 
 
@@ -43,7 +45,7 @@ class Command(metaclass=CommandMetaclass):
         # TODO: Obvs this is too restrictive. We'll need to be able to
         # select the appropriate deployment backend.
         from ..deploy.aws.admin import run_command as aws_run_command
-        aws_run_command(project, deployment, args, kwargs, feedback=HaloFeedback())
+        aws_run_command(project, deployment, cls.name, args, kwargs, feedback=HaloFeedback())
 
     def get_options(cls):
         pass

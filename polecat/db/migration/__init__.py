@@ -1,6 +1,5 @@
 from pathlib import Path
 
-from ...model.registry import model_registry, role_registry
 from ...project.app import app_registry
 from ..decorators import dbcursor
 from .migration import Migration
@@ -15,16 +14,6 @@ def migrate(migration_paths=None, cursor=None):
     migrations = load_migrations(migration_paths)
     for migration in migrations.values():
         migration.forward(migrations, cursor=cursor)
-    # # TODO: Need to execute all migrations instead of this.
-    # schema = Schema.from_models()
-    # migrations = schema.diff()
-    # # TODO: Where the hell to put these...
-    # migrations = [
-    #     CreateExtension('chkpass'),
-    #     *migrations
-    # ]
-    # for mgr in migrations:
-    #     mgr.forward()
 
 
 def load_migrations(migration_paths=None):
@@ -54,6 +43,18 @@ def sync(migration_paths=None, cursor=None):
 
 @dbcursor
 def bootstrap_migrations(cursor):
+    # TODO: This is only for development purposes, and *should* fail
+    # in production as production users shouldn't have superuser
+    # access.
+    try:
+        sql = (
+            'CREATE EXTENSION IF NOT EXISTS chkpass;'
+            'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
+        )
+        cursor.execute(sql)
+    except Exception:
+        # TODO: Reduce this to programming error.
+        pass
     sql = (
         'CREATE TABLE IF NOT EXISTS polecat_migrations ('
         '  id serial primary key,'
@@ -66,6 +67,7 @@ def bootstrap_migrations(cursor):
 
 
 def load_app_migrations(app):
+    print(f'Loading migrations from app {app.name}')
     migrations = {}
     try:
         for path in (app.path / 'migrations').iterdir():
@@ -81,6 +83,7 @@ def load_app_migrations(app):
 
 
 def load_path_migrations(path):
+    print(f'Loading migrations from path {path}')
     migrations = {}
     try:
         for file_path in Path(path).iterdir():

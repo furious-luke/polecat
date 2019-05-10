@@ -28,6 +28,9 @@ class APIGatewayRequest:
                     self.path = '/'
         except KeyError:
             self.is_valid = False
+            self.path = None
+            self.method = None
+            self.headers = {}
 
 
 class LambdaEvent(Event):
@@ -37,3 +40,6 @@ class LambdaEvent(Event):
 
     def is_http(self):
         return self.request.is_valid
+
+    def is_admin(self):
+        return self.event.get('event') == 'admin'

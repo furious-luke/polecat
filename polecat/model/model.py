@@ -34,15 +34,6 @@ class Role(metaclass=RoleMetaclass):
 
 class Access(metaclass=AccessMetaclass):
     pass
-    # def __init__(self, all=None,
-    #              select=None,
-    #              insert=None, update=None,
-    #              delete=None):
-    #     self.all = to_tuple(all)
-    #     self.select = to_tuple(select)
-    #     self.insert = to_tuple(insert)
-    #     self.update = to_tuple(update)
-    #     self.delete = to_tuple(delete)
 
 
 class Query(metaclass=QueryMetaclass):

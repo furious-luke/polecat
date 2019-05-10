@@ -34,6 +34,7 @@ def load_project():
 class Project:
     name = None
     bundle = None
+    default_role = None
 
     def __init__(self, name=None, default_role=None):
         self.name = name or self.name
@@ -41,12 +42,12 @@ class Project:
             self.name = self.__class__.__name__.lower()
             if self.name.endswith('project'):
                 self.name = self.name[:-7]
+        self.default_role = default_role or self.default_role
         self.bucket = os.environ.get('BUCKET')
         self.bundle = os.environ.get('BUNDLE', self.bundle)
         self.bundle_version = os.environ.get('BUNDLE_VERSION')
         self.config = default_config
         self.handlers = []
-        self.default_role = default_role
         global active_project
         active_project = self
 

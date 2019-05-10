@@ -5,8 +5,8 @@ from pathlib import Path
 from psycopg2.sql import SQL
 
 from ...utils import indent
-from ..decorators import dbcursor
 from ..connection import transaction
+from ..decorators import dbcursor
 from .utils import project_migrations_path
 
 migration_template = '''from polecat.db.migration.migration import Migration as BaseMigration
@@ -122,6 +122,9 @@ class Migration:
             file_path.parent.mkdir(parents=True, exist_ok=True)
             with open(file_path, 'w') as f:
                 f.write(self.serialize())
+            file_path = Path(file_path).parent / '__init__.py'
+            if not file_path.exists():
+                file_path.touch()
 
     def serialize(self):
         dep_strs = []

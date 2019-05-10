@@ -71,7 +71,7 @@ base_policy = '''{
             "Action": [
                 "ssm:GetParameter"
             ],
-            "Resource": "arn:aws:ssm:*:*:parameter/polecat/appRegistry"
+            "Resource": "arn:aws:ssm:*:*:parameter/polecat/projectRegistry"
         }
     ]
 }
@@ -148,6 +148,7 @@ administrator_policy = '''{
             "Action": [
                 "ssm:PutParameter",
                 "ssm:DeleteParameter",
+                "ssm:DeleteParameters",
                 "ssm:GetParametersByPath",
                 "ssm:GetParameters",
                 "ssm:GetParameter"
@@ -208,6 +209,7 @@ project_policy = '''{
             "Action": [
                 "ssm:PutParameter",
                 "ssm:DeleteParameter",
+                "ssm:DeleteParameters",
                 "ssm:GetParametersByPath",
                 "ssm:GetParameters",
                 "ssm:GetParameter"
@@ -220,7 +222,7 @@ project_policy = '''{
             "Action": [
                 "ssm:GetParameter"
             ],
-            "Resource": "arn:aws:ssm:*:*:parameter/polecat/appRegistry"
+            "Resource": "arn:aws:ssm:*:*:parameter/polecat/projectRegistry"
         },
         {
             "Sid": "VisualEditor3",

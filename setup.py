@@ -44,7 +44,8 @@ setup(
             'pytest-asyncio==0.10.0',
             'factory-boy==2.11.1',
             'sanic==19.3.1',
-            'boto3==1.9.125'
+            'boto3==1.9.125',
+            'coolname==1.1.0'
         ]
     },
     entry_points={

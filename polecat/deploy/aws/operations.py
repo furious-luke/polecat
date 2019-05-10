@@ -135,7 +135,10 @@ def get_parameters_by_path(path, ssm=None):
 def delete_parameter(key, ssm=None):
     ssm = aws_client('ssm', ssm)
     try:
-        ssm.delete_parameter(Name=key)
+        if isinstance(key, (list, tuple)):
+            ssm.delete_parameters(Names=key)
+        else:
+            ssm.delete_parameter(Name=key)
     except ClientError as e:
         if e.response['Error']['Code'] != 'ParameterNotFound':
             raise

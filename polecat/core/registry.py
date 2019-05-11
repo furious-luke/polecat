@@ -5,6 +5,8 @@ from ..utils import to_class
 from ..utils.container import OptionDict
 from .context import active_context
 
+__all__ = ('RegistryMetaclass', 'Registry', 'MappedRegistry')
+
 active_context()._add_options(('registries', OptionDict()))
 
 

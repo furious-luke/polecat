@@ -2,9 +2,10 @@ from . import to_tuple
 
 
 class OptionDict:
-    def __init__(self):
+    def __init__(self, options=None):
         self.__dict__['_options'] = set()
         self.__dict__['_items'] = {}
+        self._add_options(*(options or ()))
 
     def __getitem__(self, key):
         return self._get(key)
@@ -42,9 +43,13 @@ class OptionDict:
             keys_to_add.add(opt[0])
             if len(opt) == 2:
                 defaults_to_add[opt[0]] = opt[1]
-        self.__dict__['_options'].update(keys_to_add)
-        self.__dict__['_items'].update(defaults_to_add)
+        self._init_defaults(keys_to_add, defaults_to_add)
+        self._options.update(keys_to_add)
+        self._items.update(defaults_to_add)
         return self
+
+    def _init_defaults(self, keys_to_add, defaults_to_add):
+        pass
 
     def _remove_options(self, *options):
         for opt in options:

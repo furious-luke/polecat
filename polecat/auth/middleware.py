@@ -1,10 +1,9 @@
-import os
 import re
 
 from jwt import decode
 
+from ..core.context import active_context
 from ..model.registry import role_registry
-from ..project.exceptions import MissingConfigurationError
 
 __all__ = ('JWTMiddleware', 'RoleMiddleware')
 
@@ -12,18 +11,19 @@ __all__ = ('JWTMiddleware', 'RoleMiddleware')
 class JWTMiddleware:
     bearer_prog = re.compile(r'bearer\s+(\S+)', re.I)
 
-    def run(self, event):
+    @active_context
+    def run(self, event, context):
         claims = None
         jwt = event.request.headers.get('authorization', None)
         if jwt:
             match = self.bearer_prog.match(jwt)
             if match:
                 jwt = match.group(1)
-                try:
-                    secret = os.environ['JWT_SECRET']
-                except KeyError:
-                    raise MissingConfigurationError('JWT_SECRET')
-                claims = decode(jwt, secret, algorithms=('HS256',))
+                claims = decode(
+                    jwt,
+                    context.config.jwt_secret,
+                    algorithms=('HS256',)
+                )
         event.claims = claims
 
 

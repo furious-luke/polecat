@@ -4,6 +4,8 @@ from ..utils.container import OptionDict
 
 global_context = OptionDict()
 
+__all__ = ('active_context',)
+
 
 def active_context(*args):
     global global_context

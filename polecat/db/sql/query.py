@@ -1,6 +1,6 @@
 from psycopg2.sql import SQL, Identifier, Placeholder
 
-from ...project import configuration
+from ...core.context import active_context
 from ...utils import to_class
 from ..connection import cursor as conn_cursor
 from .delete import Delete
@@ -89,7 +89,8 @@ class Query:
         self.is_delete = True
         return self
 
-    def execute(self, session=None, role=None, cursor=None):
+    @active_context
+    def execute(self, session=None, role=None, cursor=None, context=None):
         result = getattr(self, '_result', None)
         if not result:
             # TODO: Don't reconnect everytime, dufus.
@@ -100,18 +101,18 @@ class Query:
                     )
                 if self.is_insert or self.is_update:
                     insert_sql, select_sql = self.evaluate()
-                    if configuration.log_sql:
+                    if context.config.log_sql:
                         print(curs.mogrify(insert_sql[0], insert_sql[1]))
                     curs.execute(*insert_sql)
                     id = curs.fetchone()[0]
-                    if configuration.log_sql:
+                    if context.config.log_sql:
                         print(curs.mogrify(select_sql[0], (id,)))
                     curs.execute(select_sql[0], (id,))
                     result = tuple(map(lambda x: x[0], curs.fetchall()))
                     self.update_model(result)
                 else:
                     sql, args = self.evaluate()
-                    if configuration.log_sql:
+                    if context.config.log_sql:
                         print(curs.mogrify(sql, args))
                     curs.execute(sql, args)
                     if not self.is_delete:

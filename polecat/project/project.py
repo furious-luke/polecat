@@ -8,7 +8,6 @@ from ..admin.commands import *  # noqa
 from ..core.context import active_context
 from ..model.registry import (access_registry, model_registry, role_registry,
                               type_registry)
-from .config import default_config
 from .index import IndexHandler, get_index_html
 
 active_project = None
@@ -35,8 +34,9 @@ class Project:
     name = None
     bundle = None
     default_role = None
+    config = None
 
-    def __init__(self, name=None, default_role=None):
+    def __init__(self, name=None, default_role=None, config=None):
         self.name = name or self.name
         if not self.name:
             self.name = self.__class__.__name__.lower()
@@ -46,8 +46,8 @@ class Project:
         self.bucket = os.environ.get('BUCKET')
         self.bundle = os.environ.get('BUNDLE', self.bundle)
         self.bundle_version = os.environ.get('BUNDLE_VERSION')
-        self.config = default_config
         self.handlers = []
+        self.config = config or self.config or {}
         global active_project
         active_project = self
 
@@ -56,7 +56,13 @@ class Project:
         # TODO: Cache.
         return list(active_context().registries.app_registry)
 
-    def prepare(self):
+    @active_context
+    def prepare(self, context):
+        # TODO: This should be a method on the config, but it would
+        # need to have an underscore prefix, which I'm starting to
+        # hate.
+        for key, value in self.config.items():
+            context.config[key] = value
         self.prepare_apps()
         # TODO: If not in DEBUG mode, validate settings.
         if not len(self.handlers):

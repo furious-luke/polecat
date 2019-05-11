@@ -1,7 +1,8 @@
 from functools import wraps
 
-from ..utils.container import OptionDict
+from ..utils.container import OptionDict, passthrough
 
+OptionDict = passthrough(OptionDict)
 global_context = OptionDict()
 
 __all__ = ('active_context',)

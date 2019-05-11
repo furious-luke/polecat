@@ -2,12 +2,14 @@ import inspect
 from operator import attrgetter
 
 from ..utils import to_class
-from ..utils.container import OptionDict
+from ..utils.container import OptionDict, passthrough
 from .context import active_context
 
 __all__ = ('RegistryMetaclass', 'Registry', 'MappedRegistry')
 
-active_context()._add_options(('registries', OptionDict()))
+active_context().Meta.add_options(
+    ('registries', passthrough(OptionDict)())
+)
 
 
 class RegistryMetaclass(type):
@@ -24,7 +26,7 @@ class Registry:
         self.construct = construct
         self.mapper = mapper or attrgetter('name')
         self.name_map = {}
-        active_context().registries._add_options((self.name, self))
+        active_context().registries.Meta.add_options((self.name, self))
 
     def __iter__(self):
         return self.values.__iter__()

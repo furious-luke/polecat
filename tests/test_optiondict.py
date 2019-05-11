@@ -1,10 +1,12 @@
 import pytest
-from polecat.utils.container import OptionDict
+from polecat.utils.container import OptionDict, passthrough
+
+OptionDict = passthrough(OptionDict)
 
 
 def setup_optiondict():
     od = OptionDict()
-    od._add_options(
+    od.Meta.add_options(
         'no_default',
         ('has_default', 'has_default_value'),
         'very_different'

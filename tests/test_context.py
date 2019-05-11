@@ -1,5 +1,4 @@
-from polecat.core.context import active_context
-from polecat.utils.container import OptionDict
+from polecat.core.context import OptionDict, active_context
 
 
 def test_active_context():

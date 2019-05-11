@@ -5,9 +5,9 @@ from importlib import import_module
 from graphql_server import HttpQueryError
 
 from ..admin.commands import *  # noqa
+from ..core.context import active_context
 from ..model.registry import (access_registry, model_registry, role_registry,
                               type_registry)
-from .app import app_registry
 from .config import default_config
 from .index import IndexHandler, get_index_html
 
@@ -54,7 +54,7 @@ class Project:
     @property
     def apps(self):
         # TODO: Cache.
-        return list(app_registry)
+        return list(active_context().registries.app_registry)
 
     def prepare(self):
         self.prepare_apps()
@@ -76,10 +76,11 @@ class Project:
             handler.prepare()
         self.index_html = self.get_index_html()
 
-    def prepare_apps(self):
+    @active_context
+    def prepare_apps(self, context=None):
         # TODO: This desperately needs to be cleaned up.
         items = []
-        for app in app_registry:
+        for app in context.registries.app_registry:
             items.append(
                 r'\.'.join(app.__module__.split('.')[:-1])
             )
@@ -90,7 +91,7 @@ class Project:
             module_name = r'.'.join(model.__module__.split('.')[:-1])
             match = prog.search(module_name)
             try:
-                app = app_registry[match.lastindex - 1]
+                app = context.registries.app_registry[match.lastindex - 1]
             except AttributeError:
                 # TODO: Should we require apps?
                 # raise Exception(f'model {model.Meta.name} has no app')
@@ -101,7 +102,7 @@ class Project:
             module_name = r'.'.join(type.__module__.split('.')[:-1])
             match = prog.search(module_name)
             try:
-                app = app_registry[match.lastindex - 1]
+                app = context.registries.app_registry[match.lastindex - 1]
             except AttributeError:
                 # TODO: Should we require apps?
                 continue
@@ -111,7 +112,7 @@ class Project:
             module_name = r'.'.join(role.__module__.split('.')[:-1])
             match = prog.search(module_name)
             try:
-                app = app_registry[match.lastindex - 1]
+                app = context.registries.app_registry[match.lastindex - 1]
             except AttributeError:
                 # TODO: Should we require apps?
                 continue
@@ -121,7 +122,7 @@ class Project:
             module_name = r'.'.join(access.__module__.split('.')[:-1])
             match = prog.search(module_name)
             try:
-                app = app_registry[match.lastindex - 1]
+                app = context.registries.app_registry[match.lastindex - 1]
             except AttributeError:
                 # TODO: Should we require apps?
                 continue

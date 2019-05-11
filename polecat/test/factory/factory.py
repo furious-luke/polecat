@@ -1,16 +1,10 @@
 from factory import base
 
+from ...core.context import active_context
 from ...db.sql import Q
 from ...model.field import ReverseField
 from ...model.registry import model_registry
-from .field import factory_field_registry
-
-# class FactoryOptions(base.FactoryOptions):
-#     def contribute_to_class(self, factory, meta=None, base_meta=None,
-#                             base_factory=None, params=None):
-#         super().contribute_to_class(factory, meta=meta, base_meta=base_meta,
-#                                     base_factory=base_factory, params=params)
-#         print('h')
+from .field import *  # noqa
 
 
 class ModelFactory(base.Factory):
@@ -65,5 +59,9 @@ def iter_model_fields(model):
         yield field
 
 
-def create_factory_field(field, factory):
-    return factory_field_registry[field].get_declaration(field, factory)
+@active_context
+def create_factory_field(field, factory, context=None):
+    return (
+        context.registries.factory_field_registry[field]
+        .get_declaration(field, factory)
+    )

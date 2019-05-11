@@ -4,7 +4,6 @@ import pytest
 from polecat.db.migration import bootstrap_migrations, migrate
 from polecat.db.migration.operation import CreateExtension
 from polecat.db.migration.schema import Column, RelatedColumn, Schema, Table
-from polecat.project.app import app_registry
 
 from .models import *  # noqa
 

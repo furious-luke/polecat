@@ -3,10 +3,10 @@ from functools import partial
 from factory import declarations
 from factory.fuzzy import FuzzyInteger, FuzzyText
 
+from ...core.registry import MappedRegistry, RegistryMetaclass
 from ...model import field as mf
-from ...utils.registry import MappedRegistry, RegistryMetaclass
 
-factory_field_registry = MappedRegistry('factory field')
+MappedRegistry('factory_field_registry')
 
 
 class FactoryWrapper(declarations._FactoryWrapper):
@@ -40,7 +40,7 @@ class SubFactory(declarations.SubFactory):
 
 
 class Field(metaclass=RegistryMetaclass):
-    _registry = factory_field_registry
+    _registry = 'factory_field_registry'
     _registry_base = 'Field'
 
     @classmethod

@@ -1,9 +1,9 @@
 from psycopg2.sql import SQL, Identifier
 
+from ...core.context import active_context
 from ...model.field import MutableField, RelatedField
 from ...model.model import Model
 from ...model.registry import access_registry, model_registry, role_registry
-from ...project.app import app_registry
 from ..field import get_db_field
 
 
@@ -249,7 +249,7 @@ class RelatedColumn(Column):
             table = parts[0]
             field = parts[1]
         else:
-            app = app_registry.map[parts[0]]
+            app = active_context().registries.app_registry[parts[0]]
             table = parts[1]
             field = parts[2]
         return (app, table, field)

@@ -3,6 +3,8 @@ import random
 import string
 from pathlib import Path
 
+from .stringcase import snakecase
+
 
 def add_attribute(obj, key, value):
     setattr(obj, key, value)
@@ -30,6 +32,15 @@ def to_tuple(value):
         return ()
     else:
         return (value,)
+
+
+def to_set(value):
+    if isinstance(value, set):
+        return value
+    elif value is None:
+        return set()
+    else:
+        return set(value)
 
 
 def merge(target, source):
@@ -83,3 +94,12 @@ def get_data_dir():
 
 def indent(text, size=4):
     return ('\n' + ' ' * size).join(text.split('\n'))
+
+
+def name_from_class(cls, suffix=None):
+    name = snakecase(to_class(cls).__name__)
+    if suffix:
+        pos = -len(suffix) - 1
+        if name[pos:] == '_' + suffix:
+            name = name[:pos]
+    return name

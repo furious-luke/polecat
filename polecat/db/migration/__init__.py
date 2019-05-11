@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from ...project.app import app_registry
+from ...core.context import active_context
 from ..decorators import dbcursor
 from .migration import Migration
 from .operation import CreateExtension
@@ -16,9 +16,10 @@ def migrate(migration_paths=None, cursor=None):
         migration.forward(migrations, cursor=cursor)
 
 
-def load_migrations(migration_paths=None):
+@active_context
+def load_migrations(migration_paths=None, context=None):
     migrations = {}
-    for app in app_registry:
+    for app in context.registries.app_registry:
         migrations.update(load_app_migrations(app))
     for path in migration_paths or ():
         migrations.update(load_path_migrations(path))
@@ -67,7 +68,6 @@ def bootstrap_migrations(cursor):
 
 
 def load_app_migrations(app):
-    print(f'Loading migrations from app {app.name}')
     migrations = {}
     try:
         for path in (app.path / 'migrations').iterdir():
@@ -83,7 +83,6 @@ def load_app_migrations(app):
 
 
 def load_path_migrations(path):
-    print(f'Loading migrations from path {path}')
     migrations = {}
     try:
         for file_path in Path(path).iterdir():

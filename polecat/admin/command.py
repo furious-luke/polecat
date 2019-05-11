@@ -1,10 +1,10 @@
 import click
 
 from ..cli.feedback import HaloFeedback
-from ..utils.registry import Registry, RegistryMetaclass
+from ..core.registry import Registry, RegistryMetaclass
 from ..utils.stringcase import snakecase
 
-command_registry = Registry('command', mapper=lambda x: x.name)
+Registry('command_registry')
 
 
 class CommandMetaclass(RegistryMetaclass):
@@ -21,7 +21,7 @@ class CommandMetaclass(RegistryMetaclass):
 
 
 class Command(metaclass=CommandMetaclass):
-    _registry = command_registry
+    _registry = 'command_registry'
     _registry_base = 'Command'
     Argument = click.Argument
     Option = click.Option

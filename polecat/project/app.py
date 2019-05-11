@@ -1,13 +1,13 @@
 import inspect
 from pathlib import Path
 
-from ..utils.registry import Registry, RegistryMetaclass
+from ..core.registry import Registry, RegistryMetaclass
 
-app_registry = Registry('app', construct=True, mapper=lambda x: x.name)
+Registry('app_registry', construct=True)
 
 
 class App(metaclass=RegistryMetaclass):
-    _registry = app_registry
+    _registry = 'app_registry'
     _registry_base = 'App'
 
     def __init__(self, *args, **kwargs):

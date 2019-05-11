@@ -1,5 +1,5 @@
+from ..core.context import active_context
 from ..project.handler import Handler
-from .command import command_registry
 
 
 class AdminHandler(Handler):
@@ -7,7 +7,7 @@ class AdminHandler(Handler):
         return event.is_admin()
 
     async def handle_event(self, event):
-        command = command_registry.map[event.event['command']]
+        command = active_context().registries.command_registry[event.event['command']]
         args = event.event['args']
         kwargs = event.event['kwargs']
         command().run(*args, **kwargs)

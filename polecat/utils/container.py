@@ -2,6 +2,9 @@ from . import to_tuple
 
 
 def passthrough(cls):
+    """ Wrap another dictionary-like class to provide direct access to
+    its contents through attribute access.
+    """
     class Wrapper:
         def __init__(self, *args, **kwargs):
             self.__dict__['Meta'] = self.Meta(*args, **kwargs)
@@ -24,10 +27,26 @@ def passthrough(cls):
     return Wrapper
 
 
+class Undefined:
+    pass
+
+
+class Option:
+    def __init__(self, name, type=Undefined, default=Undefined):
+        self.name = name
+        self.default = default
+        self.type = type
+
+
 class OptionDict:
+    """ A dictionary-like class in which all possible options are
+    specified in advance. Allows for acknowledgement of incorrect
+    accesses and suggestions for the correct key.
+    """
     def __init__(self, options=None):
         self.options = set()
         self.items = {}
+        self.types = {}
         self.add_options(*(options or ()))
 
     def __getitem__(self, key):
@@ -48,21 +67,33 @@ class OptionDict:
     def set(self, key, value):
         if key not in self.options:
             raise self.key_error(key)
-        self.items[key] = value
+        self.items[key] = self.coerce(key, value)
+
+    def coerce(self, key, value):
+        if key in self.types:
+            type = self.types[key]
+            if type == bool:
+                if isinstance(value, str):
+                    return not (
+                        not len(value) or value.lower()[0] in ('f', 'n', '0')
+                    )
+            value = type(value)
+        return value
 
     def add_options(self, *options):
         keys_to_add = set()
         defaults_to_add = {}
+        types_to_add = {}
         for opt in options:
-            opt = to_tuple(opt)
-            if len(opt) not in (2, 1):
-                raise ValueError('Invalid tuple size for OptionDict')
-            keys_to_add.add(opt[0])
-            if len(opt) == 2:
-                defaults_to_add[opt[0]] = opt[1]
+            keys_to_add.add(opt.name)
+            if opt.default != Undefined:
+                defaults_to_add[opt.name] = opt.default
+            if opt.type != Undefined:
+                types_to_add[opt.name] = opt.type
         self.init_defaults(keys_to_add, defaults_to_add)
         self.options.update(keys_to_add)
         self.items.update(defaults_to_add)
+        self.types.update(types_to_add)
         return self
 
     def init_defaults(self, keys_to_add, defaults_to_add):

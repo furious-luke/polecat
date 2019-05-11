@@ -1,6 +1,6 @@
 import os
 
-from ..utils.container import OptionDict, passthrough
+from ..utils.container import Option, OptionDict, passthrough
 from .context import active_context
 
 __all__ = ('ConfigDict',)
@@ -20,12 +20,12 @@ class ConfigDict(OptionDict):
 
 
 active_context().Meta.add_options(
-    ('config', passthrough(ConfigDict)(
+    Option('config', default=passthrough(ConfigDict)(
         (
-            ('debug', False),
-            ('log_sql', False),
-            'jwt_secret',
-            'database_url'
+            Option('debug', bool, False),
+            Option('log_sql', bool, False),
+            Option('jwt_secret'),
+            Option('database_url')
         )
     ))
 )

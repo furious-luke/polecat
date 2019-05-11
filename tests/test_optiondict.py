@@ -1,5 +1,5 @@
 import pytest
-from polecat.utils.container import OptionDict, passthrough
+from polecat.utils.container import Option, OptionDict, passthrough
 
 OptionDict = passthrough(OptionDict)
 
@@ -7,9 +7,10 @@ OptionDict = passthrough(OptionDict)
 def setup_optiondict():
     od = OptionDict()
     od.Meta.add_options(
-        'no_default',
-        ('has_default', 'has_default_value'),
-        'very_different'
+        Option('no_default'),
+        Option('has_default', default='has_default_value'),
+        Option('very_different'),
+        Option('a_bool', type=bool, default=False)
     )
     return od
 
@@ -37,3 +38,28 @@ def test_missing_option():
         od.no_default
     with pytest.raises(KeyError):
         od.not_default
+
+
+def test_boolean_option():
+    od = setup_optiondict()
+    assert od.a_bool == False  # noqa
+    od.a_bool = 1
+    assert od.a_bool == True  # noqa
+    od.a_bool = 0
+    assert od.a_bool == False  # noqa
+    od.a_bool = 'yes'
+    assert od.a_bool == True  # noqa
+    od.a_bool = 'no'
+    assert od.a_bool == False  # noqa
+    od.a_bool = 'YES'
+    assert od.a_bool == True  # noqa
+    od.a_bool = 'NO'
+    assert od.a_bool == False  # noqa
+    od.a_bool = 'true'
+    assert od.a_bool == True  # noqa
+    od.a_bool = 'false'
+    assert od.a_bool == False  # noqa
+    od.a_bool = 'y'
+    assert od.a_bool == True  # noqa
+    od.a_bool = ''
+    assert od.a_bool == False  # noqa

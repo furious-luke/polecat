@@ -1,21 +1,23 @@
-import os
 import sys
 
 from halo import Halo
 from termcolor import colored
 
+from ..core.context import active_context
 from ..utils.feedback import Feedback
 
 
 class HaloFeedback(Feedback):
     def __init__(self, message=None):
+        ctx = active_context()
         self.spinner = Halo(text=message or '', spinner='dots')
-        if message and not os.environ.get('POLECAT_DEBUG', False):
+        if message and not ctx.config.debug:
             self.spinner.start()
 
     def update_message(self, message):
         super().update_message(message)
-        if not self.spinner._spinner_id and not os.environ.get('POLECAT_DEBUG', False):
+        ctx = active_context()
+        if not self.spinner._spinner_id and not ctx.config.debug:
             self.spinner.start()
         self.spinner.text = (message + ' ...') if self.message else ''
 

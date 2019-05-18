@@ -1,4 +1,3 @@
-from ..utils import to_tuple
 from .exceptions import InvalidFieldError
 from .registry import (AccessMetaclass, ModelMetaclass, MutationMetaclass,
                        QueryMetaclass, RoleMetaclass, TypeMetaclass)
@@ -7,6 +6,9 @@ from .registry import (AccessMetaclass, ModelMetaclass, MutationMetaclass,
 # TODO: Types and models are soooo similar, perhaps use a better
 # architecture than total separation?
 class Type(metaclass=TypeMetaclass):
+    _registry = 'type_registry'
+    _registry_base = 'Type'
+
     def __init__(self, **kwargs):
         for field_name, value in kwargs.items():
             setattr(self, field_name, value)

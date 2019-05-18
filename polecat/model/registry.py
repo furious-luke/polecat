@@ -1,9 +1,16 @@
+from ..core.registry import Registry, RegistryMetaclass
 from ..utils import add_attribute
 from ..utils.stringcase import camelcase, snakecase
 from .field import Field, IntField
 from .omit import NONE
 
-type_registry = []
+
+def model_registry_name_mapper(registry):
+    return registry.Meta.name
+
+
+Registry('type_registry', name_mapper=model_registry_name_mapper)
+# TODO: Remaining registries.
 model_registry = []
 role_registry = []
 query_registry = []
@@ -12,10 +19,9 @@ access_registry = []
 
 
 # TODO: Too much overlap between types and models.
-class TypeMetaclass(type):
+class TypeMetaclass(RegistryMetaclass):
     def __new__(meta, name, bases, attrs):
-        is_sub = bases and name != 'Type'
-        if is_sub:
+        if not RegistryMetaclass.is_baseclass(name, bases):
             attrs['Meta'] = make_type_meta(
                 name, bases, attrs,
                 attrs.get('Meta')
@@ -27,11 +33,10 @@ class TypeMetaclass(type):
             })
         else:
             cls = super().__new__(meta, name, bases, attrs)
-        if is_sub:
-            type_registry.append(cls)
         return cls
 
     def __init__(cls, name, bases, attrs):
+        super().__init__(name, bases, attrs)
         meta = getattr(cls, 'Meta', None)
         if meta:
             for field in meta.fields.values():

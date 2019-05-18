@@ -6,8 +6,9 @@ from graphql.type import (GraphQLField, GraphQLInputField,
                           GraphQLInputObjectType, GraphQLInt, GraphQLList,
                           GraphQLObjectType, GraphQLSchema, GraphQLString)
 
+from ..core.context import active_context
 from ..model import (Model, model_registry, mutation_registry, omit,
-                     query_registry, type_registry)
+                     query_registry)
 from ..utils import add_attribute, capitalize, uncapitalize
 from ..utils.stringcase import camelcase
 # from .field import *  # noqa
@@ -97,8 +98,9 @@ class SchemaBuilder:
             builder = builder_class(self)
             builder.build(mutation)
 
-    def iter_models(self):
-        for type in type_registry:
+    @active_context
+    def iter_models(self, context=None):
+        for type in context.registries.type_registry:
             if not type.Meta.omit == omit.ALL:
                 yield type
         for model in model_registry:

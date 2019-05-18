@@ -13,18 +13,25 @@ active_context().Meta.add_options(
 
 
 class RegistryMetaclass(type):
+    @classmethod
+    def is_baseclass(cls, name, bases):
+        return not (
+            bases and
+            name != getattr(bases[0], '_registry_base', name)
+        )
+
     def __init__(cls, name, bases, dct):
-        if bases and name != getattr(cls, '_registry_base', name):
+        if not cls.is_baseclass(name, bases):
             active_context().registries[cls._registry].add(cls)
         super().__init__(name, bases, dct)
 
 
 class Registry:
-    def __init__(self, name, construct=False, mapper=None):
+    def __init__(self, name, construct=False, name_mapper=None):
         self.name = name
         self.values = []
         self.construct = construct
-        self.mapper = mapper or attrgetter('name')
+        self.name_mapper = name_mapper or attrgetter('name')
         self.name_map = {}
         active_context().registries.Meta.add_options(
             Option(self.name, default=self)
@@ -43,8 +50,8 @@ class Registry:
         if self.construct:
             value = value()
         self.values.append(value)
-        if self.mapper:
-            self.name_map[self.mapper(value)] = value
+        if self.name_mapper:
+            self.name_map[self.name_mapper(value)] = value
 
 
 class MappedRegistry(Registry):

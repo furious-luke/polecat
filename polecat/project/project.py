@@ -6,8 +6,7 @@ from graphql_server import HttpQueryError
 
 from ..admin.commands import *  # noqa
 from ..core.context import active_context
-from ..model.registry import (access_registry, model_registry, role_registry,
-                              type_registry)
+from ..model.registry import (access_registry, model_registry, role_registry)
 from .index import IndexHandler, get_index_html
 
 active_project = None
@@ -104,7 +103,7 @@ class Project:
                 continue
             app.models.append(model)
             model.Meta.app = app
-        for type in type_registry:
+        for type in context.registries.type_registry:
             module_name = r'.'.join(type.__module__.split('.')[:-1])
             match = prog.search(module_name)
             try:

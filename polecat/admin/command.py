@@ -9,11 +9,11 @@ Registry('command_registry')
 
 class CommandMetaclass(RegistryMetaclass):
     def __init__(cls, name, bases, dct):
-        if bases and name != getattr(cls, '_registry_base', name):
+        if not cls.is_baseclass(name, bases):
             command_name = getattr(cls, 'name', snakecase(name))
             cls.name = command_name
         super().__init__(name, bases, dct)
-        if bases and name != getattr(cls, '_registry_base', name):
+        if not cls.is_baseclass(name, bases):
             from ..cli.admin import admin  # TODO: Ugh.
             params = list(cls().get_params() or ())
             command = click.Command(name=cls.name, params=params, callback=cls._run)

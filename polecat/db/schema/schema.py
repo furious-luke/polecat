@@ -55,7 +55,17 @@ class Table(Queryable):
         try:
             return getattr(self.C, name)
         except AttributeError:
-            raise KeyError(f'Column "{name}" does not exist on table "{self.name}"')
+            raise KeyError(
+                f'Column "{name}" does not exist on table "{self.name}"'
+            )
+
+    def iter_column_names(self):
+        for column in self.columns:
+            yield column.name
+
+    def get_subrelation(self, name):
+        column = self.get_column(name)
+        return column.related_table
 
 
 class Column:

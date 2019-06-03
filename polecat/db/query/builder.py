@@ -77,6 +77,10 @@ class Q:
     def should_branch(self):
         return isinstance(self.queryable, Query)
 
+    def iter_branches(self):
+        for branch in self.branches:
+            yield branch
+
 
 def merge_query_branches(query, branches=None):
     queryable = query.queryable

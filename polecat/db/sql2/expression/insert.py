@@ -13,17 +13,36 @@ class Insert(Expression):
             self.returning += ('id',)
 
     def to_sql(self):
-        column_names_sql, column_values_sql, column_values = self.get_values_sql()
+        # TODO: Generating SQL for inserts could be improved by using
+        # a Values expression instead of this mishmash.
+        if isinstance(self.values, Expression):
+            prefix_sql = SQL('')
+            suffix_sql = SQL('')
+            get_values_func = self.get_values_sql_from_expression
+        else:
+            prefix_sql = SQL('VALUES (')
+            suffix_sql = SQL(')')
+            get_values_func = self.get_values_sql_from_dict
+        column_names_sql, column_values_sql, column_values = get_values_func()
         returning_sql = map(Identifier, self.returning)
-        sql = SQL('INSERT INTO {} ({}) VALUES ({}) RETURNING {}').format(
+        sql = SQL('INSERT INTO {} ({}) {}{}{} RETURNING {}').format(
             Identifier(self.relation.name),
             SQL(', ').join(column_names_sql),
+            prefix_sql,
             SQL(', ').join(column_values_sql),
+            suffix_sql,
             SQL(', ').join(returning_sql)
         )
         return sql, tuple(column_values)
 
-    def get_values_sql(self):
+    def get_values_sql_from_expression(self):
+        column_names_sql = []
+        for column_name in self.values.iter_column_names():
+            column_names_sql.append(Identifier(column_name))
+        column_values_sql, column_values = self.values.to_sql()
+        return column_names_sql, [column_values_sql], column_values
+
+    def get_values_sql_from_dict(self):
         column_names_sql = []
         column_values_sql = []
         column_values = []

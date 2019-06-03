@@ -56,7 +56,7 @@ def test_update_sql(db):
 def test_select_sql(db, factory):
     factory.Movie.create_batch(10)
     sql, args = Q(Movie).select('id', 'title', star=S('id', 'first_name', 'last_name', address=S('id', 'country'))).evaluate()
-    # print(sql.as_string(db))
+    print(sql.as_string(db))
     # db.execute(sql)
     # for row in db.fetchall():
     #     print(row)

@@ -40,6 +40,8 @@ class Select(Query):
 
 
 class Insert(Query):
+    mutatable = False
+
     def __init__(self, source, values, **kwargs):
         super().__init__(source, **kwargs)
         values = self.coerce_values(values)
@@ -94,6 +96,8 @@ class Update(Insert):
 
 
 class Delete(Query):
+    mutatable = False
+
     def __init__(self, source, **kwargs):
         super().__init__(source, **kwargs)
         self.assert_mutatable(source)
@@ -126,6 +130,9 @@ class Values(Query):
     def __init__(self, values, **kwargs):
         super().__init__(**kwargs)
         self.values = values
+
+    def iter_items(self):
+        return self.values.items()
 
     def iter_column_names(self):
         return iter(self.values)

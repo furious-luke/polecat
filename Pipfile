@@ -6,6 +6,7 @@ verify_ssl = true
 [dev-packages]
 aiohttp = "*"
 twine = "*"
+pytest-cov = "*"
 
 [packages]
 ujson = "==1.35"

@@ -6,23 +6,27 @@ from .expression import Expression
 
 
 class Select(Expression):
-    def __init__(self, relation, columns, subqueries=None, joins=None):
+    def __init__(self, relation, columns, subqueries=None, joins=None,
+                 where=None):
         self.relation = relation
         self.columns = columns or ()
         self.subqueries = subqueries or {}
         self.joins = joins or ()
+        self.where = where
 
     def to_sql(self):
         columns_sql = self.get_columns_sql()
         all_subquery_sql, all_subquery_args = self.get_subquery_sql()
         rel_sql, rel_args = self.relation.to_sql()
         joins_sql, joins_args = self.get_all_joins_sql()
-        sql = SQL('SELECT {} FROM {}{}').format(
+        where_sql, where_args = self.get_where_sql()
+        sql = SQL('SELECT {} FROM {}{}{}').format(
             SQL(', ').join(chain(columns_sql, all_subquery_sql)),
             rel_sql,
-            joins_sql
+            joins_sql,
+            where_sql
         )
-        return sql, all_subquery_args + rel_args + joins_args
+        return sql, all_subquery_args + rel_args + joins_args + where_args
 
     def get_subquery_sql(self):
         all_subquery_sql = []
@@ -64,6 +68,13 @@ class Select(Expression):
 
     def get_join_sql(self, join):
         return join.to_sql()
+
+    def get_where_sql(self):
+        if self.where:
+            sql, args = self.where.get_sql(self.relation)
+            return SQL(' WHERE {}').format(sql), args
+        else:
+            return SQL(''), ()
 
     def iter_column_names(self):
         for name in self.columns:

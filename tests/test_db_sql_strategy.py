@@ -140,3 +140,21 @@ def test_multiple_inserts(testdb):
         b' RETURNING "id") INSERT INTO "a_table" ("col1") VALUES (2)'
         b' RETURNING "id"'
     )
+
+
+def test_delete_strategy_unnested(testdb):
+    table = create_table()
+    query = Q(table).delete()
+    strategy = Strategy()
+    expr = strategy.parse(query)
+    sql = testdb.mogrify(*expr.to_sql())
+    assert sql == b'DELETE FROM "a_table"'
+
+
+def test_multiple_deletes(testdb):
+    table = create_table()
+    query = Q(table).delete().delete()
+    strategy = Strategy()
+    expr = strategy.parse(query)
+    sql = testdb.mogrify(*expr.to_sql())
+    assert sql == b'WITH "c0" AS (DELETE FROM "a_table") DELETE FROM "a_table"'

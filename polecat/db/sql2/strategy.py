@@ -1,5 +1,6 @@
 from ..query import Q
 from ..query import query as query_module
+from .delete_strategy import DeleteStrategy
 from .expression.alias import Alias
 from .expression.cte import CTE
 from .insert_strategy import InsertStrategy
@@ -12,6 +13,7 @@ class Strategy:
         self.select_strategy = SelectStrategy(self)
         self.insert_strategy = InsertStrategy(self)
         self.update_strategy = UpdateStrategy(self)
+        self.delete_strategy = DeleteStrategy(self)
 
     def parse(self, queryable_or_builder):
         self.cte = CTE()
@@ -78,7 +80,7 @@ class Strategy:
         return self.update_strategy.parse_query(query)
 
     def create_delete(self, query):
-        pass
+        return self.delete_strategy.parse_query(query)
 
     def parse_chained_relation(self, relation):
         if isinstance(relation, query_module.Insert):

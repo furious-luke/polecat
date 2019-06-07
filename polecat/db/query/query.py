@@ -110,6 +110,8 @@ class Delete(Query):
 
 
 class Filter(Query):
+    mutatable = False
+
     def __init__(self, source, options, **kwargs):
         super().__init__(source, **kwargs)
         self.assert_selectable(source)

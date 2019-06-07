@@ -7,6 +7,10 @@ class Subquery(Expression):
     def __init__(self, expression):
         self.expression = expression
 
+    @property
+    def alias(self):
+        return self.expression.alias
+
     def to_sql(self):
         expr_sql, expr_args = self.expression.to_sql()
         return (

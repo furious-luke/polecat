@@ -12,6 +12,10 @@ class Insert(Expression):
         if 'id' not in self.returning:
             self.returning += ('id',)
 
+    @property
+    def alias(self):
+        return self.relation.alias
+
     def to_sql(self):
         # TODO: Generating SQL for inserts could be improved by using
         # a Values expression instead of this mishmash.

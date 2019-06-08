@@ -16,7 +16,7 @@ class Insert:
         ) = self.get_values_sql(model, selector, nesting)
         cte = CTE(
             SQL('INSERT INTO {} ({}) VALUES {} RETURNING {}').format(
-                Identifier(model.Meta.table),
+                Identifier(model.Meta.table_name),
                 field_names_sql,
                 field_values_sql,
                 returning

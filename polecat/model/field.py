@@ -53,11 +53,11 @@ class EmailField(TextField):
         super().__init__(*args, length=255, **kwargs)
 
 
-class PasswordField(TextField):
+class PhoneField(TextField):
     pass
 
 
-class PhoneField(TextField):
+class PasswordField(TextField):
     pass
 
 

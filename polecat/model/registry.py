@@ -155,7 +155,7 @@ def make_model_meta(name, bases, attrs, meta):
         'options': meta.__dict__ if meta else {},
         'app': None,
         'name': name,
-        'table': snakecase(name),  # TODO
+        'table_name': snakecase(name),  # TODO
         'fields': fields,
         'cc_fields': make_cc_fields(fields),
         'plural': get_plural(name),

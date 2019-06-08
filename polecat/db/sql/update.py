@@ -17,7 +17,7 @@ class Update(Insert):
         ) = self.get_values_sql(model, selector, nesting)
         cte = CTE(
             SQL('UPDATE {} SET ({}) = ROW{} WHERE id = %s RETURNING {}').format(
-                Identifier(model.Meta.table),
+                Identifier(model.Meta.table_name),
                 field_names_sql,
                 field_values_sql,
                 returning

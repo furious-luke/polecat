@@ -76,6 +76,9 @@ class Column:
         self.null = null
         self.primary_key = primary_key
 
+    def __repr__(self):
+        return f'<Column name="{self.name}" type="{self.type}">'
+
     def to_db_value(self, value):
         return value
 
@@ -87,6 +90,9 @@ class RelatedColumn(Column):
     def __init__(self, name, related_table, *args, **kwargs):
         super().__init__(name, DBTYPE_INT, *args, **kwargs)
         self.related_table = related_table
+
+    def __repr__(self):
+        return f'<RelatedColumn name="{self.name}" related_table="{self.related_table.name}">'
 
 
 class ReverseColumn(RelatedColumn):

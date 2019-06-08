@@ -67,7 +67,7 @@ class LateralBackend:
 
     @classmethod
     def evaluate_from_clause(cls, query, cte=None):
-        table = cte.alias if cte else query.model_class.Meta.table
+        table = cte.alias if cte else query.model_class.Meta.table_name
         sql = SQL('FROM {} AS {}').format(
             Identifier(table),
             Identifier(query.table_alias)

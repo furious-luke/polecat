@@ -6,7 +6,7 @@ class Delete:
     def evaluate(self, model):
         return (
             SQL('DELETE FROM {} WHERE id=%s').format(
-                Identifier(model.Meta.table)
+                Identifier(model.Meta.table_name)
             ),
             (model.id,)
         )

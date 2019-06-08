@@ -164,7 +164,7 @@ class RelatedField(IntField):
 
     @property
     def references(self):
-        other_table = self.source.other.Meta.table
+        other_table = self.source.other.Meta.table_name
         result = f'{other_table}.id'
         app = self.source.other.Meta.app
         if app:
@@ -188,7 +188,7 @@ class RelatedField(IntField):
         return value
 
     def get_constraints_sql(self):
-        other_table = self.source.other.Meta.table
+        other_table = self.source.other.Meta.table_name
         return super().get_constraints_sql((
             SQL('REFERENCES {}(id)').format(Identifier(other_table)),
         ))

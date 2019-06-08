@@ -80,7 +80,7 @@ class Table(Entity):
             columns.append(col)
         app = model.Meta.app
         return cls(
-            model.Meta.table,
+            model.Meta.table_name,
             columns,
             checks=model.Meta.checks,
             uniques=model.Meta.uniques,

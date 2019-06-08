@@ -85,13 +85,13 @@ class FilterType:
             field = model.Meta.fields[j]
             # TODO: This is ugly.
             if i == 0:
-                prev_tbl = filter.table_alias or model.Meta.table
+                prev_tbl = filter.table_alias or model.Meta.table_name
             else:
-                prev_tbl = model.Meta.table
+                prev_tbl = model.Meta.table_name
             prev_col = field.name
             # TODO: Handle case of field not being related.
             model = field.other
-            tbl = model.Meta.table
+            tbl = model.Meta.table_name
             # TODO: Use Identifier
             # TODO: PK field other than 'id'.
             next = 'EXISTS (SELECT 1 FROM {} WHERE {} = {} AND %s)'
@@ -122,10 +122,10 @@ class FilterType:
 
     def get_table_column(self, filter):
         model = filter.model
-        table = filter.table_alias or model.Meta.table
+        table = filter.table_alias or model.Meta.table_name
         for j in self.joins:
             model = model.Meta.fields[j].other
-            table = model.Meta.table
+            table = model.Meta.table_name
         return table, self.field
 
     def format(self, format_string, *args):

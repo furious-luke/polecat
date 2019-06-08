@@ -16,4 +16,4 @@ class Selection:
         return bool(self.lookups)
 
     def all_fields(self):
-        return self.fields.union(set(self.lookups.keys()))
+        return self.fields + tuple(self.lookups.keys())

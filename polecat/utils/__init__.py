@@ -34,6 +34,11 @@ def to_tuple(value):
         return (value,)
 
 
+def to_list(value):
+    # TODO: Meh, could be faster.
+    return list(to_tuple(value))
+
+
 def to_set(value):
     if isinstance(value, set):
         return value

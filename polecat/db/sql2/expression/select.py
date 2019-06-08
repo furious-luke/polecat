@@ -6,7 +6,7 @@ from .expression import Expression
 
 
 class Select(Expression):
-    def __init__(self, relation, columns, subqueries=None, joins=None,
+    def __init__(self, relation, columns=None, subqueries=None, joins=None,
                  where=None):
         self.relation = relation
         self.columns = columns or ()
@@ -51,7 +51,7 @@ class Select(Expression):
                 name_ident
             )
             columns_sql.append(sql)
-        return columns_sql
+        return columns_sql or [SQL('*')]
 
     def get_all_joins_sql(self):
         joins_sql = []

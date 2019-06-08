@@ -1,5 +1,5 @@
-from ..query import query as query_module, Q
-
+from ..query import Q
+from ..query import query as query_module
 from .expression.insert import Insert
 from .expression.subquery import Subquery
 
@@ -12,7 +12,8 @@ class InsertStrategy:
     def parse_query(self, query):
         return Insert(
             query.source,
-            self.parse_values_or_subquery(query.values)
+            self.parse_values_or_subquery(query.values),
+            returning=self.root.current_select_columns
         )
 
     def parse_values_or_subquery(self, values_or_subquery):

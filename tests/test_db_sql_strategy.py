@@ -24,10 +24,10 @@ def test_select_strategy_lateral(testdb):
     expr = strategy.parse(query)
     sql = testdb.mogrify(*expr.to_sql())
     assert sql == (
-        b'SELECT "t0"."col1" AS "col1", "t0"."col2" AS "col2", "j1" AS "col3"'
+        b'SELECT "t0"."col1" AS "col1", "t0"."col2" AS "col2", "j0" AS "col3"'
         b' FROM "a_table" AS "t0" LEFT JOIN LATERAL (SELECT "b_table"."col1"'
-        b' AS "col1", "b_table"."col2" AS "col2" FROM "b_table") AS "j1" ON'
-        b' "j1".id = "t0"."col3"'
+        b' AS "col1", "b_table"."col2" AS "col2" FROM "b_table") AS "j0" ON'
+        b' "j0".id = "t0"."col3"'
     )
 
 
@@ -142,6 +142,18 @@ def test_multiple_inserts(testdb):
     )
 
 
+def test_insert_and_select_returning(testdb):
+    table = create_table()
+    query = Q(table).insert(col1=1).select('col1', 'col2')
+    strategy = Strategy()
+    expr = strategy.parse(query)
+    sql = testdb.mogrify(*expr.to_sql())
+    assert sql == (
+        b'WITH "c0" AS (INSERT INTO "a_table" ("col1") VALUES (1) RETURNING'
+        b' "col1", "col2", "id") SELECT "c0"."col1" AS "col1", "c0"."col2" AS "col2" FROM "c0"'
+    )
+
+
 def test_delete_strategy_unnested(testdb):
     table = create_table()
     query = Q(table).delete()
@@ -158,3 +170,24 @@ def test_multiple_deletes(testdb):
     expr = strategy.parse(query)
     sql = testdb.mogrify(*expr.to_sql())
     assert sql == b'WITH "c0" AS (DELETE FROM "a_table") DELETE FROM "a_table"'
+
+
+def test_filter_and_select(testdb):
+    table = create_table()
+    query = Q(table).filter(col2=2).select('col1')
+    strategy = Strategy()
+    expr = strategy.parse(query)
+    sql = testdb.mogrify(*expr.to_sql())
+    assert sql == (
+        b'SELECT "r0"."col1" AS "col1" FROM (SELECT * FROM "a_table" WHERE'
+        b' "a_table"."col2" = 2) AS "r0"'
+    )
+
+
+def test_filter_only(testdb):
+    table = create_table()
+    query = Q(table).filter(col2=2)
+    strategy = Strategy()
+    expr = strategy.parse(query)
+    sql = testdb.mogrify(*expr.to_sql())
+    assert sql == b'SELECT * FROM "a_table" WHERE "a_table"."col2" = 2'

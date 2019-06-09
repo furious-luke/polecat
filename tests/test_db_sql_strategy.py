@@ -31,6 +31,21 @@ def test_select_strategy_lateral(testdb):
     )
 
 
+def test_select_strategy_reverse_lateral(testdb):
+    b_table = create_table('b_table')
+    create_table('a_table', related_table=b_table)
+    query = Q(b_table).select('col1', 'col2', a_tables=S('col1', 'col2'))
+    strategy = Strategy()
+    expr = strategy.parse(query)
+    sql = testdb.mogrify(*expr.to_sql())
+    assert sql == (
+        b'SELECT "t0"."col1" AS "col1", "t0"."col2" AS "col2", "j0" AS'
+        b' "a_tables" FROM "b_table" AS "t0" LEFT JOIN LATERAL (SELECT'
+        b' "a_table"."col1" AS "col1", "a_table"."col2" AS "col2" FROM'
+        b' "a_table") AS "j0" ON "t0".id = "j0"."col3"'
+    )
+
+
 def test_select_strategy_detached(testdb):
     a_table = create_table('a_table')
     b_table = create_table('b_table')

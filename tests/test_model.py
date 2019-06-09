@@ -1,3 +1,4 @@
+from polecat.db.schema import Table
 from polecat.model.db.helpers import model_to_table
 
 from .models import Actor, Address
@@ -39,10 +40,14 @@ def test_construct_reverse():
 
 
 def test_model_to_table():
-    table = model_to_table(Actor)
-    assert table.C.id is not None
-    assert table.C.first_name is not None
-    assert table.C.last_name is not None
-    assert table.C.age is not None
-    assert table.C.address is not None
-    assert table.C.user is not None
+    actor_table = model_to_table(Actor)
+    address_table = Table.registry['address']
+    assert actor_table.C.id is not None
+    assert actor_table.C.first_name is not None
+    assert actor_table.C.last_name is not None
+    assert actor_table.C.age is not None
+    assert actor_table.C.address is not None
+    assert actor_table.C.user is not None
+    assert address_table.C.id is not None
+    assert address_table.C.country is not None
+    assert address_table.C.actors_by_address is not None

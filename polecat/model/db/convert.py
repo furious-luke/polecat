@@ -73,6 +73,7 @@ def convert_relatedfield(field):
     return RelatedColumn(
         field.name,
         model_to_table(field.other),
+        related_column=field.related_name,
         unique=field.unique,
         null=field.null,
         primary_key=field.primary_key

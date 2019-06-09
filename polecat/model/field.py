@@ -134,6 +134,9 @@ class RelatedField(MutableField):
             field.cc_name = camelcase(related_name)
             self.other.Meta.fields[field.name] = field  # TODO: Ugh.
             self.other.Meta.cc_fields[field.cc_name] = field
+            # TODO: Potentially information losing: now we don't know
+            # that Auto was originally set.
+            self.related_name = related_name
 
     def make_related_name(self, related_name, from_model, to_model):
         if related_name == Auto:

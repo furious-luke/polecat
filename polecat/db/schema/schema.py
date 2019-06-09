@@ -2,12 +2,14 @@ from psycopg2.sql import Identifier
 
 from ..query.query import Queryable
 
-__all__ = ('Table', 'Column', 'RelatedColumn')
+__all__ = ('Table', 'Column', 'RelatedColumn', 'ReverseColumn')
 
 DBTYPE_INT = 'int'
 
 
 class Table(Queryable):
+    registry = {}
+
     def __init__(self, name, columns=None, checks=None, uniques=None,
                  access=None):
         # TODO: Unknown-unknown; cannot rename "name" or
@@ -20,10 +22,15 @@ class Table(Queryable):
         self.uniques = uniques or []
         self.access = access
         self.C = type('Columns', (), {})  # TODO
-        self.build()
+        self.registry[self.name] = self
 
     def __repr__(self):
         return f'<Table name="{self.name}">'
+
+    @classmethod
+    def bind_all_tables(cls):
+        for table in cls.registry.values():
+            table.bind_all_columns()
 
     # TODO: This is for making SQL expressions. It would be nice to
     # not have this here, as it's bleeding information between
@@ -32,21 +39,23 @@ class Table(Queryable):
     def alias(self):
         return self.name
 
+    def add_column(self, column):
+        self.columns.append(column)
+        self.bind_column(column)
+
     # TODO: This is for making SQL expressions. It would be nice to
     # not have this here, as it's bleeding information between
     # abstractions.
     def to_sql(self):
         return Identifier(self.name), ()
 
-    def build(self):
-        self.build_all_columns()
-
-    def build_all_columns(self):
+    def bind_all_columns(self):
         for column in self.columns:
-            self.build_column(column)
+            self.bind_column(column)
 
-    def build_column(self, column):
+    def bind_column(self, column):
         setattr(self.C, column.name, column)
+        column.bind(self)
 
     def has_column(self, name):
         return hasattr(self.C, name)
@@ -79,6 +88,9 @@ class Column:
     def __repr__(self):
         return f'<Column name="{self.name}" type="{self.type}">'
 
+    def bind(self, table):
+        pass
+
     def to_db_value(self, value):
         return value
 
@@ -87,13 +99,53 @@ class Column:
 
 
 class RelatedColumn(Column):
-    def __init__(self, name, related_table, *args, **kwargs):
+    def __init__(self, name, related_table, *args, related_column=None,
+                 **kwargs):
         super().__init__(name, DBTYPE_INT, *args, **kwargs)
         self.related_table = related_table
+        self.related_column = related_column
 
     def __repr__(self):
-        return f'<RelatedColumn name="{self.name}" related_table="{self.related_table.name}">'
+        return (
+            f'<RelatedColumn name="{self.name}"'
+            ' related_table="{self.related_table.name}">'
+        )
+
+    def bind(self, table):
+        if self.should_bind_related_table():
+            self.bind_related_table()
+        if self.should_bind_related_column():
+            self.bind_related_column(table)
+
+    def should_bind_related_table(self):
+        return isinstance(self.related_table, str)
+
+    def bind_related_table(self):
+        self.related_table = Table.registry[self.related_table]
+
+    def should_bind_related_column(self):
+        return self.related_column and isinstance(self.related_column, str)
+
+    def bind_related_column(self, table):
+        self.related_column = ReverseColumn(
+            self.related_column,
+            table,
+            self
+        )
+        self.related_table.add_column(self.related_column)
 
 
-class ReverseColumn(RelatedColumn):
-    pass
+class ReverseColumn:
+    def __init__(self, name, related_table, related_column):
+        self.name = name
+        self.related_table = related_table
+        self.related_column = related_column
+
+    def __repr__(self):
+        return (
+            f'<ReverseColumn name="{self.name}"'
+            f' related_table="{self.related_table.name}">'
+        )
+
+    def bind(self, table):
+        pass

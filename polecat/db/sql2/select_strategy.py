@@ -1,6 +1,7 @@
 from psycopg2.sql import SQL, Identifier
 
 from ..query.selection import Selection
+from ..schema import ReverseColumn
 from .expression.alias import Alias
 from .expression.as_ import As
 from .expression.join import LateralJoin
@@ -71,14 +72,24 @@ class SelectStrategy:
         )
 
     def create_lateral_condition(self, relation, lateral_alias, column_name):
-        # TODO: This might be the only wart in this whole system.
-        return RawSQL(
-            SQL('{}.id = {}.{}').format(
-                Identifier(lateral_alias),
-                Identifier(relation.alias),
-                Identifier(column_name)
+        # TODO: Replace this with something other than a raw sql string.
+        column = relation.get_column(column_name)
+        if isinstance(column, ReverseColumn):
+            return RawSQL(
+                SQL('{}.id = {}.{}').format(
+                    Identifier(relation.alias),
+                    Identifier(lateral_alias),
+                    Identifier(column.related_column.name)
+                )
             )
-        )
+        else:
+            return RawSQL(
+                SQL('{}.id = {}.{}').format(
+                    Identifier(lateral_alias),
+                    Identifier(relation.alias),
+                    Identifier(column_name)
+                )
+            )
 
     def create_detached_subquery(self, subquery):
         return Subquery(self.root.parse_queryable_or_builder(subquery))

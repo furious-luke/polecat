@@ -8,4 +8,5 @@ def model_to_table(model):
         builder = TableBuilder()
         table = builder.build(model)
         model.Meta.table = table
+        table.bind_all_columns()
     return table

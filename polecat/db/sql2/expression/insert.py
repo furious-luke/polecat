@@ -70,6 +70,13 @@ class Insert(Expression):
         # TODO: This should be filtered by "returning".
         return self.relation.get_column(name)
 
+    def has_column(self, name):
+        # TODO: Also bad design, but also what's the difference
+        # between this and the above? Looks like the above just does
+        # 'this.related_table'.
+        # TODO: This should be filtered by "returning".
+        return self.relation.has_column(name)
+
     def push_selection(self, selection=None):
         if selection:
             # TODO: Efficiency.

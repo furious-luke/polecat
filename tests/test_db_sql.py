@@ -49,42 +49,60 @@ def test_insert_and_select(db, factory):
         Q(movie)
         .insert()
         .select('title', star=S('first_name', 'last_name'))
-        .execute()
+        .into(movie)
     )
-    # assert getattr(inst, 'id', None) is None
-    # result = Q(inst).insert().execute()
-    # assert inst.id is not None
+    assert getattr(movie, 'id', None) is None
 
 
 def test_update_sql(db):
     inst = Address(country='AU')
-    Q(inst).insert().execute()
+    Q(inst).insert().into(inst)
     init_id = inst.id
-    inst.country = 'NZ'
-    Q(inst).update().execute()
+    (
+        Q(inst)
+        .update(country='NZ')
+        .select('country')
+        .into(inst)
+    )
     assert inst.id == init_id
     assert inst.country == 'NZ'
 
 
 def test_select_sql(db, factory):
     factory.Movie.create_batch(10)
-    sql, args = Q(Movie).select('id', 'title', star=S('id', 'first_name', 'last_name', address=S('id', 'country'))).evaluate()
-    print(sql.as_string(db))
-    # db.execute(sql)
-    # for row in db.fetchall():
-    #     print(row)
+    (
+        Q(Movie)
+        .select(
+            'id',
+            'title',
+            star=S(
+                'id',
+                'first_name',
+                'last_name',
+                address=S('id', 'country')
+            )
+        )
+        .execute()
+    )
 
 
 def test_get_sql(db, factory):
     factory.Movie.create_batch(2)
-    sql, args = Q(Movie).get(star__id=1).select('id', 'title').evaluate()
-    # print(sql.as_string(db))
+    (
+        Q(Movie)
+        .get(star__id=1)
+        .select('id', 'title')
+        .evaluate()
+    )
 
 
 def test_delete_sql(db, factory):
     movie = factory.Movie.create()
-    sql, args = Q(movie).delete().evaluate()
-    # print(sql.as_string(db))
+    (
+        Q(movie)
+        .delete()
+        .execute()
+    )
 
 
 def test_delete(db, factory):

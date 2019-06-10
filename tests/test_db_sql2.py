@@ -79,8 +79,8 @@ def test_update_expression(testdb):
     )
     sql = testdb.mogrify(*expr.to_sql())
     assert sql == (
-        b'UPDATE "a_table" SET ("col1", "col3") = (1, (UPDATE "b_table" SET'
-        b' ("col2") = (2) RETURNING "id")) RETURNING "col1", "col3", "id"'
+        b'UPDATE "a_table" SET ("col1", "col3") = ROW (1, (UPDATE "b_table" SET'
+        b' ("col2") = ROW (2) RETURNING "id")) RETURNING "col1", "col3", "id"'
     )
 
 

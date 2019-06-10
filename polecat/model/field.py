@@ -183,7 +183,10 @@ class RelatedField(MutableField):
     def to_outgoing(self, instance, value):
         from .model import Model
         if isinstance(value, Model):
-            value = self._model_to_dict(value)
+            if getattr(value, 'id', None) is not None:
+                value = value.id
+            else:
+                value = self._model_to_dict(value)
         return value
 
     def _model_to_dict(self, model):

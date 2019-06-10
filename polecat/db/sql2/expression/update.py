@@ -15,7 +15,7 @@ class Update(Insert):
             suffix_sql = SQL('')
             get_values_func = self.get_values_sql_from_expression
         else:
-            prefix_sql = SQL('(')
+            prefix_sql = SQL('ROW (')
             suffix_sql = SQL(')')
             get_values_func = self.get_values_sql_from_dict
         column_names_sql, column_values_sql, column_values = get_values_func()

@@ -83,6 +83,10 @@ class Insert(Query):
     def subvalues_to_subquery(self, column, subvalues):
         if isinstance(subvalues, Query):
             return subvalues
+        # TODO: Ugh, this is soooo bad. This is how I'm currently
+        # handing being given an integer for the primary key.
+        if isinstance(subvalues, int):
+            return subvalues
         # TODO: Should we be considering if there's an ID in the
         # subset? If so this should be an Update instead of a Insert.
         return Select(

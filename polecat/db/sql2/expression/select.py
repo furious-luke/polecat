@@ -83,9 +83,17 @@ class Select(Expression):
             yield name
 
     def push_selection(self, selection=None):
-        # TODO: Efficiency.
+        from ...schema import ReverseColumn
+        # TODO: Efficiency. Everything.
         for column_name in selection or ():
             if column_name not in self.columns and column_name not in self.subqueries:
                 self.columns += (column_name,)
-        to_push = self.columns + tuple(self.subqueries.keys())
+        to_push = self.columns
+        for column_name in self.subqueries.keys():
+            try:
+                column = self.relation.get_column(column_name)
+            except KeyError:
+                continue
+            if not isinstance(column, ReverseColumn):
+                to_push += (column_name,)
         self.relation.push_selection(to_push)

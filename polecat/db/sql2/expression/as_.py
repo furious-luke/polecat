@@ -32,5 +32,11 @@ class As(Expression):
         # 'this.related_table'.
         return self.expression.get_column(name)
 
+    def has_column(self, name):
+        # TODO: Also bad design, but also what's the difference
+        # between this and the above? Looks like the above just does
+        # 'this.related_table'.
+        return self.expression.has_column(name)
+
     def push_selection(self, selection=None):
         self.expression.push_selection(selection)

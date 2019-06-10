@@ -20,12 +20,11 @@ def test_select_strategy_lateral(testdb):
     query = Q(a_table).select('col1', 'col2', col3=S('col1', 'col2'))
     sql = query.to_sql()
     assert sql == (
-        b'SELECT row_to_json(__tl) FROM ('
-        b'SELECT "t0"."col1" AS "col1", "t0"."col2" AS "col2", "j0" AS "col3"'
-        b' FROM "a_table" AS "t0" LEFT JOIN LATERAL (SELECT "b_table"."col1"'
-        b' AS "col1", "b_table"."col2" AS "col2" FROM "b_table") AS "j0" ON'
-        b' "j0".id = "t0"."col3"'
-        b') AS __tl'
+        b'SELECT row_to_json(__tl) FROM (SELECT "t0"."col1" AS "col1",'
+        b' "t0"."col2" AS "col2", "j0" AS "col3" FROM "a_table" AS "t0"'
+        b' LEFT JOIN LATERAL (SELECT "b_table"."col1" AS "col1",'
+        b' "b_table"."col2" AS "col2" FROM "b_table" WHERE "b_table"."id"'
+        b' = "t0"."col3") AS "j0" ON TRUE) AS __tl'
     )
 
 
@@ -171,8 +170,8 @@ def test_update_strategy_with_nesting(testdb):
     )
     sql = query.to_sql()
     assert sql == (
-        b'WITH "c0" AS (UPDATE "b_table" SET ("col2") = (2) RETURNING "id"),'
-        b' "c1" AS (UPDATE "a_table" SET ("col1", "col3") = (1, (SELECT'
+        b'WITH "c0" AS (UPDATE "b_table" SET ("col2") = ROW (2) RETURNING "id"),'
+        b' "c1" AS (UPDATE "a_table" SET ("col1", "col3") = ROW (1, (SELECT'
         b' "c0"."id" AS "id" FROM "c0")) RETURNING "id") SELECT'
         b' row_to_json(__tl) FROM (SELECT * FROM "c1") AS __tl'
     )

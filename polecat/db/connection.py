@@ -36,7 +36,6 @@ def cursor(url=None, cursor=None, **kwargs):
                 curs.close()
 
 
-
 @contextmanager
 def transaction(cursor):
     cursor.execute('BEGIN')

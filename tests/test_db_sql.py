@@ -90,9 +90,9 @@ def test_get_sql(db, factory):
     factory.Movie.create_batch(2)
     (
         Q(Movie)
-        .get(star__id=1)
+        .filter(star__id=1)
         .select('id', 'title')
-        .evaluate()
+        .execute()
     )
 
 
@@ -107,15 +107,39 @@ def test_delete_sql(db, factory):
 
 def test_delete(db, factory):
     movie = factory.Movie.create()
-    result = Q(movie).get(id=movie.id).execute()
-    assert result is not None
-    Q(movie).delete().execute()
-    result = Q(movie).get(id=movie.id).execute()
-    assert result is None
+    result = (
+        Q(movie)
+        .filter(id=movie.id)
+    )
+    result = [r for r in result]
+    assert len(result) == 1
+    (
+        Q(movie)
+        .delete()
+        .execute()
+    )
+    result = (
+        Q(movie)
+        .filter(id=movie.id)
+    )
+    result = [r for r in result]
+    assert len(result) == 0
 
 
 def test_set_role(db):
     with pytest.raises(ProgrammingError):
-        Q(Address).select('id').execute(role=DefaultRole)
-    Q(Address).select('id').execute()
-    Q(Address).select('id').execute(role=UserRole)
+        (
+            Q(Address, role=DefaultRole)
+            .select('id')
+            .execute()
+        )
+    (
+        Q(Address)
+        .select('id')
+        .execute()
+    )
+    (
+        Q(Address, role=UserRole)
+        .select('id')
+        .execute()
+    )

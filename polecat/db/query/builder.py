@@ -1,3 +1,5 @@
+from psycopg2.sql import SQL, Identifier
+
 from ..connection import cursor as cursor_context  # TODO: Ugh.
 from ..decorators import dbcursor
 from .query import Common, Delete, Filter, Insert, Query, Select, Update
@@ -5,12 +7,13 @@ from .selection import Selection
 
 
 class Q:
-    def __init__(self, queryable, branches=None):
+    def __init__(self, queryable, branches=None, role=None):
         self.queryable = queryable
         self.branches = branches or []
+        self.role = role
 
     def __iter__(self):
-        with cursor_context() as cursor:
+        with cursor_context(autocommit=False) as cursor:
             self.execute(cursor=cursor)
             for row in cursor:
                 yield row
@@ -28,7 +31,7 @@ class Q:
         expr = strategy.parse(self)
         return cursor.mogrify(*expr.to_sql())
 
-    @dbcursor
+    @dbcursor(autocommit=False)
     def execute(self, cursor):
         # TODO: This is pretty bad. How to keep this purely as a
         # builder, but also inject strategy and execution knowledge
@@ -37,7 +40,15 @@ class Q:
         strategy = Strategy()
         expr = strategy.parse(self)
         sql, args = expr.to_sql()
+        if self.role:
+            cursor.execute(SQL('SET LOCAL ROLE {}').format(
+                Identifier(self.role.Meta.role))
+            )
         cursor.execute(sql, args)
+        # TODO: This is strange. For some reason I need to commit
+        # the outcome of the query here. If I don't, then the
+        # changes are somehow lost.
+        cursor.connection.commit()
 
     def select(self, *args, **kwargs):
         return self.chain(
@@ -128,7 +139,7 @@ class Q:
             yield branch
 
     def chain(self, queryable):
-        return self.__class__(queryable, self.branches)
+        return self.__class__(queryable, self.branches, role=self.role)
 
     def merge_query_branches(self, query):
         queryable = query.queryable

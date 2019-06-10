@@ -37,6 +37,7 @@ class Q:
         strategy = Strategy()
         expr = strategy.parse(self)
         sql, args = expr.to_sql()
+        print(cursor.mogrify(sql, args))
         cursor.execute(sql, args)
 
     def select(self, *args, **kwargs):
@@ -102,8 +103,11 @@ class Q:
             if isinstance(value, Q):
                 queryable = self.merge_query_branches(value)
                 value = queryable
-            parsed_values[column_name] = value
+            parsed_values[column_name] = self.parse_value(queryable, column_name, value)
         return parsed_values
+
+    def parse_value(self, queryable, column_name, value):
+        return value
 
     def get_mutation_source(self):
         if self.queryable.mutatable:

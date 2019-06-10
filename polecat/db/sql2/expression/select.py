@@ -85,6 +85,7 @@ class Select(Expression):
     def push_selection(self, selection=None):
         # TODO: Efficiency.
         for column_name in selection or ():
-            if column_name not in self.columns:
+            if column_name not in self.columns and column_name not in self.subqueries:
                 self.columns += (column_name,)
-        self.relation.push_selection(self.columns)
+        to_push = self.columns + tuple(self.subqueries.keys())
+        self.relation.push_selection(to_push)

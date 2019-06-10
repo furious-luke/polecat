@@ -180,6 +180,26 @@ class RelatedField(MutableField):
             except TypeError:
                 raise InvalidModelDataError(self.other, value)
 
+    def to_outgoing(self, instance, value):
+        from .model import Model
+        if isinstance(value, Model):
+            value = self._model_to_dict(value)
+        return value
+
+    def _model_to_dict(self, model):
+        # TODO: Ugh, no. Must fix.
+        values = {}
+        for field_name, field in model.Meta.fields.items():
+            if not hasattr(model, field_name):
+                continue
+            if field_name == self.related_name:
+                continue
+            values[field_name] = field.to_outgoing(
+                model,
+                getattr(model, field_name)
+            )
+        return values
+
 
 class ComputedField(Field):
     def __init__(self, function, *args, **kwargs):

@@ -77,6 +77,13 @@ class SelectStrategy:
                     Identifier(relation.alias)
                 )
             })
+        else:
+            subquery.where = Where(**{
+                'id': SQL('{}.{}').format(
+                    Identifier(relation.alias),
+                    Identifier(column_name)
+                )
+            })
 
     def create_lateral_condition(self, relation, lateral_alias, column_name):
         # TODO: Replace this with something other than a raw sql string.
@@ -90,13 +97,14 @@ class SelectStrategy:
             #     )
             # )
         else:
-            return RawSQL(
-                SQL('{}.id = {}.{}').format(
-                    Identifier(lateral_alias),
-                    Identifier(relation.alias),
-                    Identifier(column_name)
-                )
-            )
+            return RawSQL(SQL('TRUE'))
+            # return RawSQL(
+            #     SQL('{}.id = {}.{}').format(
+            #         Identifier(lateral_alias),
+            #         Identifier(relation.alias),
+            #         Identifier(column_name)
+            #     )
+            # )
 
     def create_detached_subquery(self, subquery):
         return Subquery(self.root.parse_queryable_or_builder(subquery))

@@ -81,3 +81,10 @@ class Select(Expression):
             yield name
         for name in self.subqueries.keys():
             yield name
+
+    def push_selection(self, selection=None):
+        # TODO: Efficiency.
+        for column_name in selection or ():
+            if column_name not in self.columns:
+                self.columns += (column_name,)
+        self.relation.push_selection(self.columns)

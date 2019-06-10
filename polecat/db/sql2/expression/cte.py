@@ -54,6 +54,11 @@ class CTE(Expression):
             common_args += args
         return common_sql, common_args
 
+    def iter_expressions(self):
+        for expr in self.common_expressions:
+            yield expr
+        yield self.expression
+
 
 class CTEAs(As):
     def get_as_sql(self, expression_sql):

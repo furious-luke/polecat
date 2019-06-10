@@ -31,3 +31,6 @@ class Delete(Expression):
             return self.where.get_sql()
         else:
             return SQL(''), ()
+
+    def push_selection(self, selection=None):
+        pass

@@ -196,7 +196,7 @@ def test_insert_and_select_returning(testdb):
     sql = query.to_sql()
     assert sql == (
         b'WITH "c0" AS (INSERT INTO "a_table" ("col1") VALUES (1) RETURNING'
-        b' "col1", "col2", "id") SELECT row_to_json(__tl) FROM (SELECT'
+        b' "id", "col1", "col2") SELECT row_to_json(__tl) FROM (SELECT'
         b' "c0"."col1" AS "col1", "c0"."col2" AS "col2" FROM "c0") AS __tl'
     )
 
@@ -220,10 +220,9 @@ def test_filter_and_select(testdb):
     query = Q(table).filter(col2=2).select('col1')
     sql = query.to_sql()
     assert sql == (
-        b'SELECT row_to_json(__tl) FROM ('
-        b'SELECT "r0"."col1" AS "col1" FROM ('
-        b'SELECT * FROM "a_table" WHERE "a_table"."col2" = 2) AS "r0"'
-        b') AS __tl'
+        b'SELECT row_to_json(__tl) FROM (SELECT "r0"."col1" AS "col1" FROM'
+        b' (SELECT "a_table"."col1" AS "col1" FROM "a_table" WHERE'
+        b' "a_table"."col2" = 2) AS "r0") AS __tl'
     )
 
 

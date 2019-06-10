@@ -76,6 +76,9 @@ class Table:
         column = self.get_column(name)
         return column.related_table
 
+    def push_selection(self, selection=None):
+        pass
+
 
 class Column:
     def __init__(self, name, type, unique=False, null=True, primary_key=False):

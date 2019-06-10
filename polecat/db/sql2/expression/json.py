@@ -12,3 +12,6 @@ class JSON(Expression):
         return SQL('SELECT row_to_json(__tl) FROM {} AS __tl').format(
             sql
         ), args
+
+    def push_selection(self, selection=None):
+        self.expression.push_selection(selection)

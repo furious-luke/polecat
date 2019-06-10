@@ -1,4 +1,3 @@
-from ...utils import to_list
 from ..query import Q
 from ..query import query as query_module
 from .delete_strategy import DeleteStrategy
@@ -28,6 +27,7 @@ class Strategy:
         expr = self.parse_queryable_or_builder(queryable_or_builder)
         expr = self.wrap_final_expression(expr)
         self.cte.set_final_expression(expr)
+        self.push_selection_to_relations()
         return self.cte
 
     def parse_queryable_or_builder(self, queryable_or_builder):
@@ -39,11 +39,9 @@ class Strategy:
     def parse_builder(self, builder):
         for branch in builder.iter_branches():
             self.parse_query_branch(branch)
-        self.current_select_columns = []
         return self.create_expression_from_query(builder.queryable)
 
     def parse_query_branch(self, query):
-        self.current_select_columns = []
         alias = self.get_or_create_query_alias(query)
         return alias
 
@@ -117,7 +115,7 @@ class Strategy:
 
     def parse_chained_relation(self, relation):
         # TODO: I'm not too happy about the type conditional here.
-        if isinstance(relation, query_module.Insert):
+        if isinstance(relation, (query_module.Insert, query_module.Update)):
             return self.get_or_create_query_alias(relation)
         elif isinstance(relation, query_module.Filter):
             counter = self.chained_relation_counter
@@ -131,9 +129,6 @@ class Strategy:
         else:
             return relation
 
-    def add_select_columns(self, column_names):
-        self.current_select_columns.extend(to_list(column_names))
-
     def wrap_final_expression(self, expression):
         if isinstance(expression, Select):
             expression = JSON(Subquery(expression))
@@ -142,3 +137,7 @@ class Strategy:
         elif expression.returning:
             expression = JSON(Subquery(Select(Alias(self.cte.append(expression)))))
         return expression
+
+    def push_selection_to_relations(self):
+        for expr in self.cte.iter_expressions():
+            expr.push_selection()

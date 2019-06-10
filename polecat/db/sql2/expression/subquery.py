@@ -27,3 +27,6 @@ class Subquery(Expression):
         # TODO: This feels like bad design. Not sure how to correct
         # just at the moment, and at least it's clear what it's doing.
         return iter(self.expression.iter_column_names())
+
+    def push_selection(self, selection=None):
+        self.expression.push_selection(selection)

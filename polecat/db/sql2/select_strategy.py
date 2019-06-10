@@ -24,16 +24,12 @@ class SelectStrategy:
         )
 
     def parse_query_from_components(self, relation, selection):
-        self.add_select_columns_to_root(selection)
         relation = self.parse_relation(relation)
         if selection.has_lookups():
             relation = self.create_alias_for_relation(relation)
         columns = selection.fields
         subqueries, joins = self.create_subqueries(relation, selection)
         return Select(relation, columns, subqueries, joins)
-
-    def add_select_columns_to_root(self, selection):
-        self.root.add_select_columns(selection.all_fields())
 
     def parse_relation(self, relation):
         return self.root.parse_chained_relation(relation)

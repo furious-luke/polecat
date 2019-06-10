@@ -33,3 +33,6 @@ class Alias(Expression):
         # between this and the above? Looks like the above just does
         # 'this.related_table'.
         return self.expression.get_column(name)
+
+    def push_selection(self, selection=None):
+        self.expression.push_selection(selection)

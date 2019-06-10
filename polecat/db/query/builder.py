@@ -37,7 +37,6 @@ class Q:
         strategy = Strategy()
         expr = strategy.parse(self)
         sql, args = expr.to_sql()
-        print(cursor.mogrify(sql, args))
         cursor.execute(sql, args)
 
     def select(self, *args, **kwargs):

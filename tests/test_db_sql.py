@@ -30,6 +30,7 @@ def test_insert_reverse_sql(db):
         Q(inst)
         .insert()
         .select(
+            'id',
             'country',
             actors_by_address=S('first_name')
         )
@@ -38,7 +39,7 @@ def test_insert_reverse_sql(db):
     assert inst.id is not None
     assert len(inst.actors_by_address) == 2
     for actor in inst.actors_by_address:
-        assert actor['first_name'] is not None
+        assert actor.first_name is not None
 
 
 def test_insert_and_select(db, factory):

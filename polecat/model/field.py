@@ -28,6 +28,9 @@ class Field:
     def from_incoming(self, instance, value):
         return value
 
+    def to_outgoing(self, instance, value):
+        return value
+
 
 class MutableField(Field):
     def __init__(self, *args, null=True, unique=False, default=None,
@@ -102,6 +105,26 @@ class ReverseField(Field):
             self.other(**{self.related_name: instance, **v})
             for v in value
         ]
+
+    def to_outgoing(self, instance, value):
+        return [
+            self._model_to_dict(v)
+            for v in (value or [])
+        ]
+
+    def _model_to_dict(self, model):
+        # TODO: Ugh, no. Must fix.
+        values = {}
+        for field_name, field in model.Meta.fields.items():
+            if not hasattr(model, field_name):
+                continue
+            if field_name == self.related_name:
+                continue
+            values[field_name] = field.to_outgoing(
+                model,
+                getattr(model, field_name)
+            )
+        return values
 
 
 class RelatedField(MutableField):

@@ -46,7 +46,7 @@ def test_nested_value_insert():
 
 def test_insert_invalid_column():
     table = create_table()
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         Q(table).insert(missing=1)
 
 
@@ -89,11 +89,11 @@ def test_combined_queries():
     a_table = create_table()
     (
         Q.common(
-            first=(
+            (
                 Q(a_table)
                 .select('col1')
             ),
-            second=(
+            (
                 Q(a_table)
                 .insert(col1=1, col2=2)
                 .select('col2')

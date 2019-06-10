@@ -1,13 +1,13 @@
 from psycopg2.sql import Identifier
 
-from ..query.query import Queryable
-
 __all__ = ('Table', 'Column', 'RelatedColumn', 'ReverseColumn')
 
 DBTYPE_INT = 'int'
 
 
-class Table(Queryable):
+class Table:
+    selectable = True
+    mutatable = True
     registry = {}
 
     def __init__(self, name, columns=None, checks=None, uniques=None,
@@ -108,7 +108,7 @@ class RelatedColumn(Column):
     def __repr__(self):
         return (
             f'<RelatedColumn name="{self.name}"'
-            ' related_table="{self.related_table.name}">'
+            f' related_table="{self.related_table.name}">'
         )
 
     def bind(self, table):

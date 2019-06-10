@@ -1,28 +1,40 @@
 import pytest
-from polecat.db.sql import Q, S
+from polecat.db.schema import Table
+from polecat.model.db import Q, S
+from polecat.model.db.helpers import model_to_table
 from psycopg2 import ProgrammingError
 
-from .models import Address, DefaultRole, Movie, UserRole
+from .models import Actor, Address, DefaultRole, Movie, UserRole
 
 
 def test_insert_sql(db):
     inst = Address(country='AU')
     assert getattr(inst, 'id', None) is None
-    Q(inst).insert().execute()
+    Q(inst).insert().into(inst)
     assert inst.id is not None
 
 
 def test_insert_reverse_sql(db):
-    inst = Address(country='AU', actors_by_address=[
-        {
-            'first_name': 'a'
-        },
-        {
-            'first_name': 'b'
-        }
-    ])
+    model_to_table(Address)
+    model_to_table(Actor)
+    Table.bind_all_tables()
+    inst = Address(
+        country='AU',
+        actors_by_address=[
+            {'first_name': 'a'},
+            {'first_name': 'b'}
+        ]
+    )
     assert getattr(inst, 'id', None) is None
-    Q(inst).insert().select('country', actors_by_address=S('first_name')).execute()
+    (
+        Q(inst)
+        .insert()
+        .select(
+            'country',
+            actors_by_address=S('first_name')
+        )
+        .into(inst)
+    )
     assert inst.id is not None
     assert len(inst.actors_by_address) == 2
     for actor in inst.actors_by_address:

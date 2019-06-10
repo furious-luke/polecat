@@ -1,3 +1,4 @@
+from ..schema import RelatedColumn, ReverseColumn
 from .selection import Selection
 
 
@@ -44,6 +45,7 @@ class Insert(Query):
 
     def __init__(self, source, values, **kwargs):
         super().__init__(source, **kwargs)
+        self.reverse_queries = []
         values = self.coerce_values(values)
         self.assert_mutatable(source)
         self.assert_selectable(values)
@@ -68,20 +70,37 @@ class Insert(Query):
     def dict_to_values(self, values):
         mapped_values = {}
         for column_name, subvalue in values.items():
-            if isinstance(subvalue, dict):
-                subvalue = self.subvalues_to_subquery(column_name, subvalue)
+            column = self.get_column(column_name)
+            # TODO: It would be nice to avoid breaking the OCP here.
+            if isinstance(column, RelatedColumn):
+                subvalue = self.subvalues_to_subquery(column, subvalue)
+            elif isinstance(column, ReverseColumn):
+                self.create_reverse_queries(column, subvalue)
+                continue
             mapped_values[column_name] = subvalue
         return Values(mapped_values)
 
-    def subvalues_to_subquery(self, column_name, subvalues):
-        # TODO: How to confirm this is a related column?
-        column = self.get_column(column_name)
+    def subvalues_to_subquery(self, column, subvalues):
+        if isinstance(subvalues, Query):
+            return subvalues
         # TODO: Should we be considering if there's an ID in the
         # subset? If so this should be an Update instead of a Insert.
         return Select(
             Insert(column.related_table, subvalues),
             Selection('id')
         )
+
+    def create_reverse_queries(self, column, linked_values):
+        related_column = column.related_column
+        for values in linked_values:
+            reverse_query = Insert(
+                column.related_table,
+                {
+                    **values,
+                    related_column.name: Select(self, Selection('id'))
+                }
+            )
+            self.reverse_queries.append(reverse_query)
 
     def assert_values_match_columns(self, values):
         for column_name in values.iter_column_names():

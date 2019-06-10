@@ -8,6 +8,7 @@ from .expression.join import LateralJoin
 from .expression.raw import RawSQL
 from .expression.select import Select
 from .expression.subquery import Subquery
+from .expression.where import Where
 
 
 class SelectStrategy:
@@ -59,6 +60,7 @@ class SelectStrategy:
     def create_lateral_subquery(self, relation, selection, column_name):
         subrelation = relation.get_subrelation(column_name)
         subquery = self.parse_query_from_components(subrelation, selection)
+        self.add_where_clause_to_lateral_subquery(relation, column_name, subquery)
         lateral_alias = self.create_alias_name_for_lateral()
         return LateralJoin(
             subquery,
@@ -71,17 +73,26 @@ class SelectStrategy:
             )
         )
 
+    def add_where_clause_to_lateral_subquery(self, relation, column_name, subquery):
+        column = relation.get_column(column_name)
+        if isinstance(column, ReverseColumn):
+            subquery.where = Where(**{
+                column.related_column.name: SQL('{}.id').format(
+                    Identifier(relation.alias)
+                )
+            })
+
     def create_lateral_condition(self, relation, lateral_alias, column_name):
         # TODO: Replace this with something other than a raw sql string.
         column = relation.get_column(column_name)
         if isinstance(column, ReverseColumn):
-            return RawSQL(
-                SQL('{}.id = {}.{}').format(
-                    Identifier(relation.alias),
-                    Identifier(lateral_alias),
-                    Identifier(column.related_column.name)
-                )
-            )
+            return RawSQL(SQL('TRUE'))
+            #     SQL('{}.id = {}.{}').format(
+            #         Identifier(relation.alias),
+            #         Identifier(lateral_alias),
+            #         Identifier(column.related_column.name)
+            #     )
+            # )
         else:
             return RawSQL(
                 SQL('{}.id = {}.{}').format(

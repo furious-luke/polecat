@@ -5,6 +5,7 @@ from .delete_strategy import DeleteStrategy
 from .expression.alias import Alias
 from .expression.as_ import As
 from .expression.cte import CTE
+from .expression.json import JSON
 from .expression.select import Select
 from .expression.subquery import Subquery
 from .expression.where import Where
@@ -25,6 +26,7 @@ class Strategy:
         self.query_alias_map = {}
         self.chained_relation_counter = 0
         expr = self.parse_queryable_or_builder(queryable_or_builder)
+        expr = self.wrap_final_expression(expr)
         self.cte.set_final_expression(expr)
         return self.cte
 
@@ -63,6 +65,9 @@ class Strategy:
         return alias
 
     def create_expression_from_query(self, query):
+        alias = self.get_query_alias(query)
+        if alias is not None:
+            return alias
         if isinstance(query, query_module.Select):
             expr = self.create_select(query)
         # TODO: Update must come before Insert, as it's
@@ -76,6 +81,8 @@ class Strategy:
             expr = self.create_delete(query)
         elif isinstance(query, query_module.Filter):
             expr = self.create_filter(query)
+        elif isinstance(query, query_module.Common):
+            expr = self.create_common(query)
         else:
             raise TypeError(f'Unknown query: {query}')
         return expr
@@ -102,6 +109,12 @@ class Strategy:
             )
         )
 
+    def create_common(self, query):
+        for subquery in query.subqueries[:-1]:
+            expr = self.parse_queryable_or_builder(subquery)
+            self.cte.append(expr)
+        return self.parse_queryable_or_builder(query.subqueries[-1])
+
     def parse_chained_relation(self, relation):
         # TODO: I'm not too happy about the type conditional here.
         if isinstance(relation, query_module.Insert):
@@ -120,3 +133,12 @@ class Strategy:
 
     def add_select_columns(self, column_names):
         self.current_select_columns.extend(to_list(column_names))
+
+    def wrap_final_expression(self, expression):
+        if isinstance(expression, Select):
+            expression = JSON(Subquery(expression))
+        elif isinstance(expression, Alias):
+            expression = JSON(expression)
+        elif expression.returning:
+            expression = JSON(Subquery(Select(Alias(self.cte.append(expression)))))
+        return expression

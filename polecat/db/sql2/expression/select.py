@@ -30,7 +30,7 @@ class Select(Expression):
 
     def get_subquery_sql(self):
         all_subquery_sql = []
-        all_subquery_args = []
+        all_subquery_args = ()
         for as_name, subquery in self.subqueries.items():
             subquery_sql, subquery_args = subquery.to_sql()
             sql = SQL('{} AS {}').format(
@@ -38,8 +38,8 @@ class Select(Expression):
                 Identifier(as_name)
             )
             all_subquery_sql.append(sql)
-            all_subquery_args.append(subquery_args)
-        return all_subquery_sql, tuple(all_subquery_args)
+            all_subquery_args += subquery_args
+        return all_subquery_sql, all_subquery_args
 
     def get_columns_sql(self):
         columns_sql = []

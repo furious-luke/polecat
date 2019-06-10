@@ -57,3 +57,15 @@ class Insert(Expression):
             column_values_sql.append(value_sql)
             column_values.extend(value)
         return column_names_sql, column_values_sql, column_values
+
+    def get_subrelation(self, name):
+        # TODO: This feels like bad design. Not sure how to correct
+        # just at the moment, and at least it's clear what it's doing.
+        return self.relation.get_subrelation(name)
+
+    def get_column(self, name):
+        # TODO: Also bad design, but also what's the difference
+        # between this and the above? Looks like the above just does
+        # 'this.related_table'.
+        # TODO: This should be filtered by "returning".
+        return self.relation.get_column(name)

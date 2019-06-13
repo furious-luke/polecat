@@ -26,7 +26,7 @@ def test_insert_into():
 
 def test_nested_query_insert():
     b_table = create_table('b_table')
-    a_table = create_table(b_table)
+    a_table = create_table('a_table')
     Q(a_table).insert(
         Q(b_table)
         .insert(col1=1)

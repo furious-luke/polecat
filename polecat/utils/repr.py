@@ -1,16 +1,16 @@
 from . import to_class
 
 
-def to_repr(name, **attrs):
-    name = to_repr_name(name)
-    attrs_str = to_repr_attrs(attrs)
-    return f'<{name}{prespace(attrs_str)}>'
+def to_repr(tag, **attrs):
+    tag = to_repr_tag(tag)
+    attrs_str = to_repr_attrs(**attrs)
+    return f'<{tag}{prespace(attrs_str)}>'
 
 
-def to_repr_name(name):
-    if not isinstance(name, str):
-        name = to_class(name).__name__
-    return name
+def to_repr_tag(tag):
+    if not isinstance(tag, str):
+        tag = to_class(tag).__name__
+    return tag
 
 
 def to_repr_attrs(**attrs):

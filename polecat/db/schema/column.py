@@ -1,12 +1,12 @@
 from ...utils.repr import to_repr
-from .table import Table
+from .entity import Entity
 
 __all__ = ('Column', 'MutableColumn', 'IntColumn', 'TextColumn',
            'BoolColumn', 'FloatColumn', 'RelatedColumn', 'ReverseColumn',
            'PasswordColumn', 'TimestampColumn', 'UUIDColumn')
 
 
-class Column:
+class Column(Entity):
     def __init__(self, name, unique=False):
         self.name = name
         self.unique = unique
@@ -15,6 +15,16 @@ class Column:
         return to_repr(
             self,
             name=self.name
+        )
+
+    @property
+    def signature(self):
+        return (Column, self.name)
+
+    def has_changed(self, other):
+        return (
+            self.__class__ != other.__class__ or
+            self.name != other.name
         )
 
     def bind(self, table):
@@ -39,6 +49,13 @@ class MutableColumn(Column):
             name=self.name
         )
 
+    def has_changed(self, other):
+        return (
+            super().has_changed(other) or
+            self.null != other.null or
+            self.primary_key != other.primary_key
+        )
+
 
 class IntColumn(MutableColumn):
     pass
@@ -56,6 +73,12 @@ class TextColumn(MutableColumn):
     def __init__(self, *args, max_length=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.max_length = max_length
+
+    def has_changed(self, other):
+        return (
+            super().has_changed(other) or
+            self.max_length != other.max_length
+        )
 
 
 class PasswordColumn(TextColumn):
@@ -82,6 +105,13 @@ class RelatedColumn(IntColumn):
             self,
             name=self.name,
             related_table=self.related_table.name
+        )
+
+    def has_changed(self, other):
+        return (
+            super().has_changed(other) or
+            self.related_table != other.related_table or
+            self.related_column != other.related_column
         )
 
     def bind(self, table):
@@ -122,4 +152,11 @@ class ReverseColumn(Column):
             self,
             name=self.name,
             related_table=self.related_table
+        )
+
+    def has_changed(self, other):
+        return (
+            super().has_changed(other) or
+            self.related_table != other.related_table or
+            self.related_column != other.related_column
         )

@@ -1,22 +1,24 @@
 from psycopg2.sql import Identifier
 
 from ...utils.repr import to_repr
+from .entity import Entity
 
 __all__ = ('Table',)
 
 
-class Table:
+class Table(Entity):
     # TODO: These are here to support the Queryable interface. Bad
     # design, need to encapsulate these somewhere else.
     selectable = True
     mutatable = True
 
     def __init__(self, name, columns=None, checks=None, uniques=None,
-                 access=None):
+                 access=None, app=None):
         # TODO: Unknown-unknown; cannot rename "name" or
         # polecat.db.query.selection.Selection will break. It expects
         # that if the column name passed in is not a string it has a
         # `.name` attribute.
+        self.app = app
         self.name = name
         self.columns = columns or []
         self.checks = checks or []
@@ -28,7 +30,21 @@ class Table:
     def __repr__(self):
         return to_repr(
             self,
+            app=self.app,
             name=self.name
+        )
+
+    @property
+    def signature(self):
+        return (Table, self.app, self.name)
+
+    def has_changed(self, other):
+        return (
+            self.app != other.app or
+            self.name != other.name or
+            self.checks != other.checks or
+            self.uniques != other.uniques or
+            self.columns != other.columns
         )
 
     # TODO: This is for making SQL expressions. It would be nice to

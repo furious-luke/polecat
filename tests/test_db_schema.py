@@ -1,4 +1,4 @@
-from polecat.db.schema import Column, RelatedColumn, Table
+from polecat.db.schema import Column, RelatedColumn, Schema, Table
 
 
 def test_create_from_migrations():
@@ -15,6 +15,8 @@ def test_create_from_migrations():
             Column('col1', 'text')
         ]
     )
-    Table.bind_all_tables()
+    schema = Schema()
+    schema.add_table(a_table, b_table)
+    schema.bind()
     assert isinstance(a_table.C.col2.related_table, Table)
     assert b_table.C.a_tables is not None

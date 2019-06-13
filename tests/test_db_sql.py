@@ -1,10 +1,8 @@
 import pytest
-from polecat.db.schema import Table
 from polecat.model.db import Q, S
-from polecat.model.db.helpers import model_to_table
 from psycopg2 import ProgrammingError
 
-from .models import Actor, Address, DefaultRole, Movie, UserRole
+from .models import Address, DefaultRole, Movie, UserRole
 
 
 def test_insert_sql(db):
@@ -15,9 +13,6 @@ def test_insert_sql(db):
 
 
 def test_insert_reverse_sql(db):
-    model_to_table(Address)
-    model_to_table(Actor)
-    Table.bind_all_tables()
     inst = Address(
         country='AU',
         actors_by_address=[

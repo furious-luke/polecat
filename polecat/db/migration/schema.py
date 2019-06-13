@@ -36,8 +36,8 @@ class Schema:
             from_schema = Schema()
         return self.get_differ().diff(from_schema, self)
 
-    def apply(self, migration):
-        migration.apply(self)
+    # def apply(self, migration):
+    #     migration.apply(self)
 
     def forward(self, operation):
         pass

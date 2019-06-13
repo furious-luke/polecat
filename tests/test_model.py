@@ -1,7 +1,7 @@
 from polecat.db.schema import Table
 from polecat.model.db.helpers import model_to_table
 
-from .models import Actor, Address
+from .models import Actor, Address, schema
 
 
 def test_construct_related():
@@ -40,8 +40,8 @@ def test_construct_reverse():
 
 
 def test_model_to_table():
-    actor_table = model_to_table(Actor)
-    address_table = Table.registry['address']
+    address_table = schema.get_table_by_name('address')
+    actor_table = schema.get_table_by_name('actor')
     assert actor_table.C.id is not None
     assert actor_table.C.first_name is not None
     assert actor_table.C.last_name is not None

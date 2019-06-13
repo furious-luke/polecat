@@ -5,7 +5,7 @@ from polecat.db.migration import bootstrap_migrations, migrate
 from polecat.db.migration.operation import CreateExtension
 from polecat.db.migration.schema import Column, RelatedColumn, Schema, Table
 
-from .models import *  # noqa
+from .models import AdminRole  # noqa
 
 
 def test_migration_from_models(testdb):

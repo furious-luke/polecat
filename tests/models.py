@@ -1,6 +1,11 @@
 from polecat import model
 from polecat.auth import jwt
+from polecat.db.schema import Schema
 from polecat.db.sql import Q
+from polecat.model.db.helpers import model_to_table
+
+# TODO: Convert this to use a function to generate the models to
+# assist with easier testing?
 
 
 class AdminRole(model.Role):
@@ -91,3 +96,13 @@ class Authenticate(model.Mutation):
         return {
             'token': jwt({'userId': result['id']})
         }
+
+
+schema = Schema()
+schema.add_table(
+    model_to_table(User),
+    model_to_table(Address),
+    model_to_table(Actor),
+    model_to_table(Movie)
+)
+schema.bind()

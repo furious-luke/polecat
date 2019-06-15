@@ -2,10 +2,10 @@ from contextlib import contextmanager
 
 import pytest
 from polecat.db.connection import cursor
-from polecat.db.migration import sync
 from polecat.db.utils import parse_url, push_database_url, unparse_url
 from polecat.deploy.aws.server import LambdaServer
 from polecat.deploy.server.server import Server
+from polecat.model.db.migrate import sync
 from polecat.test.factory import create_model_factory
 from polecat.test.utils import environ
 from polecat.utils import random_ident

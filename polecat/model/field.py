@@ -72,6 +72,10 @@ class IntField(MutableField):
     pass
 
 
+class SerialField(MutableField):
+    pass
+
+
 class FloatField(MutableField):
     pass
 

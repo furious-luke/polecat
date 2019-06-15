@@ -105,6 +105,11 @@ class IntField(Field):
     sources = (field.IntField,)
 
 
+class SerialField(Field):
+    graphql_type = GraphQLInt
+    sources = (field.SerialField,)
+
+
 class FloatField(Field):
     graphql_type = GraphQLFloat
     sources = (field.FloatField,)

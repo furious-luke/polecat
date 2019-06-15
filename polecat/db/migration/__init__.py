@@ -2,10 +2,16 @@ from pathlib import Path
 
 from ...core.context import active_context
 from ..decorators import dbcursor
+from .differ import Differ
 from .migration import Migration
-from .operation import CreateExtension
 from .schema import Schema
 from .utils import project_migrations_path
+
+
+def diff_schemas(to_schema, from_schema=None):
+    if from_schema is None:
+        from_schema = Schema()
+    return Differ().diff(from_schema, to_schema)
 
 
 @dbcursor
@@ -25,21 +31,6 @@ def load_migrations(migration_paths=None, context=None):
         migrations.update(load_path_migrations(path))
     migrations.update(load_path_migrations(project_migrations_path()))
     return migrations
-
-
-@dbcursor
-def sync(migration_paths=None, cursor=None):
-    migrate(migration_paths, cursor=cursor)
-    # TODO: Build schema from migrations.
-    to_schema = Schema.from_models()
-    migrations = to_schema.diff()  # TODO: Add in "from_schema"
-    # # TODO: Where the hell to put these...
-    migrations = [
-        CreateExtension('chkpass'),
-        *migrations
-    ]
-    for mgr in migrations:
-        mgr.forward()
 
 
 @dbcursor

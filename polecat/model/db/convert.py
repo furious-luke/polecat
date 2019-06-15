@@ -2,8 +2,8 @@ from functools import singledispatch
 
 from .. import field
 from ...db.schema import (BoolColumn, FloatColumn, IntColumn, PasswordColumn,
-                          RelatedColumn, TextColumn, TimestampColumn,
-                          UUIDColumn)
+                          RelatedColumn, SerialColumn, TextColumn,
+                          TimestampColumn, UUIDColumn)
 
 
 def create_column_from_field(field, type, **kwargs):
@@ -41,6 +41,11 @@ def convert_boolfield(field):
 @convert_field.register(field.IntField)
 def convert_intfield(field):
     return create_column_from_field(field, IntColumn)
+
+
+@convert_field.register(field.SerialField)
+def convert_intfield(field):
+    return create_column_from_field(field, SerialColumn)
 
 
 @convert_field.register(field.FloatField)

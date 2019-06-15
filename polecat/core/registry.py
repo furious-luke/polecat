@@ -17,7 +17,7 @@ class RegistryMetaclass(type):
     def is_baseclass(cls, name, bases):
         return not (
             bases and
-            name != getattr(bases[0], '_registry_base', name)
+            name != getattr(bases[0], '_registry_base', None)
         )
 
     def __init__(cls, name, bases, dct):
@@ -67,7 +67,7 @@ class MappedRegistry(Registry):
                     match = getattr(c, 'match', None)
                     if not match or match(value):
                         return c
-        raise KeyError(f'No {self.type} mapping for {value}')
+        raise KeyError(f'No {self.name} mapping for {value}')
 
     def add(self, mapped_value):
         for src in mapped_value.sources:

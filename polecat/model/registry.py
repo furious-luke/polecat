@@ -1,7 +1,7 @@
 from ..core.registry import Registry, RegistryMetaclass
 from ..utils import add_attribute
 from ..utils.stringcase import camelcase, snakecase
-from .field import Field, IntField
+from .field import Field, SerialField
 from .omit import NONE
 
 
@@ -232,7 +232,7 @@ def get_type_fields(attrs):
 def get_model_fields(attrs):
     yield add_attribute(
         add_attribute(
-            IntField(primary_key=True), 'name', 'id'
+            SerialField(primary_key=True), 'name', 'id'
         ), 'cc_name', 'id'
     )
     for field in get_type_fields(attrs):

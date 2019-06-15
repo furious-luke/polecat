@@ -1,6 +1,8 @@
+from ..schema import Role, Table
 from .migration import Migration
 from .operation import (AlterRole, AlterTable, CreateRole, CreateTable,
-                        DeleteRole, DeleteTable, GrantAccess, RevokeAccess)
+                        DeleteRole, DeleteTable, GrantAccessToRole,
+                        GrantAccessToTable, RevokeAccess)
 
 
 class Differ:
@@ -31,7 +33,10 @@ class Differ:
         return list(migrations.values())
 
     def diff_roles(self, from_schema, to_schema):
-        created, deleted, altered = self.diff_entities(from_schema.roles, to_schema.roles)
+        created, deleted, altered = self.diff_entities(
+            from_schema.roles,
+            to_schema.roles
+        )
         self.operations.extend([
             *[
                 DeleteRole(role)
@@ -48,7 +53,10 @@ class Differ:
         ])
 
     def diff_tables(self, from_schema, to_schema):
-        created, deleted, altered = self.diff_entities(from_schema.tables, to_schema.tables)
+        created, deleted, altered = self.diff_entities(
+            from_schema.tables,
+            to_schema.tables
+        )
         self.operations.extend([
             *[
                 DeleteTable(table)
@@ -68,12 +76,18 @@ class Differ:
         from_access = from_schema.merge_access()
         to_access = to_schema.merge_access()
         created, deleted, altered = self.diff_entities(from_access, to_access)
+        grants = []
+        for access in created:
+            entity = access.entity
+            if isinstance(entity, Table):
+                grants.append(GrantAccessToTable(access))
+            elif isinstance(entity, Role):
+                grants.append(GrantAccessToRole(access))
+            else:
+                raise TypeError(f'Unknown schema entity: {access}')
         # TODO: Alter.
         self.operations.extend([
-            *[
-                GrantAccess(access)
-                for access in created
-            ],
+            *grants,
             *[
                 RevokeAccess(access)
                 for access in deleted
@@ -109,8 +123,10 @@ class Differ:
             if e.signature not in to_entities
         ]
         altered = [
-            (e, from_entities[e.signature]) for e in to_entities.values()
-            if e.signature in from_entities and from_entities[e.signature].has_changed(e)
+            (e, from_entities[e.signature])
+            for e in to_entities.values()
+            if e.signature in from_entities and
+            from_entities[e.signature].has_changed(e)
         ]
         # TODO: How to check for renames?
         return (created, deleted, altered)

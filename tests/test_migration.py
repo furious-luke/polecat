@@ -1,42 +1,39 @@
 from tempfile import TemporaryDirectory
 
 import pytest
-from polecat.db.migration import bootstrap_migrations, migrate
-from polecat.db.migration.operation import CreateExtension
+from polecat.db.migration import bootstrap_migrations, diff_schemas, migrate
 from polecat.db.migration.schema import Column, RelatedColumn, Schema, Table
 
-from .models import AdminRole  # noqa
+from .models import schema  # noqa
 
 
 def test_migration_from_models(testdb):
     bootstrap_migrations()
-    schema = Schema.from_models()
-    migrations = schema.diff()
+    migrations = diff_schemas(schema)
     migrations = [
-        CreateExtension('chkpass'),
         *migrations
     ]
     for mgr in migrations:
-        # sql, args = mgr.forward_sql
-        # print(sql.as_string(testdb))
+        for op in mgr.operations:
+            sql = testdb.mogrify(*op.sql)
+            print(sql.decode())
         mgr.forward()
 
 
 def test_serialize_migration(testdb):
-    schema = Schema.from_models()
-    migrations = schema.diff()
+    migrations = diff_schemas(schema)
     for mgr in migrations:
         result = mgr.serialize()
+        # print(result)
         # TODO: Better test.
         assert result is not None
         assert len(result) > 0
 
 
 def test_run_migrations(testdb):
-    schema = Schema.from_models()
-    migrations = schema.diff()
+    bootstrap_migrations()
+    migrations = diff_schemas(schema)
     with TemporaryDirectory() as root:
-        migrations[0].operations.insert(0, CreateExtension('chkpass'))
         for mgr in migrations:
             mgr.save(root)
         migrate([root])

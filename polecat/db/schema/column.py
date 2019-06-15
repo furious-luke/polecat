@@ -1,9 +1,10 @@
 from ...utils.repr import to_repr
-from .entity import Entity
+from .entity import ConstructionArguments, Entity
+from .utils import column_to_identifier, table_to_identifier
 
 __all__ = ('Column', 'MutableColumn', 'IntColumn', 'TextColumn',
            'BoolColumn', 'FloatColumn', 'RelatedColumn', 'ReverseColumn',
-           'PasswordColumn', 'TimestampColumn', 'UUIDColumn')
+           'PasswordColumn', 'TimestampColumn', 'UUIDColumn', 'SerialColumn')
 
 
 class Column(Entity):
@@ -36,6 +37,12 @@ class Column(Entity):
     def from_db_value(self, value):
         return value
 
+    def get_construction_arguments(self):
+        return ConstructionArguments(
+            self.name,
+            unique=self.unique
+        )
+
 
 class MutableColumn(Column):
     def __init__(self, name, null=True, primary_key=False, **kwargs):
@@ -56,8 +63,19 @@ class MutableColumn(Column):
             self.primary_key != other.primary_key
         )
 
+    def get_construction_arguments(self):
+        cargs = super().get_construction_arguments()
+        return cargs.merge(
+            null=self.null,
+            primary_key=self.primary_key
+        )
+
 
 class IntColumn(MutableColumn):
+    pass
+
+
+class SerialColumn(MutableColumn):
     pass
 
 
@@ -78,6 +96,12 @@ class TextColumn(MutableColumn):
         return (
             super().has_changed(other) or
             self.max_length != other.max_length
+        )
+
+    def get_construction_arguments(self):
+        cargs = super().get_construction_arguments()
+        return cargs.merge(
+            max_length=self.max_length
         )
 
 
@@ -106,6 +130,9 @@ class RelatedColumn(IntColumn):
             name=self.name,
             related_table=self.related_table.name
         )
+
+    def get_dependent_entities(self):
+        return (self.related_table,)
 
     def has_changed(self, other):
         return (
@@ -139,6 +166,13 @@ class RelatedColumn(IntColumn):
             self
         )
         self.related_table.add_column(self.related_column)
+
+    def get_construction_arguments(self):
+        cargs = super().get_construction_arguments()
+        return cargs.merge(
+            related_table=table_to_identifier(self.related_table),
+            related_column=column_to_identifier(self.related_column)
+        )
 
 
 class ReverseColumn(Column):

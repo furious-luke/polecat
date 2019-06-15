@@ -1,4 +1,4 @@
-from polecat.db.schema import Table
+from polecat.db.schema import Role, Table
 from polecat.model.db.helpers import model_to_table
 
 from .models import Actor, Address, schema
@@ -39,9 +39,11 @@ def test_construct_reverse():
         assert actor.address == address
 
 
-def test_model_to_table():
+def test_create_schema():
     address_table = schema.get_table_by_name('address')
     actor_table = schema.get_table_by_name('actor')
+    admin_role = schema.get_role_by_name('admin')
+    address_access = schema.get_access_by_entity(address_table)
     assert actor_table.C.id is not None
     assert actor_table.C.first_name is not None
     assert actor_table.C.last_name is not None
@@ -51,3 +53,11 @@ def test_model_to_table():
     assert address_table.C.id is not None
     assert address_table.C.country is not None
     assert address_table.C.actors_by_address is not None
+    assert admin_role.name == 'admin'
+    assert address_access.entity == address_table
+
+
+def test_role_to_dbrole_converts_parents():
+    user_role = schema.get_role_by_name('user')
+    parent = list(user_role.parents)[0]
+    assert parent.__class__ == Role

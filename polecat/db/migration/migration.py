@@ -2,19 +2,17 @@ import re
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 
-from psycopg2.sql import SQL
-
 from ...utils import indent
 from ..connection import transaction
 from ..decorators import dbcursor
 from .utils import project_migrations_path
 
-migration_template = '''from polecat.db.migration.migration import Migration as BaseMigration
-from polecat.db.migration.operation import CreateRole, CreateTable, GrantAccess, CreateExtension
-from polecat.db.migration.schema import Table, Role, Column, RelatedColumn
+migration_template = '''from polecat.db.migration import migration
+from polecat.db.migration import operation  # noqa
+from polecat.db.schema import column  # noqa
 
 
-class Migration(BaseMigration):
+class Migration(migration.Migration):
     dependencies = [{}]
     operations = [{}]
 '''

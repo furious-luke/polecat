@@ -1,11 +1,12 @@
 from psycopg2.sql import SQL, Identifier
 
+from ...core.context import active_context
 from ...model.registry import make_role_from_name
 from ...utils import indent
 from ...utils.predicates import not_empty
-from ...utils.stringcase import snakecase
 from ..decorators import dbcursor
-from .schema import Access, Role, Table
+from ..schema import Access, MutableColumn, Role, Table
+from .column import Column  # noqa
 
 create_role_sql = '''do $$
   BEGIN
@@ -15,7 +16,7 @@ create_role_sql = '''do $$
   END
 $$;'''
 
-create_table_template = '''CreateTable(
+create_table_template = '''operation.CreateTable(
     '{}',
     columns=[{}]{}
 )'''
@@ -63,9 +64,6 @@ class CreateTable(Operation):
             name_or_table = Table(name_or_table, *args, **kwargs)
         self.table = name_or_table
 
-    # def __repr__(self):
-    #     return f'<CreateTable name="{self.name}">'
-
     @property
     def signature(self):
         return self.table.signature
@@ -103,8 +101,8 @@ class CreateTable(Operation):
 
     def all_columns_sql(self):
         return SQL(',\n').join(
-            SQL('  ') + self.column_sql(f)
-            for f in self.iter_valid_columns()
+            SQL('  ') + self.column_sql(column)
+            for column in self.iter_valid_columns()
         )
 
     def all_uniques_sql(self):
@@ -127,12 +125,15 @@ class CreateTable(Operation):
         else:
             None
 
-    def iter_valid_columns(self):
+    @active_context
+    def iter_valid_columns(self, context):
+        registry = context.registries.migration_column_registry
         for column in self.table.columns:
-            yield column
+            if isinstance(column, MutableColumn):
+                yield registry[column](column)
 
     def column_sql(self, column):
-        return column.sql
+        return column.to_sql()
 
     def check_sql(self, check):
         if isinstance(check, str):
@@ -176,7 +177,7 @@ class CreateTable(Operation):
         return self.table.name
 
     def serialize(self):
-        columns = self.serialize_columns()
+        columns = self.serialize_valid_columns()
         if columns:
             columns = indent(f'\n{columns}', 8)
             columns += indent('\n')
@@ -199,11 +200,15 @@ class CreateTable(Operation):
             options
         )
 
-    def serialize_columns(self):
+    def serialize_valid_columns(self):
         cols = []
-        for col in self.table.columns:
-            cols.append(col.serialize())
+        for col in self.iter_valid_columns():
+            cols.append(self.serialize_column(col.schema_column))
         return ',\n'.join(cols)
+
+    def serialize_column(self, column):
+        cargs = column.get_construction_arguments()
+        return f'column.{column.__class__.__name__}({str(cargs)})'
 
     def serialize_access(self):
         access = self.table.access
@@ -252,15 +257,9 @@ class CreateRole(Operation):
             name_or_role = Role(name_or_role, *args, **kwargs)
         self.role = name_or_role
 
-    # def __repr__(self):
-    #     return f'<CreateRole name="{self.role.name}">'
-
     @property
     def dependencies(self):
-        return [
-            Role(p)
-            for p in self.role.parents
-        ]
+        return self.role.parents
 
     @property
     def signature(self):
@@ -286,7 +285,7 @@ class CreateRole(Operation):
         return tuple(
             SQL('GRANT {} TO {};').format(
                 role_name,
-                Identifier(parent)
+                Identifier(getattr(parent, 'name', parent))
             )
             for parent in self.role.parents
         )
@@ -296,7 +295,14 @@ class CreateRole(Operation):
         return self.role.options.get('role', make_role_from_name(self.role.name))
 
     def serialize(self):
-        return self.role.serialize('CreateRole')
+        parents = self.serialize_role_parents(self.role)
+        if parents:
+            parents = f', parents={parents}'
+        return f"operation.CreateRole('{self.role.name}'{parents})"
+
+    def serialize_role_parents(self, role):
+        parents = '[' + ', '.join(f"'{p.name}'" for p in role.parents) + ']'
+        return parents
 
 
 class DeleteRole(Operation):
@@ -324,22 +330,27 @@ class GrantAccess(Operation):
 
     @property
     def sql(self):
+        # TODO: Awful.
         access_sql = filter(not_empty, [
             self.get_access_sql(access, roles)
             for access, roles in [
-                ('SELECT', set(self.access.all) | set(self.access.select)),
-                ('INSERT', set(self.access.all) | set(self.access.insert)),
-                ('UPDATE', set(self.access.all) | set(self.access.update)),
-                ('DELETE', set(self.access.all) | set(self.access.delete)),
+                ('SELECT', set(map(lambda r: getattr(r, 'name', r), self.access.all)) | set(map(lambda r: getattr(r, 'name', r), self.access.select))),
+                ('INSERT', set(map(lambda r: getattr(r, 'name', r), self.access.all)) | set(map(lambda r: getattr(r, 'name', r), self.access.insert))),
+                ('UPDATE', set(map(lambda r: getattr(r, 'name', r), self.access.all)) | set(map(lambda r: getattr(r, 'name', r), self.access.update))),
+                ('DELETE', set(map(lambda r: getattr(r, 'name', r), self.access.all)) | set(map(lambda r: getattr(r, 'name', r), self.access.delete))),
             ]
         ])
         return SQL('\n').join(access_sql), ()
 
     @property
     def entity_sql(self):
-        return SQL('%s {}' % self.access.entity.tag).format(
-            Identifier(self.access.entity.name)
+        tag = self.get_entity_tag(self.access.entity)
+        return SQL('%s {}' % tag).format(
+            Identifier(self.access.entity if isinstance(self.access.entity, str) else self.access.entity.name)
         )
+
+    def get_entity_tag(self, entity):
+        raise NotImplementedError
 
     def get_access_sql(self, access, roles):
         if not roles:
@@ -353,7 +364,8 @@ class GrantAccess(Operation):
         )
 
     def serialize(self):
-        entity = self.access.entity.serialize()
+        # TODO: Fix this.
+        entity = self.serialize_entity()
         access = [
             ('all', [r.name for r in self.access.all]),
             ('select', [r.name for r in self.access.select]),
@@ -362,7 +374,35 @@ class GrantAccess(Operation):
             ('delete', [r.name for r in self.access.delete])
         ]
         access = ', '.join([f'{a[0]}={a[1]}' for a in access if len(a[1])])
-        return f'GrantAccess({entity}, {access})'
+        return f'operation.{self.__class__.__name__}({repr(entity)}, {access})'
+
+    def serialize_entity(self):
+        entity = self.access.entity
+        if isinstance(entity, str):
+            entity_string = entity
+        else:
+            entity_string = self.entity.name
+        return entity_string
+
+
+class GrantAccessToTable(GrantAccess):
+    def serialize_entity(self):
+        entity = self.access.entity
+        if isinstance(entity, str):
+            entity_string = entity
+        else:
+            entity_string = entity.name
+            if entity.app:
+                entity_string = f'{entity.app}.{entity_string}'
+        return entity_string
+
+    def get_entity_tag(self, entity):
+        return 'TABLE'
+
+
+class GrantAccessToRole(GrantAccess):
+    def get_entity_tag(self, entity):
+        return 'ROLE'
 
 
 class RevokeAccess(Operation):

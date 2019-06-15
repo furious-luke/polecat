@@ -11,6 +11,12 @@ from polecat.test.utils import environ
 from polecat.utils import random_ident
 
 
+@pytest.fixture
+def staticdb():
+    with cursor() as curs:
+        yield curs
+
+
 @contextmanager
 def create_database():
     dbinfo = parse_url()

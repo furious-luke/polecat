@@ -2,7 +2,7 @@ from tempfile import TemporaryDirectory
 
 import pytest
 from polecat.db.migration import bootstrap_migrations, diff_schemas, migrate
-from polecat.db.migration.schema import Column, RelatedColumn, Schema, Table
+from polecat.db.schema import Column, RelatedColumn, Schema, Table
 
 from .models import schema  # noqa
 

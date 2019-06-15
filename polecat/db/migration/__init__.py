@@ -2,9 +2,9 @@ from pathlib import Path
 
 from ...core.context import active_context
 from ..decorators import dbcursor
+from ..schema import Schema
 from .differ import Differ
 from .migration import Migration
-from .schema import Schema
 from .utils import project_migrations_path
 
 

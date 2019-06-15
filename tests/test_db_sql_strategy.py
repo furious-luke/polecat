@@ -3,7 +3,7 @@ from polecat.db.query import Q, S
 from .schema import create_table
 
 
-def test_select_strategy_unnested(testdb):
+def test_select_strategy_unnested(staticdb):
     table = create_table()
     query = Q(table).select('col1', 'col2')
     sql = query.to_sql()
@@ -14,7 +14,7 @@ def test_select_strategy_unnested(testdb):
     )
 
 
-def test_select_strategy_lateral(testdb):
+def test_select_strategy_lateral(staticdb):
     b_table = create_table('b_table')
     a_table = create_table('a_table', related_table=b_table)
     query = Q(a_table).select('col1', 'col2', col3=S('col1', 'col2'))
@@ -28,7 +28,7 @@ def test_select_strategy_lateral(testdb):
     )
 
 
-def test_select_strategy_reverse_lateral(testdb):
+def test_select_strategy_reverse_lateral(staticdb):
     b_table = create_table('b_table')
     create_table('a_table', related_table=b_table)
     query = Q(b_table).select('col1', 'col2', a_tables=S('col1', 'col2'))
@@ -43,7 +43,7 @@ def test_select_strategy_reverse_lateral(testdb):
     )
 
 
-def test_select_strategy_detached(testdb):
+def test_select_strategy_detached(staticdb):
     a_table = create_table('a_table')
     b_table = create_table('b_table')
     b_query = Q(b_table).select('col1', 'col2')
@@ -58,7 +58,7 @@ def test_select_strategy_detached(testdb):
     )
 
 
-def test_insert_strategy_unnested(testdb):
+def test_insert_strategy_unnested(staticdb):
     table = create_table('a_table')
     query = Q(table).insert(col1=1, col2=2)
     sql = query.to_sql()
@@ -69,7 +69,7 @@ def test_insert_strategy_unnested(testdb):
     )
 
 
-def test_insert_strategy_with_value_subquery(testdb):
+def test_insert_strategy_with_value_subquery(staticdb):
     b_table = create_table('b_table')
     a_table = create_table('a_table', related_table=b_table)
     query = Q(a_table).insert(
@@ -84,7 +84,7 @@ def test_insert_strategy_with_value_subquery(testdb):
     )
 
 
-def test_insert_strategy_with_subquery(testdb):
+def test_insert_strategy_with_subquery(staticdb):
     b_table = create_table('b_table')
     a_table = create_table('a_table', related_table=b_table)
     query = Q(a_table).insert(Q(a_table).select('id'))
@@ -96,7 +96,7 @@ def test_insert_strategy_with_subquery(testdb):
     )
 
 
-def test_insert_strategy_with_nesting(testdb):
+def test_insert_strategy_with_nesting(staticdb):
     b_table = create_table('b_table')
     a_table = create_table('a_table', related_table=b_table)
     query = Q(a_table).insert(
@@ -117,7 +117,7 @@ def test_insert_strategy_with_nesting(testdb):
     )
 
 
-def test_insert_strategy_with_explicit_reverse(testdb):
+def test_insert_strategy_with_explicit_reverse(staticdb):
     b_table = create_table('b_table')
     a_table = create_table('a_table', related_table=b_table)
     b_query = Q(b_table).insert(col1=1)
@@ -136,7 +136,7 @@ def test_insert_strategy_with_explicit_reverse(testdb):
     )
 
 
-def test_insert_strategy_with_implicit_reverse(testdb):
+def test_insert_strategy_with_implicit_reverse(staticdb):
     b_table = create_table('b_table')
     create_table('a_table', related_table=b_table)
     b_query = Q(b_table).insert(
@@ -157,7 +157,7 @@ def test_insert_strategy_with_implicit_reverse(testdb):
     )
 
 
-def test_update_strategy_with_nesting(testdb):
+def test_update_strategy_with_nesting(staticdb):
     b_table = create_table('b_table')
     a_table = create_table('a_table', related_table=b_table)
     query = Q(a_table).update(
@@ -177,7 +177,7 @@ def test_update_strategy_with_nesting(testdb):
     )
 
 
-def test_multiple_inserts(testdb):
+def test_multiple_inserts(staticdb):
     table = create_table()
     query = Q(table).insert(col1=1).insert(col1=2)
     sql = query.to_sql()
@@ -189,7 +189,7 @@ def test_multiple_inserts(testdb):
     )
 
 
-def test_insert_and_select_returning(testdb):
+def test_insert_and_select_returning(staticdb):
     table = create_table()
     query = Q(table).insert(col1=1).select('col1', 'col2')
     sql = query.to_sql()
@@ -200,21 +200,21 @@ def test_insert_and_select_returning(testdb):
     )
 
 
-def test_delete_strategy_unnested(testdb):
+def test_delete_strategy_unnested(staticdb):
     table = create_table()
     query = Q(table).delete()
     sql = query.to_sql()
     assert sql == b'DELETE FROM "a_table"'
 
 
-def test_multiple_deletes(testdb):
+def test_multiple_deletes(staticdb):
     table = create_table()
     query = Q(table).delete().delete()
     sql = query.to_sql()
     assert sql == b'WITH "c0" AS (DELETE FROM "a_table") DELETE FROM "a_table"'
 
 
-def test_filter_and_select(testdb):
+def test_filter_and_select(staticdb):
     table = create_table()
     query = Q(table).filter(col2=2).select('col1')
     sql = query.to_sql()
@@ -225,7 +225,7 @@ def test_filter_and_select(testdb):
     )
 
 
-def test_filter_only(testdb):
+def test_filter_only(staticdb):
     table = create_table()
     query = Q(table).filter(col2=2)
     sql = query.to_sql()

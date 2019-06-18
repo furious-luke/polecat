@@ -4,8 +4,9 @@ from .expression import Expression
 
 
 class Alias(Expression):
-    def __init__(self, expression):
+    def __init__(self, expression, column=None):
         self.expression = expression
+        self.column = column
 
     @property
     def alias(self):
@@ -16,9 +17,14 @@ class Alias(Expression):
             alias = self.expression.alias
         except AttributeError:
             alias = self.expression
+        if self.column:
+            column_sql = SQL('.{}').format(Identifier(self.column))
+        else:
+            column_sql = SQL('')
         return (
-            SQL('{}').format(
-                Identifier(alias)
+            SQL('{}{}').format(
+                Identifier(alias),
+                column_sql
             ),
             ()
         )

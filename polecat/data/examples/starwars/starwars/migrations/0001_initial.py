@@ -1,30 +1,37 @@
-from polecat.db.migration.migration import Migration as BaseMigration
-from polecat.db.migration.operation import CreateTable, RunPython
-from polecat.db.migration.schema import Table, Column, RelatedColumn
-from polecat.db.sql import Q
-from starwars.models import Film, Planet, Character
+from polecat.db.migration import Migration as BaseMigration
+from polecat.db.migration import operation
+from polecat.db.query import Q
+from polecat.db.schema import Column, RelatedColumn
 
 
-def create_data(cursor):
-    ep4 = Film(title='A New Hope')
-    Q(ep4).insert().execute(cursor=cursor)
-    tatooine = Planet(name='Tatooine', film=ep4)
-    Q(tatooine).insert().execute(cursor=cursor)
-    luke = Character(name='Luke Skywalker', film=ep4)
-    Q(luke).insert().execute(cursor=cursor)
+def create_data(schema, cursor):
+    film_table = schema.get_table_by_name('film')
+    planet_table = schema.get_table_by_name('planet')
+    char_table = schema.get_table_by_name('character')
+    insert_ep4 = Q(film_table).insert(title='A New Hope')
+    Q.common(
+        Q(planet_table).insert(
+            name='Tatooine',
+            film=insert_ep4
+        ),
+        Q(char_table).insert(
+            name='Luke Skywalker',
+            film=insert_ep4
+        )
+    ).execute()
 
 
 class Migration(BaseMigration):
     dependencies = []
     operations = [
-        CreateTable(
+        operation.CreateTable(
             'film',
             columns=[
                 Column('id', 'serial', primary_key=True),
                 Column('title', 'text', null=False)
             ]
         ),
-        CreateTable(
+        operation.CreateTable(
             'planet',
             columns=[
                 Column('id', 'serial', primary_key=True),
@@ -32,7 +39,7 @@ class Migration(BaseMigration):
                 RelatedColumn('film', 'int', 'film.id')
             ]
         ),
-        CreateTable(
+        operation.CreateTable(
             'character',
             columns=[
                 Column('id', 'serial', primary_key=True),
@@ -40,5 +47,5 @@ class Migration(BaseMigration):
                 RelatedColumn('film', 'int', 'film.id')
             ]
         ),
-        RunPython(create_data)
+        operation.RunPython(create_data)
     ]

@@ -1,6 +1,6 @@
 from graphql.type import GraphQLList
+from polecat.model.db import Q, S
 
-from ..db.sql import Q, S
 from ..utils.exceptions import traceback
 from .field import RelatedField
 from .input import Input
@@ -8,24 +8,24 @@ from .input import Input
 
 def resolve_all_query(obj, info):
     graphql_type = info.return_type.of_type
-    query = build_all_query(graphql_type, info.field_nodes[0])
     options = info.context or {}
-    return query.execute(**options)
+    query = build_all_query(graphql_type, info.field_nodes[0], options=options)
+    return list(query)
 
 
 def resolve_get_query(obj, info, query=None):
     graphql_type = info.return_type
-    query = build_all_query(graphql_type, info.field_nodes[0], query=query)
-    query.is_get = True  # TODO: Must be a better way.
-    # TODO: Should use execute above.
     options = info.context or {}
-    return query.execute(**options)
+    with traceback():
+        query = build_all_query(graphql_type, info.field_nodes[0], query=query, options=options)
+        # TODO: Should use execute above.
+        return query.get()
 
 
-def build_all_query(graphql_type, node, query=None):
+def build_all_query(graphql_type, node, query=None, options=None):
     model = graphql_type._model
     if not query:
-        query = Q(model)
+        query = Q(model, **(options or {}))
     return query.select(get_selector_from_node(graphql_type, node))
 
 
@@ -62,15 +62,22 @@ def resolve_create_mutation(obj, info, **kwargs):
     except KeyError:
         raise Exception('Missing "input" argument')
     # Perform any deletes.
-    # TODO: This can one day be merged together. Before then, I need to create a CTE system
-    # that allows me to combine queries more elegantly.
+    # TODO: While these are all done together, I'd like to add them to
+    # the insert below.
+    queries = []
     for delete_class, ids in input.delete.items():
         options = info.context or {}
-        Q(delete_class).delete(ids).execute(**options)
+        queries.extend([
+            Q(delete_class, **options)
+            .filter(id=id)
+            .delete()
+            for id in ids
+        ])
+    if queries:
+        Q.common(*queries).execute()
     model = model_class(**input.change)
     # TODO: We can optimise this operation for the case where there
     # are no nested insertions like this...
-    # TODO: Delete...
     query = Q(model).insert()
     return resolve_get_query(obj, info, query=query)
 
@@ -88,9 +95,17 @@ def resolve_update_mutation(obj, info, **kwargs):
     # TODO: This can one day be merged together. Before then, I need
     # to create a CTE system that allows me to combine queries more
     # elegantly.
+    queries = []
     for delete_class, ids in input.delete.items():
         options = info.context or {}
-        Q(delete_class).delete(ids).execute(**options)
+        queries.extend([
+            Q(delete_class, **options)
+            .filter(id=id)
+            .delete()
+            for id in ids
+        ])
+    if queries:
+        Q.common(*queries).execute()
     model = model_class(**input.change)
     # TODO: We can optimise this operation for the case where there
     # are no nested insertions like this...

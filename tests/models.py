@@ -1,6 +1,6 @@
 from polecat import model
 from polecat.auth import jwt
-from polecat.db.sql import Q
+from polecat.model.db import Q
 from polecat.model.db.helpers import create_schema
 
 # TODO: Convert this to use a function to generate the models to
@@ -89,8 +89,9 @@ class Authenticate(model.Mutation):
     def resolve(self, email, password):
         result = (
             Q(User)
-            .get(email=email, password=password)
+            .filter(email=email, password=password)
             .select('id')
+            .get()
         )
         return {
             'token': jwt({'userId': result['id']})

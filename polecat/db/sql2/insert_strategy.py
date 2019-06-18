@@ -1,6 +1,7 @@
 from ..query import query as query_module
 from .expression.insert import Insert
 from .expression.subquery import Subquery
+from .expression.subrelation_override import SubrelationOverride
 
 
 class InsertStrategy:
@@ -9,10 +10,13 @@ class InsertStrategy:
         self.relation_counter = 0
 
     def parse_query(self, query):
-        return Insert(
+        expr = Insert(
             query.source,
             self.parse_values_or_subquery(query, query.values)
         )
+        if query.reverse_queries:
+            expr = SubrelationOverride(expr, query.reverse_queries, self.root)
+        return expr
 
     def parse_values_or_subquery(self, query, values_or_subquery):
         if isinstance(values_or_subquery, query_module.Values):

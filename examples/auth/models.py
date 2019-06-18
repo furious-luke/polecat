@@ -1,6 +1,6 @@
 from polecat import model
 from polecat.auth import jwt
-from polecat.db.sql import Q
+from polecat.db.sql2 import Q
 from polecat.project import Project
 
 
@@ -22,7 +22,12 @@ class Authenticate(model.Mutation):
     returns = JWTType
 
     def resolve(self, email, password):
-        result = Q(User).get(email=email, password=password).select('id')
+        result = (
+            Q(User)
+            .filter(email=email, password=password)
+            .select('id')
+            .get()
+        )
         return jwt({'userId': result['id']})
 
 

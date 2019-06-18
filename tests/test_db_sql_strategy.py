@@ -34,12 +34,12 @@ def test_select_strategy_reverse_lateral(staticdb):
     query = Q(b_table).select('col1', 'col2', a_tables=S('col1', 'col2'))
     sql = query.to_sql()
     assert sql == (
-        b'SELECT row_to_json(__tl) FROM ('
-        b'SELECT "t0"."col1" AS "col1", "t0"."col2" AS "col2", "j0" AS'
-        b' "a_tables" FROM "b_table" AS "t0" LEFT JOIN LATERAL (SELECT'
-        b' "a_table"."col1" AS "col1", "a_table"."col2" AS "col2" FROM'
-        b' "a_table" WHERE "a_table"."col3" = "t0".id) AS "j0" ON TRUE'
-        b') AS __tl'
+        b'SELECT row_to_json(__tl) FROM (SELECT "t0"."col1" AS "col1",'
+        b' "t0"."col2" AS "col2", "j0"."array_agg" AS "a_tables" FROM'
+        b' "b_table" AS "t0" LEFT JOIN LATERAL (SELECT array_agg("a0")'
+        b' FROM (SELECT "a_table"."col1" AS "col1", "a_table"."col2" AS'
+        b' "col2" FROM "a_table" WHERE "a_table"."col3" = "t0".id) AS'
+        b' "a0") AS "j0" ON TRUE) AS __tl'
     )
 
 

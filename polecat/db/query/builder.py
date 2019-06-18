@@ -16,7 +16,18 @@ class Q:
         with cursor_context(autocommit=False) as cursor:
             self.execute(cursor=cursor)
             for row in cursor:
-                yield row
+                yield row[0]
+
+    def get(self):
+        with cursor_context(autocommit=False) as cursor:
+            self.execute(cursor=cursor)
+            if cursor.rowcount == 0:
+                return None
+            elif cursor.rowcount > 1:
+                # TODO: Better exception.
+                raise Exception('Multiple results for get query.')
+            for row in cursor:
+                return row[0]
 
     @classmethod
     def common(cls, *subqueries):
@@ -51,8 +62,14 @@ class Q:
         cursor.connection.commit()
 
     def select(self, *args, **kwargs):
+        if len(args) == 1 and isinstance(args[0], Selection):
+            if len(kwargs):
+                raise ValueError('Cannot pass a Selection instance and lookups.')
+            selection = args[0]
+        else:
+            selection = Selection(*args, **kwargs)
         return self.chain(
-            Select(self.queryable, Selection(*args, **kwargs)),
+            Select(self.queryable, selection)
         )
 
     def insert(self, *subquery, **values):
@@ -69,7 +86,8 @@ class Q:
         if insert.reverse_queries:
             if self.branches is None:
                 self.branches = []
-            self.branches.extend(insert.reverse_queries)
+            for reverse_queries in insert.reverse_queries.values():
+                self.branches.extend(reverse_queries)
             # TODO: Do I need to wrap insert in a select?
         return self.chain(insert)
 

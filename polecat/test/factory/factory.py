@@ -1,7 +1,7 @@
 from factory import base
+from polecat.model.db import Q
 
 from ...core.context import active_context
-from ...db.sql import Q
 from ...model.field import ReverseField
 from ...model.registry import model_registry
 from .field import *  # noqa
@@ -13,7 +13,7 @@ class ModelFactory(base.Factory):
     @classmethod
     def _create(cls, model_class, *args, **kwargs):
         inst = model_class(*args, **kwargs)
-        Q(inst).insert().execute()
+        Q(inst).insert().into(inst)
         return inst
 
 

@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from ..schema import RelatedColumn, ReverseColumn
 from .selection import Selection
 
@@ -45,7 +47,7 @@ class Insert(Query):
 
     def __init__(self, source, values, **kwargs):
         super().__init__(source, **kwargs)
-        self.reverse_queries = []
+        self.reverse_queries = defaultdict(list)
         values = self.coerce_values(values)
         self.assert_mutatable(source)
         self.assert_selectable(values)
@@ -104,7 +106,7 @@ class Insert(Query):
                     related_column.name: Select(self, Selection('id'))
                 }
             )
-            self.reverse_queries.append(reverse_query)
+            self.reverse_queries[column.name].append(reverse_query)
 
     def assert_values_match_columns(self, values):
         for column_name in values.iter_column_names():

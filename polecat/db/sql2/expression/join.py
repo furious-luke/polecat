@@ -40,3 +40,6 @@ class LateralJoin(Join):
             )
         else:
             return SQL(''), ()
+
+    def push_selection(self, selection=None):
+        self.expression.push_selection(selection=selection)

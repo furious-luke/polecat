@@ -3,6 +3,7 @@ from psycopg2.sql import SQL, Identifier
 from ..query.selection import Selection
 from ..schema import ReverseColumn
 from .expression.alias import Alias
+from .expression.array_agg import ArrayAgg
 from .expression.as_ import As
 from .expression.join import LateralJoin
 from .expression.raw import RawSQL
@@ -16,6 +17,7 @@ class SelectStrategy:
         self.root = root_strategy
         self.relation_counter = 0
         self.lateral_counter = 0
+        self.agg_counter = 0
 
     def parse_query(self, queryable):
         return self.parse_query_from_components(
@@ -47,7 +49,18 @@ class SelectStrategy:
             if isinstance(subquery, Selection):
                 expr = self.create_lateral_subquery(relation, subquery, name)
                 joins.append(expr)
-                subqueries[name] = Alias(expr.alias)
+                # TODO: This is ugly as. The problem is that
+                # subqueries aren't necessarily columns, they can be
+                # just named subqueries. Need to separate them.
+                try:
+                    column = relation.get_column(name)
+                    if isinstance(column, ReverseColumn):
+                        alias_column = 'array_agg'
+                    else:
+                        alias_column = None
+                except KeyError:
+                    alias_column = None
+                subqueries[name] = Alias(expr.alias, column=alias_column)
             else:
                 expr = self.create_detached_subquery(subquery)
                 subqueries[name] = expr
@@ -57,6 +70,7 @@ class SelectStrategy:
         subrelation = relation.get_subrelation(column_name)
         subquery = self.parse_query_from_components(subrelation, selection)
         self.add_where_clause_to_lateral_subquery(relation, column_name, subquery)
+        subquery = self.add_aggregation_to_lateral_subquery(relation, column_name, subquery)
         lateral_alias = self.create_alias_name_for_lateral()
         return LateralJoin(
             subquery,
@@ -85,26 +99,23 @@ class SelectStrategy:
                 )
             })
 
+    def add_aggregation_to_lateral_subquery(self, relation, column_name, subquery):
+        column = relation.get_column(column_name)
+        if isinstance(column, ReverseColumn):
+            agg_alias = self.create_alias_name_for_aggregate()
+            subquery = Select(
+                As(Subquery(subquery), agg_alias),
+                columns=ArrayAgg(Alias(agg_alias))
+            )
+        return subquery
+
     def create_lateral_condition(self, relation, lateral_alias, column_name):
         # TODO: Replace this with something other than a raw sql string.
         column = relation.get_column(column_name)
         if isinstance(column, ReverseColumn):
             return RawSQL(SQL('TRUE'))
-            #     SQL('{}.id = {}.{}').format(
-            #         Identifier(relation.alias),
-            #         Identifier(lateral_alias),
-            #         Identifier(column.related_column.name)
-            #     )
-            # )
         else:
             return RawSQL(SQL('TRUE'))
-            # return RawSQL(
-            #     SQL('{}.id = {}.{}').format(
-            #         Identifier(lateral_alias),
-            #         Identifier(relation.alias),
-            #         Identifier(column_name)
-            #     )
-            # )
 
     def create_detached_subquery(self, subquery):
         return Subquery(self.root.parse_queryable_or_builder(subquery))
@@ -112,4 +123,9 @@ class SelectStrategy:
     def create_alias_name_for_lateral(self):
         alias_name = f'j{self.lateral_counter}'
         self.lateral_counter += 1
+        return alias_name
+
+    def create_alias_name_for_aggregate(self):
+        alias_name = f'a{self.agg_counter}'
+        self.agg_counter += 1
         return alias_name

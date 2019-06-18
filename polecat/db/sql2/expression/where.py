@@ -55,6 +55,9 @@ class Where:
         elif other.root:
             self.root = other.root
 
+    def get_primary_columns(self):
+        return self.root.get_primary_columns()
+
 
 class FilterType:
     def __init__(self, filter, lookup, value):
@@ -131,6 +134,9 @@ class FilterType:
             return SQL(format_string).format(*(args + (self.value,))), ()
         else:
             return SQL(format_string).format(*args), to_tuple(self.value)
+
+    def get_primary_columns(self):
+        return (self.field,)
 
 
 class Equal(FilterType):
@@ -276,6 +282,9 @@ class Operator:
         left_sql, left_args = self.left.get_sql(filter)
         right_sql, right_args = self.right.get_sql(filter)
         return left_sql, right_sql, left_args + right_args
+
+    def get_primary_columns(self):
+        return self.left.get_primary_columns() + self.right.get_primary_columns()
 
 
 class And(Operator):

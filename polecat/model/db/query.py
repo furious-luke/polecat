@@ -36,9 +36,30 @@ class Q(BaseQ):
     def insert_from_root(self):
         return super().insert(**model_to_values(self.model))
 
+    def update(self, model_or_subquery=None, **kwargs):
+        if isinstance(model_or_subquery, Model):
+            if kwargs:
+                raise ValueError('Cannot pass both model and values to update')
+            return self.update_from_model_argument(model_or_subquery)
+        elif not kwargs:
+            if not isinstance(self.model, Model):
+                raise ValueError(
+                    'Cannot pass nothing to update when root queryable is not'
+                    ' a Model'
+                )
+            return self.update_from_root()
+        else:
+            return super().update(**kwargs)
+
+    def update_from_model_argument(self, model):
+        return super().update(**model_to_values(model))
+
+    def update_from_root(self):
+        return super().update(**model_to_values(self.model))
+
     def into(self, destination_model):
         for row in self:
-            set_values_on_model(row[0], destination_model)
+            set_values_on_model(row, destination_model)
             return destination_model
         raise ValueError('No results returned from query')
 

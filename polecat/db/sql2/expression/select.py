@@ -1,5 +1,6 @@
 from itertools import chain
 
+from polecat.utils import to_tuple
 from psycopg2.sql import SQL, Identifier
 
 from .expression import Expression
@@ -15,7 +16,7 @@ class Select(Expression):
         self.where = where
 
     def to_sql(self):
-        columns_sql = self.get_columns_sql()
+        columns_sql, columns_args = self.get_columns_sql()
         all_subquery_sql, all_subquery_args = self.get_subquery_sql()
         rel_sql, rel_args = self.relation.to_sql()
         joins_sql, joins_args = self.get_all_joins_sql()
@@ -26,7 +27,7 @@ class Select(Expression):
             joins_sql,
             where_sql
         )
-        return sql, all_subquery_args + rel_args + joins_args + where_args
+        return sql, columns_args + all_subquery_args + rel_args + joins_args + where_args
 
     def get_subquery_sql(self):
         all_subquery_sql = []
@@ -43,15 +44,23 @@ class Select(Expression):
 
     def get_columns_sql(self):
         columns_sql = []
-        for name in self.columns:
-            name_ident = Identifier(name)
-            sql = SQL('{}.{} AS {}').format(
-                Identifier(self.relation.alias),
-                name_ident,
-                name_ident
-            )
+        columns_args = ()
+        for name in to_tuple(self.columns):
+            if isinstance(name, Expression):
+                sql, args = name.to_sql()
+            else:
+                name_ident = Identifier(name)
+                sql = SQL('{}.{} AS {}').format(
+                    Identifier(self.relation.alias),
+                    name_ident,
+                    name_ident
+                )
+                args = ()
             columns_sql.append(sql)
-        return columns_sql or [SQL('*')]
+            columns_args += args
+        if not columns_sql and not self.subqueries:
+            columns_sql = [SQL('*')]
+        return columns_sql, columns_args
 
     def get_all_joins_sql(self):
         joins_sql = []
@@ -88,7 +97,10 @@ class Select(Expression):
         for column_name in selection or ():
             if column_name not in self.columns and column_name not in self.subqueries:
                 self.columns += (column_name,)
-        to_push = self.columns
+        # TODO: Forgot that columns can be a subquery. I'll need to
+        # allow subqueries to return a list columns they require. For
+        # now, skip it.
+        to_push = self.columns if isinstance(self.columns, (tuple, list)) else ()
         for column_name in self.subqueries.keys():
             try:
                 column = self.relation.get_column(column_name)
@@ -96,4 +108,8 @@ class Select(Expression):
                 continue
             if not isinstance(column, ReverseColumn):
                 to_push += (column_name,)
+        if self.where:
+            to_push += self.where.get_primary_columns()
         self.relation.push_selection(to_push)
+        for join in self.joins:
+            join.push_selection()

@@ -1,7 +1,7 @@
 import pytest
-from polecat.db.sql import Q
 from polecat.graphql import build_graphql_schema, execute_query
 from polecat.graphql.utils import print_schema
+from polecat.model.db import Q
 
 from .models import *  # noqa
 from .queries import (all_actors_query, all_addresses_query, all_movies_query,
@@ -76,7 +76,7 @@ def test_delete(db, factory):
     assert result.errors is None
     data = result.data['deleteMovie']
     assert data['id'] == movie.id
-    result = Q(movie).get(id=movie.id).execute()
+    result = Q(movie).filter(id=movie.id).get()
     assert result is None
 
 

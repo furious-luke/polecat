@@ -30,7 +30,7 @@ class Insert(Expression):
         column_names_sql, column_values_sql, column_values = get_values_func()
         returning_sql = map(Identifier, self.returning)
         sql = SQL('INSERT INTO {} ({}) {}{}{} RETURNING {}').format(
-            Identifier(self.relation.name),
+            Identifier(self.relation.alias),
             SQL(', ').join(column_names_sql),
             prefix_sql,
             SQL(', ').join(column_values_sql),

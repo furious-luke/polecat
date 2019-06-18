@@ -91,6 +91,10 @@ class Select(Expression):
         for name in self.subqueries.keys():
             yield name
 
+    def get_column(self, name):
+        # TODO: Not sure a select should be running "get_column".
+        return self.relation.get_column(name)
+
     def push_selection(self, selection=None):
         from ...schema import ReverseColumn
         # TODO: Efficiency. Everything.

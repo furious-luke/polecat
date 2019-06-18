@@ -177,6 +177,21 @@ def test_update_strategy_with_nesting(staticdb):
     )
 
 
+def test_update_strategy_with_filter(staticdb):
+    table = create_table()
+    query = (
+        Q(table)
+        .filter(col1=1)
+        .update(col2=2)
+    )
+    sql = query.to_sql()
+    assert sql == (
+        b'WITH "c0" AS (UPDATE "a_table" SET ("col2") = ROW (2) WHERE'
+        b' "a_table"."col1" = 1 RETURNING "id") SELECT row_to_json(__tl)'
+        b' FROM (SELECT * FROM "c0") AS __tl'
+    )
+
+
 def test_multiple_inserts(staticdb):
     table = create_table()
     query = Q(table).insert(col1=1).insert(col1=2)

@@ -52,10 +52,26 @@ class Q(BaseQ):
             return super().update(**kwargs)
 
     def update_from_model_argument(self, model):
-        return super().update(**model_to_values(model))
+        id = self.get_model_id(model)
+        return (
+            super()
+            .filter(id=id)
+            .update(**model_to_values(model, exclude_fields=('id',)))
+        )
 
     def update_from_root(self):
-        return super().update(**model_to_values(self.model))
+        id = self.get_model_id(self.model)
+        return (
+            super()
+            .filter(id=id)
+            .update(**model_to_values(self.model, exclude_fields=('id',)))
+        )
+
+    def get_model_id(self, model):
+        id = getattr(model, 'id', None)
+        if id is None:
+            raise ValueError('Model has no ID set.')
+        return id
 
     def into(self, destination_model):
         for row in self:

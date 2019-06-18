@@ -80,9 +80,12 @@ def access_to_dbaccess(access):
     return dbaccess
 
 
-def model_to_values(model):
+def model_to_values(model, exclude_fields=None):
+    exclude_fields = exclude_fields or ()
     values = {}
     for field_name, field in model.Meta.fields.items():
+        if field_name in exclude_fields:
+            continue
         if not isinstance(field, (MutableField, ReverseField)):
             continue
         if not hasattr(model, field_name):

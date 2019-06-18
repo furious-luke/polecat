@@ -55,6 +55,7 @@ class Q:
             cursor.execute(SQL('SET LOCAL ROLE {}').format(
                 Identifier(self.role.Meta.role))
             )
+        print(cursor.mogrify(sql, args))
         cursor.execute(sql, args)
         # TODO: This is strange. For some reason I need to commit
         # the outcome of the query here. If I don't, then the
@@ -98,7 +99,10 @@ class Q:
         )
 
     def update(self, *subquery, **values):
-        source = self.get_mutation_source()
+        # TODO: Need to think about this more, but an Update is almost
+        # always able to run, regardless of the mutability of the
+        # source.
+        source = self.queryable
         # TODO: This is duped in insert.
         if len(subquery):
             if len(subquery) > 1:

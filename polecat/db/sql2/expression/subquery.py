@@ -28,5 +28,11 @@ class Subquery(Expression):
         # just at the moment, and at least it's clear what it's doing.
         return iter(self.expression.iter_column_names())
 
+    def get_column(self, name):
+        # TODO: Also bad design, but also what's the difference
+        # between this and the above? Looks like the above just does
+        # 'this.related_table'.
+        return self.expression.get_column(name)
+
     def push_selection(self, selection=None):
         self.expression.push_selection(selection)

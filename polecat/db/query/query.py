@@ -117,7 +117,10 @@ class Insert(Query):
 
 
 class Update(Insert):
-    pass
+    def assert_mutatable(self, source):
+        # TODO: Think about this more, but Update can work with pretty
+        # much anything. Maybe need "is_insertable" and "is_updatable"?
+        return True
 
 
 class Delete(Query):
@@ -141,6 +144,12 @@ class Filter(Query):
         super().__init__(source, **kwargs)
         self.assert_selectable(source)
         self.options = options
+
+    def has_column(self, name):
+        return self.source.has_column(name)
+
+    def get_column(self, name):
+        return self.source.get_column(name)
 
 
 class Common(Query):

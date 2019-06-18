@@ -9,6 +9,10 @@ class Update(Insert):
         super().__init__(*args, **kwargs)
         self.where = where
 
+    @property
+    def alias(self):
+        return self.relation.alias
+
     def to_sql(self):
         if isinstance(self.values, Expression):
             prefix_sql = SQL('')
@@ -22,7 +26,7 @@ class Update(Insert):
         returning_sql = map(Identifier, self.returning)
         where_sql, where_args = self.get_where_sql()
         sql = SQL('UPDATE {} SET ({}) = {}{}{}{} RETURNING {}').format(
-            Identifier(self.relation.name),
+            Identifier(self.relation.alias),
             SQL(', ').join(column_names_sql),
             prefix_sql,
             SQL(', ').join(column_values_sql),
@@ -34,6 +38,7 @@ class Update(Insert):
 
     def get_where_sql(self):
         if self.where:
-            return self.where.get_sql()
+            sql, args = self.where.get_sql(self.relation)
+            return SQL(' WHERE {}').format(sql), args
         else:
             return SQL(''), ()

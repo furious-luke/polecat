@@ -37,7 +37,7 @@ class Q:
     def to_sql(self, cursor):
         # TODO: This is also technically outside of the scope of this
         # class.
-        from ..sql2.strategy import Strategy
+        from ..sql.strategy import Strategy
         strategy = Strategy()
         expr = strategy.parse(self)
         return cursor.mogrify(*expr.to_sql())
@@ -47,7 +47,7 @@ class Q:
         # TODO: This is pretty bad. How to keep this purely as a
         # builder, but also inject strategy and execution knowledge
         # for convenience?
-        from ..sql2.strategy import Strategy
+        from ..sql.strategy import Strategy
         strategy = Strategy()
         expr = strategy.parse(self)
         sql, args = expr.to_sql()

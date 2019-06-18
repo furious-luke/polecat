@@ -1,4 +1,4 @@
-from polecat.db.sql2.expression import Insert, Select, Subquery, Update, Where
+from polecat.db.sql.expression import Insert, Select, Subquery, Update, Where
 
 from .schema import create_table
 

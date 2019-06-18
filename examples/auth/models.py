@@ -1,6 +1,6 @@
 from polecat import model
 from polecat.auth import jwt
-from polecat.db.sql2 import Q
+from polecat.db.sql import Q
 from polecat.project import Project
 
 

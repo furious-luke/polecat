@@ -19,6 +19,14 @@ def test_select_expression(staticdb):
     )
 
 
+def test_select_expression_with_app(staticdb):
+    table = create_table()
+    table.app = type('App', (), {'name': 'test'})
+    expr = Select(table, ['col1'])
+    sql = staticdb.mogrify(*expr.to_sql())
+    assert sql == b'SELECT "test_a_table"."col1" AS "col1" FROM "test_a_table"'
+
+
 def test_select_expression_with_where(staticdb):
     table = create_table()
     expr = Select(

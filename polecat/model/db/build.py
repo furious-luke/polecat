@@ -7,7 +7,8 @@ class TableBuilder:
     def build(self, model):
         return Table(
             model.Meta.table_name,
-            columns=self.build_all_columns(model)
+            columns=self.build_all_columns(model),
+            app=model.Meta.app
         )
 
     def build_all_columns(self, model):

@@ -3,8 +3,8 @@ def table_to_identifier(table):
         ident = table
     else:
         ident = table.name
-        if table.app:
-            ident = f'{app}.{ident}'
+        # if table.app:
+        #     ident = f'{table.app.name}.{ident}'
     return ident
 
 

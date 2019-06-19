@@ -2,11 +2,18 @@ import pytest
 from polecat.model.db import Q, S
 from psycopg2 import ProgrammingError
 
-from .models import Address, DefaultRole, Movie, UserRole
+from .models import Address, DefaultRole, Movie, User, UserRole
 
 
 def test_insert_sql(db):
     inst = Address(country='AU')
+    assert getattr(inst, 'id', None) is None
+    Q(inst).insert().into(inst)
+    assert inst.id is not None
+
+
+def test_insert_sql_with_app(db):
+    inst = User(email='test@test.org')
     assert getattr(inst, 'id', None) is None
     Q(inst).insert().into(inst)
     assert inst.id is not None

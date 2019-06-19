@@ -28,6 +28,9 @@ class User(model.Model):
     email = model.EmailField(unique=True, null=False)
     password = model.PasswordField()
 
+    class Meta:
+        app = type('App', (), {'name': 'auth'})
+
 
 class Address(model.Model):
     country = model.TextField()

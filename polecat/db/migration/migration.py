@@ -69,8 +69,9 @@ class Migration:
             if result[0]:
                 return
             migrations = migrations or {}
-            for dep_str in self.dependencies:
-                dep = migrations[dep_str]
+            for dep in self.dependencies:
+                if isinstance(dep, str):
+                    dep = migrations[dep]
                 dep.forward(migrations, cursor=cursor)
             # TODO: This transaction is slightly inefficient.
             with transaction(cursor):
@@ -113,6 +114,7 @@ class Migration:
             root = Path(root)
             if self.app:
                 root /= self.app.name
+            root /= 'migrations'
         return root / self.filename
 
     def save(self, output_path=None):
@@ -129,7 +131,7 @@ class Migration:
     def serialize(self):
         dep_strs = []
         for dep in self.dependencies:
-            dep.save()
+            # dep.save()
             dep_strs.append(f"'{dep.dependency_string}'")
         dep_strs = ',\n'.join(dep_strs)
         if dep_strs:

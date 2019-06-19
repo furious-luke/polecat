@@ -1,3 +1,4 @@
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import pytest
@@ -15,9 +16,9 @@ def test_migration_from_models(testdb):
         *migrations
     ]
     for mgr in migrations:
-        for op in mgr.operations:
-            sql = testdb.mogrify(*op.sql)
-            print(sql.decode())
+        # for op in mgr.operations:
+        #     sql = testdb.mogrify(*op.sql)
+        #     print(sql.decode())
         mgr.forward()
 
 
@@ -34,10 +35,15 @@ def test_serialize_migration(testdb):
 def test_run_migrations(testdb):
     bootstrap_migrations()
     migrations = diff_schemas(schema)
+    apps = []
     with TemporaryDirectory() as root:
         for mgr in migrations:
+            if mgr.app:
+                mgr.app.path = Path(root) / mgr.app.name
+                apps.append(mgr.app)
+        for mgr in migrations:
             mgr.save(root)
-        migrate([root])
+        migrate([root], apps=apps)
         # TODO: Test something?
 
 

@@ -16,17 +16,16 @@ def diff_schemas(to_schema, from_schema=None):
 
 
 @dbcursor
-def migrate(migration_paths=None, cursor=None):
+def migrate(migration_paths=None, apps=None, cursor=None):
     bootstrap_migrations()
-    migrations = load_migrations(migration_paths)
+    migrations = load_migrations(migration_paths, apps=apps)
     for migration in migrations.values():
         migration.forward(migrations, cursor=cursor)
 
 
-@active_context
-def load_migrations(migration_paths=None, context=None):
+def load_migrations(migration_paths=None, apps=None):
     migrations = {}
-    for app in context.registries.app_registry:
+    for app in apps or ():
         migrations.update(load_app_migrations(app))
     for path in migration_paths or ():
         migrations.update(load_path_migrations(path))

@@ -19,7 +19,7 @@ class Table(Entity):
         # that if the column name passed in is not a string it has a
         # `.name` attribute.
         self.app = app
-        self.name = name
+        self._name = name  # TODO: Not sure how I feel about this.
         self.columns = columns or []
         self.checks = checks or []
         self.uniques = uniques or []
@@ -37,6 +37,13 @@ class Table(Entity):
     @property
     def signature(self):
         return (Table, self.app, self.name)
+
+    @property
+    def name(self):
+        name = self._name
+        if self.app:
+            name = f'{self.app.name}_{name}'
+        return name
 
     def has_changed(self, other):
         return (

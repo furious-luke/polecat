@@ -153,7 +153,7 @@ def make_model_meta(name, bases, attrs, meta):
     }
     return type('Meta', (), {
         'options': meta.__dict__ if meta else {},
-        'app': None,
+        'app': getattr(meta, 'app', None),
         'name': name,
         'table_name': snakecase(name),  # TODO
         'fields': fields,

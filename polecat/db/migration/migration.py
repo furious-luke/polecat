@@ -111,6 +111,8 @@ class Migration:
             root = self.migrations_path
         else:
             root = Path(root)
+            if self.app:
+                root /= self.app.name
         return root / self.filename
 
     def save(self, output_path=None):

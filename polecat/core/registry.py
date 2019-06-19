@@ -1,8 +1,9 @@
 import inspect
 from operator import attrgetter
 
-from ..utils import to_class
-from ..utils.container import Option, OptionDict, passthrough
+from polecat.utils import to_class
+from polecat.utils.container import Option, OptionDict, passthrough
+
 from .context import active_context
 
 __all__ = ('RegistryMetaclass', 'Registry', 'MappedRegistry')

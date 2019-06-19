@@ -1,6 +1,3 @@
-from . import to_tuple
-
-
 def passthrough(cls):
     """ Wrap another dictionary-like class to provide direct access to
     its contents through attribute access.
@@ -120,5 +117,8 @@ class OptionDict:
             (distance(key, opt), opt)
             for opt in self.options
         ]
-        closest = min(closest, key=lambda x: x[0])[1]
-        return KeyError(f'{key} not found, did you mean {closest}?')
+        if closest:
+            closest = min(closest, key=lambda x: x[0])[1]
+            return KeyError(f'{key} not found, did you mean {closest}?')
+        else:
+            return KeyError(f'{key} not found')

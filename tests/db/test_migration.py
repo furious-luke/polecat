@@ -1,10 +1,11 @@
 from tempfile import TemporaryDirectory
 
 import pytest
-from polecat.db.migration import bootstrap_migrations, diff_schemas, migrate
+from polecat.db.migration import (bootstrap_migrations, diff_schemas,
+                                  make_migrations, migrate)
 from polecat.db.schema import Column, RelatedColumn, Schema, Table
 
-from .models import schema  # noqa
+from ..models import schema  # noqa
 
 
 def test_migration_from_models(testdb):
@@ -38,6 +39,12 @@ def test_run_migrations(testdb):
             mgr.save(root)
         migrate([root])
         # TODO: Test something?
+
+
+def test_make_migration(testdb):
+    bootstrap_migrations()
+    with TemporaryDirectory() as root:
+        make_migrations(to_schema=schema, output_path=root)
 
 
 @pytest.mark.skip(reason='need to mock app registry')

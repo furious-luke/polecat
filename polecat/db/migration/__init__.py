@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from ...core.context import active_context
+from polecat.core.context import active_context
+
 from ..decorators import dbcursor
 from ..schema import Schema
 from .differ import Differ
@@ -87,14 +88,15 @@ def load_path_migrations(path):
     return migrations
 
 
-def make_migrations():
+def make_migrations(to_schema=None, output_path=None):
     migrations = load_migrations()
     # TODO: Make schema from migrations.
-    to_schema = Schema.from_models()
-    new_migrations = to_schema.diff()  # TODO: Add in "from_schema"
+    if to_schema is None:
+        to_schema = active_context().db.schema
+    new_migrations = diff_schemas(to_schema)
     for mgr in new_migrations:
         # TODO: Feedback?
-        mgr.save()
+        mgr.save(output_path=output_path)
 
 
 def make_migrations_for_app(app):

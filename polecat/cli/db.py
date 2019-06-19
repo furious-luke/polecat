@@ -42,21 +42,21 @@ def delete_instance(ctx, name):
 
 
 @db.command()
-@click.argument('project')
 @click.argument('deployment')
 @click.option('--instance')
 @click.pass_context
-def create(ctx, project, deployment, instance):
+def create(ctx, deployment, instance):
     from ..deploy.aws.db import create_db as aws_create_db
+    project = ctx.obj['project']
     aws_create_db(project, deployment, instance_name=instance, feedback=HaloFeedback())
 
 
 @db.command('list')
-@click.argument('project')
 @click.argument('deployment')
 @click.pass_context
-def list_dbs(ctx, project, deployment):
+def list_dbs(ctx, deployment):
     from ..deploy.aws.db import list_dbs as aws_list_dbs
+    project = ctx.obj['project']
     dbs = aws_list_dbs(project, deployment, feedback=HaloFeedback())
     if len(dbs) == 0:
         print(colored('    No databases', 'grey'))
@@ -66,9 +66,9 @@ def list_dbs(ctx, project, deployment):
 
 
 @db.command()
-@click.argument('project')
 @click.argument('deployment')
 @click.pass_context
-def delete(ctx, project, deployment):
+def delete(ctx, deployment):
     from ..deploy.aws.db import delete_db as aws_delete_db
+    project = ctx.obj['project']
     aws_delete_db(project, deployment, feedback=HaloFeedback())

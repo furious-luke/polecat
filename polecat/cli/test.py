@@ -26,10 +26,9 @@ def test(ctx):
 
 
 @test.command('production')
-@click.argument('project')
 @click.argument('source')
 @click.pass_context
-def test_production(ctx, project, source):
+def test_production(ctx, source):
     with TemporaryDirectory() as root:
         os.chmod(root, 0o755)
         with ZipFile(source, 'r') as zf:

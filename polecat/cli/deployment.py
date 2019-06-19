@@ -14,17 +14,19 @@ def deployment(ctx):
 
 
 @deployment.command('create')
-@click.argument('project')
+@click.pass_context
 @click.argument('deployment')
-def create_deployment(project, deployment):
+def create_deployment(ctx, deployment):
     from ..deploy.aws.deployment import create_deployment as aws_create_deployment
+    project = ctx.obj['project']
     aws_create_deployment(project, deployment, feedback=HaloFeedback())
 
 
 @deployment.command('list')
-@click.argument('project')
-def list_deployments(project):
+@click.pass_context
+def list_deployments(ctx):
     from ..deploy.aws.deployment import list_deployments as aws_list_deployments
+    project = ctx.obj['project']
     deployments = aws_list_deployments(project, feedback=HaloFeedback())
     if len(deployments) == 0:
         print(colored('    No deployments', 'grey'))

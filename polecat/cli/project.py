@@ -1,6 +1,7 @@
 import click
 from termcolor import colored
 
+from .config import update_config
 from .feedback import HaloFeedback
 from .main import main
 
@@ -20,6 +21,7 @@ def create_project(ctx, project):
     from ..deploy.aws.project import create_project as aws_create_project
     bucket = ctx.obj['bucket']
     aws_create_project(project, bucket, feedback=HaloFeedback())
+    update_config({'project': project})
 
 
 @project.command('list')

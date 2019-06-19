@@ -5,5 +5,8 @@ from .config import load_config
 
 @click.group()
 @click.pass_context
-def main(ctx):
+@click.option('--project', '-p')
+def main(ctx, project):
     ctx.obj.update(load_config())
+    if project:
+        ctx.obj['project'] = project

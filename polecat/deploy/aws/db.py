@@ -3,8 +3,9 @@ from psycopg2.sql import SQL, Identifier
 from termcolor import colored
 
 from ...db.connection import cursor
-from ...utils import capitalize, random_ident
-from ...utils.feedback import feedback
+from ...utils import random_ident
+from ...utils.feedback import capitalize, feedback
+from .constants import DEPLOYMENT_PREFIX
 from .exceptions import KnownError
 from .operations import (delete_parameter, get_parameter,
                          get_parameters_by_path, set_parameter)
@@ -13,7 +14,7 @@ from .utils import aws_client
 
 
 def get_db_name(project, deployment):
-    return f'{project}{capitalize(deployment)}'
+    return f'{capitalize(project)}{capitalize(deployment)}'
 
 
 def get_rds_instance(instance_id, rds=None):
@@ -157,11 +158,11 @@ def create_db(project, deployment, instance_name=None, instance_class='db.t2.mic
             url
         )
         set_parameter(
-            f'/polecat/projects/{project}/deployments/{deployment}/databases/{db_name}/url',
+            DEPLOYMENT_PREFIX.format(project, deployment) + f'databases/{db_name}/url',
             url
         )
         set_parameter(
-            f'/polecat/projects/{project}/deployments/{deployment}/databases/{db_name}/instance_name',
+            DEPLOYMENT_PREFIX.format(project, deployment) + f'databases/{db_name}/instance_name',
             instance_name
         )
     create_secret(
@@ -177,7 +178,7 @@ def create_db(project, deployment, instance_name=None, instance_class='db.t2.mic
 def list_dbs(project, deployment, feedback=None):
     with feedback(f'List databases for {colored(project, "blue")}/{colored(deployment, "green")}'):
         dbs = get_parameters_by_path(
-            f'/polecat/projects/{project}/deployments/{deployment}/databases/'
+            DEPLOYMENT_PREFIX.format(project, deployment) + 'databases/'
         )
     return dbs.keys()
 
@@ -187,7 +188,7 @@ def delete_db(project, deployment, feedback=None):
     db_name = get_db_name(project, deployment)
     with feedback(f'Delete database for {colored(project, "blue")}/{colored(deployment, "green")}'):
         info = get_parameters_by_path(
-            f'/polecat/projects/{project}/deployments/{deployment}/databases/{db_name}/',
+            DEPLOYMENT_PREFIX.format(project, deployment) + f'databases/{db_name}/',
         )
         instance_name = info['instance_name']
         instance_url = get_parameter(
@@ -198,6 +199,6 @@ def delete_db(project, deployment, feedback=None):
             curs.execute(SQL('DROP USER {}').format(Identifier(db_name)))
         delete_parameter([
             f'/polecat/aws/db/instances/{instance_name}/databases/{db_name}/url',
-            f'/polecat/projects/{project}/deployments/{deployment}/databases/{db_name}/url',
-            f'/polecat/projects/{project}/deployments/{deployment}/databases/{db_name}/instance_name'
+            DEPLOYMENT_PREFIX.format(project, deployment) + f'databases/{db_name}/url',
+            DEPLOYMENT_PREFIX.format(project, deployment) + f'databases/{db_name}/instance_name'
         ])

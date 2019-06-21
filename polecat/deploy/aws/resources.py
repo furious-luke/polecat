@@ -1,10 +1,9 @@
 from ...utils import capitalize
-# from .constants import ADMIN_CODE, MEDIA_PREFIX, SERVER_CODE
 from .constants import MEDIA_PREFIX, SERVER_CODE
 
 
-def create_api_resources(project, deployment, bucket, environment):
-    project_deployment = f'{project}{capitalize(deployment)}'
+def create_api_resources(project, deployment, api_name, bucket, environment):
+    project_deployment = f'{capitalize(project)}{capitalize(deployment)}'
     code_version = environment['code']['version']
     bundle_version = environment['bundle']['version']
     secrets = environment.get('secrets', {})
@@ -16,7 +15,7 @@ def create_api_resources(project, deployment, bucket, environment):
                     'S3Bucket': bucket,
                     'S3Key': SERVER_CODE.format(project, code_version)
                 },
-                'Description': f'API resolver for {project_deployment}',
+                'Description': f'Polecat API resolver for {project}/{deployment}',
                 'FunctionName': f'{project_deployment}Server',
                 'Handler': f'main.handler',
                 'Timeout': 30,
@@ -57,54 +56,6 @@ def create_api_resources(project, deployment, bucket, environment):
                 ]
             }
         },
-        # f'{project_deployment}AdminLambda': {
-        #     'Type': 'AWS::Lambda::Function',
-        #     'Properties': {
-        #         'Code': {
-        #             'S3Bucket': bucket,
-        #             'S3Key': ADMIN_CODE.format(project, code_version)
-        #         },
-        #         'Description': f'Admin functions for {project_deployment}',
-        #         'FunctionName': f'{project_deployment}Admin',
-        #         'Handler': 'main.handler',
-        #         'Timeout': 900,
-        #         'Role': {
-        #             'Fn::GetAtt': [
-        #                 f'{project_deployment}ExecutionRole',
-        #                 'Arn'
-        #             ]
-        #         },
-        #         'Runtime': 'python3.7',
-        #         'Environment': {
-        #             'Variables': {
-        #                 'PROJECT': project,
-        #                 'DEPLOYMENT': deployment,
-        #                 'BUCKET': bucket,
-        #                 'MEDIA_PREFIX': MEDIA_PREFIX.format(
-        #                     project,
-        #                     deployment
-        #                 ),
-        #                 'CODE_VERSION': code_version,
-        #                 'BUNDLE_VERSION': bundle_version,
-        #                 **secrets
-        #             }
-        #         },
-        #         'Tags': [
-        #             {
-        #                 'Key': 'Builder',
-        #                 'Value': 'Polecat'
-        #             },
-        #             {
-        #                 'Key': 'PolecatProject',
-        #                 'Value': project
-        #             },
-        #             {
-        #                 'Key': 'PolecatDeployment',
-        #                 'Value': deployment
-        #             }
-        #         ]
-        #     }
-        # },
         f'{project_deployment}ExecutionRole': {
             'Type': 'AWS::IAM::Role',
             'Properties': {
@@ -129,7 +80,7 @@ def create_api_resources(project, deployment, bucket, environment):
                 ],
                 'Policies': [
                     {
-                        'PolicyName': f'{project_deployment}ParameterAccess',
+                        'PolicyName': f'{project_deployment}MediaAccess',
                         'PolicyDocument': {
                             'Version': '2012-10-17',
                             'Statement': [
@@ -146,7 +97,7 @@ def create_api_resources(project, deployment, bucket, environment):
                                             '',
                                             [
                                                 # TODO: Use a constant.
-                                                f'arn:aws:s3:::{bucket}/projects/{project}/deployments/{deployment}/media/*'
+                                                f'arn:aws:s3:::{bucket}/' + MEDIA_PREFIX.format(project, deployment) + '*'
                                             ]
                                         ]
                                     }
@@ -157,11 +108,11 @@ def create_api_resources(project, deployment, bucket, environment):
                 ]
             }
         },
-        f'{project_deployment}Api': {
+        f'{api_name}Api': {
             'Type': 'AWS::ApiGateway::RestApi',
             'Properties': {
                 'Name': project_deployment,
-                'Description': f'API Gateway for {project_deployment}',
+                'Description': f'Polecat API Gateway',
                 'FailOnWarnings': True,
                 'EndpointConfiguration': {
                     'Types': [
@@ -196,7 +147,7 @@ def create_api_resources(project, deployment, bucket, environment):
                             },
                             ':',
                             {
-                                'Ref': f'{project_deployment}Api'
+                                'Ref': f'{api_name}Api'
                             },
                             '/*'
                         ]
@@ -204,40 +155,7 @@ def create_api_resources(project, deployment, bucket, environment):
                 }
             }
         },
-        # f'{project_deployment}AdminLambdaPermission': {
-        #     'Type': 'AWS::Lambda::Permission',
-        #     'Properties': {
-        #         'Action': 'lambda:invokeFunction',
-        #         'FunctionName': {
-        #             'Fn::GetAtt': [
-        #                 f'{project_deployment}AdminLambda',
-        #                 'Arn'
-        #             ]
-        #         },
-        #         'Principal': 'apigateway.amazonaws.com',
-        #         'SourceArn': {
-        #             'Fn::Join': [
-        #                 '',
-        #                 [
-        #                     'arn:aws:execute-api:',
-        #                     {
-        #                         'Ref': 'AWS::Region'
-        #                     },
-        #                     ':',
-        #                     {
-        #                         'Ref': 'AWS::AccountId'
-        #                     },
-        #                     ':',
-        #                     {
-        #                         'Ref': f'{project_deployment}Api'
-        #                     },
-        #                     '/*'
-        #                 ]
-        #             ]
-        #         }
-        #     }
-        # },
-        f'{project_deployment}ApiGatewayCloudWatchLogsRole': {
+        f'{capitalize(project)}ApiGatewayCloudWatchLogsRole': {
             'Type': 'AWS::IAM::Role',
             'Properties': {
                 'AssumeRolePolicyDocument': {
@@ -286,7 +204,7 @@ def create_api_resources(project, deployment, bucket, environment):
             'Properties': {
                 'CloudWatchRoleArn': {
                     'Fn::GetAtt': [
-                        f'{project_deployment}ApiGatewayCloudWatchLogsRole',
+                        f'{capitalize(project)}ApiGatewayCloudWatchLogsRole',
                         'Arn'
                     ]
                 }
@@ -310,9 +228,9 @@ def create_api_resources(project, deployment, bucket, environment):
                     }
                 ],
                 'RestApiId': {
-                    'Ref': f'{project_deployment}Api'
+                    'Ref': f'{api_name}Api'
                 },
-                'StageName': 'LATEST',
+                'StageName': f'{project}-{deployment}',
                 'Tags': [
                     {
                         'Key': 'Builder',
@@ -336,7 +254,7 @@ def create_api_resources(project, deployment, bucket, environment):
             ],
             'Properties': {
                 'RestApiId': {
-                    'Ref': f'{project_deployment}Api'
+                    'Ref': f'{api_name}Api'
                 }
             }
         },
@@ -344,11 +262,11 @@ def create_api_resources(project, deployment, bucket, environment):
             'Type': 'AWS::ApiGateway::Resource',
             'Properties': {
                 'RestApiId': {
-                    'Ref': f'{project_deployment}Api'
+                    'Ref': f'{api_name}Api'
                 },
                 'ParentId': {
                     'Fn::GetAtt': [
-                        f'{project_deployment}Api', 'RootResourceId'
+                        f'{api_name}Api', 'RootResourceId'
                     ]
                 },
                 'PathPart': '{proxy+}'
@@ -393,7 +311,7 @@ def create_api_resources(project, deployment, bucket, environment):
                     'Ref': f'{project_deployment}Resource'
                 },
                 'RestApiId': {
-                    'Ref': f'{project_deployment}Api'
+                    'Ref': f'{api_name}Api'
                 },
                 'MethodResponses': [
                     {
@@ -439,12 +357,12 @@ def create_api_resources(project, deployment, bucket, environment):
                 },
                 'ResourceId': {
                     'Fn::GetAtt': [
-                        f'{project_deployment}Api',
+                        f'{api_name}Api',
                         'RootResourceId'
                     ]
                 },
                 'RestApiId': {
-                    'Ref': f'{project_deployment}Api'
+                    'Ref': f'{api_name}Api'
                 },
                 'MethodResponses': [
                     {
@@ -456,8 +374,8 @@ def create_api_resources(project, deployment, bucket, environment):
     }
 
 
-def create_domain_resources(project, deployment, domain, certificate_arn):
-    project_deployment = f'{project}{capitalize(deployment)}'
+def create_domain_resources(project, deployment, api_name, domain, certificate_arn):
+    project_deployment = f'{capitalize(project)}{capitalize(deployment)}'
     return {
         f'{project_deployment}DomainName': {
             'DependsOn': f'{project_deployment}ApiDeployment',
@@ -478,16 +396,16 @@ def create_domain_resources(project, deployment, domain, certificate_arn):
             'Properties': {
                 'DomainName': domain,
                 'RestApiId': {
-                    'Ref': f'{project_deployment}Api'
+                    'Ref': f'{api_name}Api'
                 },
-                'Stage': 'LATEST'
+                'Stage': f'{project}-{deployment}'
             }
         }
     }
 
 
 def create_zone_resources(project, deployment, domain, zone):
-    project_deployment = f'{project}{capitalize(deployment)}'
+    project_deployment = f'{capitalize(project)}{capitalize(deployment)}'
     return {
         f'{project_deployment}RecordSet': {
             'DependsOn': f'{project_deployment}DomainName',
@@ -516,24 +434,24 @@ def create_zone_resources(project, deployment, domain, zone):
     }
 
 
-def create_output_resources(project, deployment):
-    project_deployment = f'{project}{capitalize(deployment)}'
+def create_output_resources(project, deployment, api_name):
+    project_deployment = f'{capitalize(project)}{capitalize(deployment)}'
     return {
         f'{project_deployment}Url': {
-            'Description': f'Root URL of the {project_deployment} API gateway',
+            'Description': f'Polecat root URL of {project}/{deployment} API gateway',
             'Value': {
                 'Fn::Join': [
                     '',
                     [
                         'https://',
                         {
-                            'Ref': f'{project_deployment}Api'
+                            'Ref': f'{api_name}Api'
                         },
                         '.execute-api.',
                         {
                             'Ref': 'AWS::Region'
                         },
-                        '.amazonaws.com/LATEST/'
+                        f'.amazonaws.com/{project}-{deployment}/'
                     ]
                 ]
             }

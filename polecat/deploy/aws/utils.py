@@ -30,3 +30,10 @@ def aws_exists():
 
 def default_path(path):
     return path or '/polecat/'
+
+
+def assert_project_and_deployment_exists(project, deployment, ssm=None):
+    from .project import assert_project_exists
+    from .deployment import assert_deployment_exists
+    assert_project_exists(project, ssm=ssm)
+    assert_deployment_exists(deployment, ssm=ssm)

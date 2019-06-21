@@ -1,9 +1,11 @@
-import ujson
 from botocore.exceptions import ClientError, WaiterError
+
+import ujson
 from termcolor import colored
 
 from ...utils import get_path, set_path
 from ...utils.feedback import feedback
+from .constants import PROJECT_PREFIX
 from .deployment import assert_deployment_exists
 from .exceptions import KnownError
 from .operations import get_parameter, get_parameters_by_path
@@ -19,7 +21,7 @@ def deploy(project, bucket, deployment=None, dry_run=False, feedback=None):
     if deployment:
         msg += f'/{colored(deployment, "green")}'
     with feedback(msg):
-        template = create_template(project, bucket, deployment, cf=cf)
+        template = create_template(project, bucket, deployment=deployment, cf=cf)
         if dry_run:
             raise Warning('dry run')
         params = {
@@ -88,11 +90,13 @@ def get_existing_template(project, cf=None):
 def create_resources(project, bucket, environment, resources=None):
     resources = resources or {}
     for dep, env in environment.items():
-        resources.update(create_api_resources(project, dep, bucket, env))
+        # TODO: Need to make the API name dynamic.
+        api_name = 'Polecat1'
+        resources.update(create_api_resources(project, dep, api_name, bucket, env))
         for domain, info in env.get('domains', {}).items():
             certificate_arn = info['certificate']  # TODO: Confirm it exists?
             resources.update(
-                create_domain_resources(project, dep, domain, certificate_arn)
+                create_domain_resources(project, dep, api_name, domain, certificate_arn)
             )
             zone = info.get('zone', None)
             if zone:
@@ -105,7 +109,7 @@ def create_resources(project, bucket, environment, resources=None):
 def create_outputs(project, environment, outputs=None):
     outputs = outputs or {}
     for dep, env in environment.items():
-        outputs.update(create_output_resources(project, dep))
+        outputs.update(create_output_resources(project, dep, api_name))
     return outputs
 
 
@@ -113,7 +117,7 @@ def get_environment(project, deployment=None):
     deployment = deployment or ''
     if deployment:
         assert_deployment_exists(project, deployment)
-    prefix = f'/polecat/projects/{project}'  # TODO: Constant.
+    prefix = PROJECT_PREFIX.format(project)
     project_code_version = get_parameter(f'{prefix}/code/version')  # TODO: Constant.
     if project_code_version is None:
         raise KnownError('No code version available')

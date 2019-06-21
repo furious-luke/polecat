@@ -14,8 +14,8 @@ def deployment(ctx):
 
 
 @deployment.command('create')
-@click.pass_context
 @click.argument('deployment')
+@click.pass_context
 def create_deployment(ctx, deployment):
     from ..deploy.aws.deployment import create_deployment as aws_create_deployment
     project = ctx.obj['project']

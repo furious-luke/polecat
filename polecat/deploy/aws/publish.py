@@ -1,7 +1,7 @@
 from termcolor import colored
 
 from ...utils.feedback import feedback
-from .constants import CERTIFICATE, ZONE
+from .constants import CERTIFICATE, SECRET_PREFIX, ZONE
 from .operations import delete_parameter, get_parameters_by_path, set_parameter
 from .utils import aws_client
 
@@ -62,16 +62,4 @@ def publish(project, deployment, domain, certificate, zone, feedback):
 @feedback
 def unpublish(project, deployment, domain, feedback):
     # TODO
-    ssm = aws_client('ssm')
-    with feedback(f'List secrets for {colored(project, "blue")}/{colored(deployment, "green")}'):
-        prefix = SECRET_PREFIX.format(project, deployment)
-        return get_parameters_by_path(prefix, ssm=ssm)
-# export async function unpublish(deployment, domain) {
-#   const app = getConfig('app')
-#   await loggedOperation(`Unpublishing ${app.blue}/${deployment.blue} from ${domain.yellow} ... `, async () => {
-#     const ssm = new AWS.SSM()
-#     await ssm.deleteParameter({
-#       Name: `/polecat/apps/${app}/deployments/${deployment}/domains/${domain}/certificate`
-#     }).promise()
-#   })
-# }
+    pass

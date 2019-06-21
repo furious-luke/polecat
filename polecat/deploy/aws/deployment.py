@@ -1,7 +1,7 @@
 from termcolor import colored
 
 from ...utils.feedback import feedback
-from .constants import DEPLOYMENT_REGISTRY
+from .constants import DEPLOYMENT_PREFIX, DEPLOYMENT_REGISTRY
 from .exceptions import EntityDoesNotExist, EntityExists
 from .operations import get_parameter, set_parameter
 from .project import assert_project_exists

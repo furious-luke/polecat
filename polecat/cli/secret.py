@@ -14,10 +14,10 @@ def secret(ctx):
 
 
 @secret.command('create')
-@click.pass_context
 @click.argument('deployment')
 @click.argument('key')
 @click.argument('value')
+@click.pass_context
 def create_secret(ctx, deployment, key, value):
     from ..deploy.aws.secret import create_secret as aws_create_secret
     project = ctx.obj['project']
@@ -25,8 +25,8 @@ def create_secret(ctx, deployment, key, value):
 
 
 @secret.command('list')
-@click.pass_context
 @click.argument('deployment')
+@click.pass_context
 def list_secrets(ctx, deployment):
     from ..deploy.aws.secret import list_secrets as aws_list_secrets
     project = ctx.obj['project']

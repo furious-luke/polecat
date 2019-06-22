@@ -3,14 +3,14 @@ from psycopg2.sql import SQL, Identifier
 from termcolor import colored
 
 from ...db.connection import cursor
-from ...utils import random_ident
-from ...utils.feedback import capitalize, feedback
+from ...utils import capitalize, random_ident
+from ...utils.feedback import feedback
 from .constants import DEPLOYMENT_PREFIX
 from .exceptions import KnownError
 from .operations import (delete_parameter, get_parameter,
                          get_parameters_by_path, set_parameter)
 from .secret import create_secret
-from .utils import aws_client
+from .utils import aws_client, aws_does_not_exist
 
 
 def get_db_name(project, deployment):
@@ -41,7 +41,7 @@ def get_db_url_components(url):
 
 
 def replace_db_name(url, db_name):
-    return url[url.rfind('/'):] + db_name
+    return url[:url.rfind('/') + 1] + db_name
 
 
 @feedback
@@ -115,8 +115,11 @@ def create_db(project, deployment, instance_name=None, instance_class='db.t2.mic
               feedback=None):
     if not instance_name:
         instance_name, instance_url = create_instance(
-            instance_class, storage,
-            master_username, backup_days, feedback=feedback
+            instance_class=instance_class,
+            storage=storage,
+            master_username=master_username,
+            backup_days=backup_days,
+            feedback=feedback
         )
     else:
         instance_url = get_parameter(f'/polecat/aws/db/instances/{instance_name}/url')
@@ -127,7 +130,7 @@ def create_db(project, deployment, instance_name=None, instance_class='db.t2.mic
         url = get_db_url(db_name, password, address, db_name)
         with cursor(instance_url) as curs:
             curs.execute(
-                SQL('CREATE USER {} WITH PASSWORD \'%s\'' % password).format(
+                SQL('CREATE USER {} WITH CREATEROLE PASSWORD \'%s\'' % password).format(
                     Identifier(db_name)
                 )
             )

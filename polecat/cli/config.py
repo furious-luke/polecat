@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 import click
 import ujson
@@ -6,8 +7,9 @@ import ujson
 
 def load_config():
     cfg = read_config(global_config_path())
-    cfg.update(read_config(find_config()))
-    return cfg
+    path = find_config()
+    cfg.update(read_config(path))
+    return cfg, path
 
 
 def update_config(new_cfg={}, delete=[], path=None):
@@ -26,9 +28,14 @@ def update_config(new_cfg={}, delete=[], path=None):
 
 
 def find_config():
-    path = os.path.join(os.getcwd(), 'polecat.json')
-    if os.path.exists(path):
-        return path
+    dir = Path().absolute()
+    while True:
+        path = dir / 'polecat.json'
+        if path.exists():
+            return str(path)
+        if dir == Path.home():
+            return None
+        dir = dir.parent
 
 
 def global_config_path():
@@ -55,5 +62,5 @@ def write_config(path, cfg):
         except Exception:
             pass
     os.chmod(path, 0o600)
-    cfg_str = ujson.dumps(cfg)
+    cfg_str = ujson.dumps(cfg, indent=2)
     open(path, 'w').write(cfg_str)

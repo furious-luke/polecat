@@ -15,6 +15,7 @@ class APIGatewayRequest:
             self.path = event['path']
             self.method = event['httpMethod']
             self.headers = event.get('headers', {})
+            self.host = self.headers.get('Host', None)
             self.query_parameters = event.get('queryStringParameters', None)
             self.body = event.get('body', None)
             self.json = ujson.loads(self.body) if self.body is not None else None
@@ -27,6 +28,7 @@ class APIGatewayRequest:
                     self.path = '/'
         except KeyError:
             self.is_valid = False
+            self.host = None
             self.path = None
             self.method = None
             self.headers = {}

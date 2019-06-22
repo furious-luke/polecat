@@ -59,6 +59,11 @@ class TextColumn(Column):
             return SQL(self.dbtype)
 
 
+class TimestampColumn(Column):
+    sources = (schema.TimestampColumn,)
+    dbtype = 'timestamptz'
+
+
 class RelatedColumn(IntColumn):
     sources = (schema.RelatedColumn,)
 

@@ -22,6 +22,7 @@ def upload(project, bucket, source=None, version=None, feedback=None):
         else:
             current_version = 0
         if version is not None:
+            version = int(version)
             if version > current_version + 1:
                 raise KnownError('invalid version provided')
         else:
@@ -71,6 +72,7 @@ def upload_bundle(project, bucket, source=None, version=None, feedback=None):
         else:
             current_version = 0
         if version is not None:
+            version = int(version)
             if version > current_version + 1:
                 raise KnownError('invalid version provided')
         else:

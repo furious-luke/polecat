@@ -47,5 +47,5 @@ class RoleMiddleware(JWTMiddleware):
                     break
             if not found:
                 # TODO: Better exception.
-                raise Exception('fole not found')
+                raise Exception('role not found')
         event.role = role

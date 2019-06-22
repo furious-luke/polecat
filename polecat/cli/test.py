@@ -35,7 +35,7 @@ def test_production(ctx, source):
             zf.extractall(root)
         env = {
             'DATABASE_URL': os.environ['DATABASE_URL'],
-            'POLECAT_PROJECT': 'basic.project.Project'  # TODO
+            'POLECAT_PROJECT_MODULE': 'basic.project.Project'  # TODO
         }
         env_str = ' '.join(f'-e {k}={v}' for k, v in env.items())
         request = api_gateway_request

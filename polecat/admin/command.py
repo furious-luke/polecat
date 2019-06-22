@@ -26,18 +26,22 @@ class Command(metaclass=CommandMetaclass):
     Argument = click.Argument
     Option = click.Option
 
+    def __init__(self, project=None):
+        self.project = project
+
     @classmethod
     def _run(cls, *args, **kwargs):
         ctx = click.get_current_context()
         project = ctx.obj.get('project')
         deployment = ctx.obj.get('deployment')
+        # TODO: Support running on all deployments?
         if project and deployment:
             cls._run_remote(project, deployment, *args, **kwargs)
             return
         from ..project.project import load_project  # TODO: Ugh.
         project = load_project()
         project.prepare()  # TODO: Need this?
-        command = cls()
+        command = cls(project)
         command.run(*args, **kwargs)
 
     @classmethod

@@ -9,4 +9,4 @@ class Migrate(Command):
 
     def run(self, skip):
         from polecat.db.migration import migrate
-        migrate()
+        migrate(apps=self.project.apps)

@@ -42,7 +42,7 @@ class Table(Entity):
     def name(self):
         name = self._name
         if self.app:
-            name = f'{self.app.name}_{name}'
+            name = f'{self.app.name.lower()}_{name}'
         return name
 
     def has_changed(self, other):

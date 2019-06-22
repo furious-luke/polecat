@@ -72,11 +72,11 @@ def factory():
 
 @pytest.fixture
 def server():
-    with environ(POLECAT_PROJECT='polecat.project.project.Project'):
+    with environ(POLECAT_PROJECT_MODULE='polecat.project.project.Project'):
         yield Server()
 
 
 @pytest.fixture
 def lambda_server():
-    with environ(POLECAT_PROJECT='polecat.project.project.Project'):
+    with environ(POLECAT_PROJECT_MODULE='polecat.project.project.Project'):
         yield LambdaServer()

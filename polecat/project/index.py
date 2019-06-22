@@ -35,10 +35,6 @@ def get_index_html(bucket, project, bundle_version, region='ap-southeast-2',
 
 
 class IndexHandler(Handler):
-    def __init__(self, project):
-        super().__init__()
-        self.project = project
-
     def prepare(self):
         self.index_html = self.project.get_index_html()
 

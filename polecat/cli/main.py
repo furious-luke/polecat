@@ -1,12 +1,16 @@
 import click
+from termcolor import colored
 
 from .config import load_config
 
 
 @click.group()
-@click.pass_context
 @click.option('--project', '-p')
+@click.pass_context
 def main(ctx, project):
-    ctx.obj.update(load_config())
+    config, config_path = load_config()
+    if config_path:
+        print(f'Loaded config from {colored(config_path, "blue")}')
+    ctx.obj.update(config)
     if project:
         ctx.obj['project'] = project

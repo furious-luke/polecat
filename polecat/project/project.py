@@ -3,10 +3,12 @@ import re
 from importlib import import_module
 
 from graphql_server import HttpQueryError
+from polecat.core.context import active_context
+from polecat.model.db.helpers import create_schema
+from polecat.model.registry import (access_registry, model_registry,
+                                    role_registry)
 
 from ..admin.commands import *  # noqa
-from ..core.context import active_context
-from ..model.registry import (access_registry, model_registry, role_registry)
 from .index import IndexHandler, get_index_html
 
 active_project = None
@@ -18,9 +20,9 @@ def get_active_project():
 
 
 def load_project():
-    module_path = os.environ.get('POLECAT_PROJECT')
+    module_path = os.environ.get('POLECAT_PROJECT_MODULE')
     if module_path is None:
-        raise Exception('Please set POLECAT_PROJECT')
+        raise Exception('Please set POLECAT_PROJECT_MODULE')
     parts = module_path.split('.')
     module_name, class_name = '.'.join(parts[:-1]), parts[-1]
     project_class = getattr(import_module(module_name), class_name)
@@ -63,20 +65,28 @@ class Project:
         for key, value in self.config.items():
             context.config[key] = value
         self.prepare_apps()
+        self.prepare_schema()
         # TODO: If not in DEBUG mode, validate settings.
         if not len(self.handlers):
             # TODO: Hmm, don't like the internal import so
-            # much... better way to set default handlers?
+            # much... better way to set default handlers? Also,
+            # shouldn't be importing AWS middleware here, it should be
+            # setup when selecting AWS as deployment system.
+            from polecat.deploy.aws.middleware import DevelopMiddleware
             from polecat.auth.middleware import RoleMiddleware
             from polecat.graphql.api import GraphqlAPI
             self.handlers.append(
-                GraphqlAPI(middleware=[
-                    RoleMiddleware(self.default_role)
-                ])
+                GraphqlAPI(
+                    self,
+                    middleware=[
+                        DevelopMiddleware(),
+                        RoleMiddleware(self.default_role)
+                    ]
+                )
             )
         self.handlers.append(IndexHandler(self))
         from polecat.admin.handler import AdminHandler  # TODO: Ugh.
-        self.handlers.append(AdminHandler())
+        self.handlers.append(AdminHandler(self))
         for handler in self.handlers:
             handler.prepare()
         self.index_html = self.get_index_html()
@@ -133,6 +143,10 @@ class Project:
                 continue
             app.access.append(access)
             access.app = app
+
+    @active_context
+    def prepare_schema(self, context=None):
+        context.db.schema = create_schema()
 
     def get_index_html(self):
         kwargs = {}

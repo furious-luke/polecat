@@ -32,11 +32,11 @@ details please visit the "hello world" deployment guide:
 ```bash
 polecat aws initialise <bucket>
 polecat project create starwars
-polecat deployment create starwars production
-polecat secret create helloworld production POLECAT_PROJECT starwars.project.StarWarsProject
-polecat build starwars
-polecat upload starwars
-polecat upload-bundle starwars --source bundle.js
+polecat deployment create production
+polecat secret create production POLECAT_PROJECT_MODULE starwars.project.StarWarsProject
+polecat build
+polecat upload
+polecat upload-bundle --source bundle.js
 ```
 
 Before deploying our Star Wars example, we'll need to provision a
@@ -44,19 +44,21 @@ database and migrate our schema. To provision a new database for the
 project/deployment:
 
 ```bash
-polecat db create starwars production
+polecat db create production
+```
+
+Before running the migrations we first need to deploy our functions
+(the ability to migrate a database prior to deployment is in the
+roadmap):
+
+```bash
+polecat deploy
 ```
 
 To migrate the database we need to run an administration command:
 
 ```bash
-polecat admin --project starwars --deployment production migrate
-```
-
-Now the project can be deployed:
-
-```bash
-polecat deploy starwars
+polecat admin --deployment production migrate
 ```
 
 To examine your new GraphQL API, use a schema inspector of your choice

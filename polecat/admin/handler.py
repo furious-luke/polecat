@@ -10,4 +10,4 @@ class AdminHandler(Handler):
         command = active_context().registries.command_registry[event.event['command']]
         args = event.event['args']
         kwargs = event.event['kwargs']
-        command().run(*args, **kwargs)
+        command(self.project).run(*args, **kwargs)

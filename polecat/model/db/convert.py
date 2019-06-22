@@ -44,7 +44,7 @@ def convert_intfield(field):
 
 
 @convert_field.register(field.SerialField)
-def convert_intfield(field):
+def convert_serialfield(field):
     return create_column_from_field(field, SerialColumn)
 
 

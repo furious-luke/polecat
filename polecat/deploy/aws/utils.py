@@ -2,7 +2,7 @@ from contextlib import contextmanager
 
 import boto3
 
-from .exceptions import EntityExists
+from .exceptions import EntityDoesNotExist, EntityExists
 
 
 def aws_client(service, client=None, region=None):
@@ -26,6 +26,22 @@ def aws_exists():
                     'BucketPolicyAlreadyExists', 'ParameterAlreadyExists'):
             raise EntityExists
         raise
+
+
+@contextmanager
+def aws_does_not_exist(swallow=False):
+    try:
+        yield
+    except Exception as e:
+        try:
+            code = e.response['Error']['Code']
+        except (KeyError, AttributeError):
+            code = None
+        if code in ('DBInstanceNotFound',):
+            if not swallow:
+                raise EntityDoesNotExist
+        else:
+            raise
 
 
 def default_path(path):

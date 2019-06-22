@@ -1,5 +1,6 @@
 class Handler:
-    def __init__(self, middleware=None):
+    def __init__(self, project, middleware=None):
+        self.project = project
         self.middleware = middleware or []
 
     def prepare(self):

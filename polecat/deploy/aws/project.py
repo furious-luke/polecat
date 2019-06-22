@@ -28,7 +28,8 @@ def create_project(project, bucket, feedback):
 def list_projects(feedback):
     ssm = aws_client('ssm')
     with feedback(f'List projects'):
-        return get_parameter(PROJECT_REGISTRY, default=[], ssm=ssm)
+        projects = get_parameter(PROJECT_REGISTRY, default=[], ssm=ssm)
+        return [p for p in projects if p != '_']
 
 
 def add_project_to_registry(project, ssm=None):

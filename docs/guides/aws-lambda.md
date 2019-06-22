@@ -63,7 +63,7 @@ as a "secret". Secrets are environmental values supplied to deployments to confi
 the behvior of Polecat. To specify the project entrypoint:
 
 ```bash
-polecat secret create helloworld production POLECAT_PROJECT helloworld.project.HelloWorldProject
+polecat secret create helloworld production POLECAT_PROJECT_MODULE helloworld.project.HelloWorldProject
 ```
 
 Before we can deploy our project and deployment, we need to build and

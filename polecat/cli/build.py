@@ -7,9 +7,10 @@ __all__ = ('build',)
 
 
 @main.command()
-@click.argument('project')
 @click.option('--source')
 @click.option('--local-package', '-l', multiple=True)
-def build(project, source, local_package):
+@click.pass_context
+def build(ctx, source, local_package):
     from ..deploy.aws.build import build as aws_build
+    project = ctx.obj['project']
     aws_build(project, source, local_package, feedback=HaloFeedback())

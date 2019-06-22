@@ -111,7 +111,7 @@ def create_api_resources(project, deployment, api_name, bucket, environment):
         f'{api_name}Api': {
             'Type': 'AWS::ApiGateway::RestApi',
             'Properties': {
-                'Name': project_deployment,
+                'Name': api_name,
                 'Description': f'Polecat API Gateway',
                 'FailOnWarnings': True,
                 'EndpointConfiguration': {

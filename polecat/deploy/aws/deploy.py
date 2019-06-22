@@ -13,6 +13,9 @@ from .resources import (create_api_resources, create_domain_resources,
                         create_output_resources, create_zone_resources)
 from .utils import aws_client
 
+# TODO: Need to make the API name dynamic.
+api_name = 'Polecat1'
+
 
 @feedback
 def deploy(project, bucket, deployment=None, dry_run=False, feedback=None):
@@ -90,8 +93,6 @@ def get_existing_template(project, cf=None):
 def create_resources(project, bucket, environment, resources=None):
     resources = resources or {}
     for dep, env in environment.items():
-        # TODO: Need to make the API name dynamic.
-        api_name = 'Polecat1'
         resources.update(create_api_resources(project, dep, api_name, bucket, env))
         for domain, info in env.get('domains', {}).items():
             certificate_arn = info['certificate']  # TODO: Confirm it exists?
@@ -118,10 +119,10 @@ def get_environment(project, deployment=None):
     if deployment:
         assert_deployment_exists(project, deployment)
     prefix = PROJECT_PREFIX.format(project)
-    project_code_version = get_parameter(f'{prefix}/code/version')  # TODO: Constant.
+    project_code_version = get_parameter(f'{prefix}code/version')  # TODO: Constant.
     if project_code_version is None:
         raise KnownError('No code version available')
-    project_bundle_version = get_parameter(f'{prefix}/bundle/version', default='')  # TODO: Constant.
+    project_bundle_version = get_parameter(f'{prefix}bundle/version', default='')  # TODO: Constant.
     path = f'/polecat/projects/{project}/deployments/{deployment}' + ('/' if deployment else '')
     environment = get_parameters_by_path(path)
     if deployment:

@@ -10,7 +10,7 @@ from .utils import aws_client
 @feedback
 def run_command(project, deployment, command, args, kwargs, feedback):
     lmd = aws_client('lambda')
-    project_deployment = f'{project}{capitalize(deployment)}'
+    project_deployment = f'{capitalize(project)}{capitalize(deployment)}'
     payload = ujson.dumps({
         'event': 'admin',
         'command': command,

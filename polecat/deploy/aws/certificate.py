@@ -77,11 +77,24 @@ def wait_certificate(domain, feedback=None):
 def get_certificate_arn(domain, acm=None):
     acm = aws_client('acm', client=acm, region='us-east-1')
     paginator = acm.get_paginator('list_certificates')
+    possible_certs = []
     for info in paginator.paginate():
         for cert in info['CertificateSummaryList']:
-            if cert['DomainName'] == domain:
+            tags = acm.list_tags_for_certificate(
+                CertificateArn=cert['CertificateArn']
+            )['Tags']
+            name_tag = [
+                t for t in tags
+                if t['Key'] == 'Name' and t['Value'] == domain
+            ]
+            if len(name_tag) > 0:
                 return cert['CertificateArn']
-    raise KnownError('unknown domain')
+            elif cert['DomainName'] == domain:
+                return cert['CertificateArn']
+            possible_certs.append(cert['DomainName'])
+    error = KnownError('unknown domain')
+    error.possible_certificates = possible_certs
+    raise error
 
 
 def get_hosted_zone_id(domain, r53=None):

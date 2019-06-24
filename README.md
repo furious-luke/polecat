@@ -7,6 +7,35 @@ A lean, powerful, and enjoyable web framework.
 This is *very* alpha software. It is not yet fully functional and will
 certainly eat your cat.
 
+## Features
+
+ * Built-in high-performance ORM.
+ * No `n + 1` query issues; a single SQL query is issued regardless of
+   query depth.
+ * Automatically produces GraphQL APIs (JSON-API specification is in
+   the roadmap).
+ * Includes (limited) built-in database migrations.
+ * Testing facilities, including automatic model factories.
+ 
+## Installation
+
+Polecat comes as a PyPi package, and as such the easiest way to
+install it is with `pip`:
+
+``` bash
+pip install polecat[cli]
+```
+
+The extras keyword `cli` indicates that the command line interface and
+its dependencies should be installed. For production deployments those
+dependencies are omitted.
+
+## Documentation
+
+Polecat's documentation can be found under the "docs" directory. At
+the moment there are mostly guides to performing the most common
+operations. Over time more guides and documentation will be added.
+
 ## Discussion
 
 Django has always been one of my favorite web frameworks. The Django
@@ -45,30 +74,12 @@ in the same kind of convenience as Django. Polecat attempts to be
 highly-performant, scalable API server, deployed to popular cloud
 services, all the while enjoying a pleasant developer experience.
 
-## Features
+## Roadmap
 
- * Built-in high-performance ORM.
- * No `n + 1` query issues.
- * Automatically produces JSON-API specification and GraphQL APIs.
- * Includes (limited) database migrations.
- * Testing facilities, including automatic model factories.
-
-## Installation
-
-Polecat comes as a PyPi package, and as such the easiest way to
-install it is with `pip`:
-
-``` bash
-pip install polecat[cli]
-```
-
-The extras keyword `cli` indicates that the command line interface and
-its dependencies should be installed. For production deployments those
-dependencies are omitted.
-
-## Documentation
-
-Coming soon (slowly).
+Please visit the [development GitHub
+project](https://github.com/furious-luke/polecat/projects/1) to see
+upcoming work. If there's something on the roadmap you're keen to see
+implemented, give the issue a thumbs up.
 
 ## Contributing
 

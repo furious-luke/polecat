@@ -2,6 +2,7 @@ from polecat.cli.admin import *  # noqa
 from polecat.cli.app import *  # noqa
 from polecat.cli.aws import *  # noqa
 from polecat.cli.build import *  # noqa
+from polecat.cli.certificate import *  # noqa
 from polecat.cli.db import *  # noqa
 from polecat.cli.deploy import *  # noqa
 from polecat.cli.deployment import *  # noqa

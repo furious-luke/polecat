@@ -10,7 +10,7 @@ from .exceptions import KnownError
 from .operations import (delete_parameter, get_parameter,
                          get_parameters_by_path, set_parameter)
 from .secret import create_secret
-from .utils import aws_client, aws_does_not_exist
+from .utils import aws_client
 
 
 def get_db_name(project, deployment):

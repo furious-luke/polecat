@@ -1,8 +1,8 @@
 from termcolor import colored
 
 from ...utils.feedback import feedback
-from .constants import CERTIFICATE, SECRET_PREFIX, ZONE
-from .operations import delete_parameter, get_parameters_by_path, set_parameter
+from .constants import CERTIFICATE, ZONE
+from .operations import delete_parameter, set_parameter
 from .utils import aws_client
 
 

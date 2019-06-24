@@ -58,10 +58,13 @@ polecat deploy
 To migrate the database we need to run an administration command:
 
 ```bash
-polecat admin --deployment production migrate
+polecat admin production migrate
 ```
 
-To examine your new GraphQL API, use a schema inspector of your choice
+Navigate to the URL reported by the above "deploy" command. You should
+see data loaded from your new API.
+
+To explore the GraphQL API, use a schema inspector of your choice
 (Altair, for example), and navigate to the public URL reported by the
 deployment command, with `/graphql` appended.
 
@@ -71,7 +74,10 @@ Cleanup all provisioned resources with:
 
 ```bash
 polecat undeploy starwars
-polecat db delete starwars production
-polecat deployment delete starwars production
+polecat db delete production
+polecat deployment delete production
 polecat project delete starwars
 ```
+
+Note: Please confirm all resources have been terminated via the AWS
+console.

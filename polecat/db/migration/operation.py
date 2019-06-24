@@ -31,8 +31,11 @@ class Operation:
         return ()
 
     @dbcursor
-    def forward(self, cursor):
+    def forward(self, schema, cursor):
         cursor.execute(*self.sql)
+
+    def forward_schema(self, schema):
+        pass
 
 
 class CreateExtension(Operation):
@@ -91,6 +94,10 @@ class CreateTable(Operation):
             ),
             ()
         )
+
+    def forward_schema(self, schema):
+        schema.add_table(self.table)
+        schema.bind_table(self.table)
 
     def all_sql(self):
         return SQL(',\n').join(tuple(filter(not_empty, (
@@ -281,6 +288,9 @@ class CreateRole(Operation):
             (role_name,)
         )
 
+    def forward_schema(self, schema):
+        schema.add_role(self.role)
+
     def grants_sql(self, role_name):
         return tuple(
             SQL('GRANT {} TO {};').format(
@@ -348,6 +358,9 @@ class GrantAccess(Operation):
         return SQL('%s {}' % tag).format(
             Identifier(self.access.entity if isinstance(self.access.entity, str) else self.access.entity.name)
         )
+
+    def forward_schema(self, schema):
+        schema.add_access(self.access)
 
     def get_entity_tag(self, entity):
         raise NotImplementedError
@@ -420,11 +433,14 @@ class RevokeAccess(Operation):
     def app(self):
         return self.access.app
 
+    def forward_schema(self, schema):
+        schema.remove_access(self.access)
+
 
 class RunPython(Operation):
     def __init__(self, forward_func):
         self.forward_func = forward_func
 
     @dbcursor
-    def forward(self, cursor):
-        self.forward_func(cursor)
+    def forward(self, schema, cursor):
+        self.forward_func(schema, cursor)

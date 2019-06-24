@@ -55,15 +55,16 @@ most recent stable version. Let's create a production deployment for
 our project:
 
 ```bash
-polecat deployment create helloworld production
+polecat deployment create production
 ```
 
-When deploying Polecat projects, the entrypoint for the project must be specified
-as a "secret". Secrets are environmental values supplied to deployments to configure
-the behvior of Polecat. To specify the project entrypoint:
+When deploying Polecat projects, the entrypoint for the project must
+be specified as a "secret". Secrets are environmental values supplied
+to deployments to configure the behvior of Polecat. To specify the
+project entrypoint:
 
 ```bash
-polecat secret create helloworld production POLECAT_PROJECT_MODULE helloworld.project.HelloWorldProject
+polecat secret create production POLECAT_PROJECT_MODULE helloworld.project.HelloWorldProject
 ```
 
 Before we can deploy our project and deployment, we need to build and
@@ -71,8 +72,8 @@ upload both the server archive and the frontend bundle. Let's start by
 building and uploading our server:
 
 ```bash
-polecat build helloworld
-polecat upload helloworld
+polecat build
+polecat upload
 ```
 
 Usually you would need to setup your frontend code to be bundled using
@@ -81,21 +82,21 @@ instance the `bundle.js` file shipped with the "hello world" example
 can be used directly. Upload it with:
 
 ```bash
-polecat upload-bundle helloworld --source bundle.js
+polecat upload-bundle --source bundle.js
 ```
 
 We're now ready to deploy our project. To redeploy all deployments,
 use:
 
 ```bash
-polecat deploy helloworld
+polecat deploy
 ```
 
 If you happened to have multiple deployments, let's say staging and
 production, you could deploy just staging with:
 
 ```bash
-polecat deploy helloworld staging
+polecat deploy staging
 ```
 
 This command will return an internal URL you may use to view your

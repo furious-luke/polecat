@@ -24,9 +24,30 @@ class Schema:
             self.tables.append(table)
             self.tables_by_name[table.name] = table
 
+    def add_role(self, *roles):
+        for role in roles:
+            self.roles.append(role)
+            self.roles_by_name[role.name] = role
+
+    def add_access(self, *accesses):
+        for access in accesses:
+            self.access.append(access)
+            self.access_by_entity[access.entity.signature] = access
+
+    def remove_access(self, *accesses):
+        for access in accesses:
+            for index, existing in enumerate(self.access):
+                if existing.signature == access.signature:
+                    self.access.pop(index)
+                    del self.access_by_entity[existing.signature]
+                    return
+
     def bind(self):
         for table in self.tables:
-            table.bind(self)
+            self.bind_table(table)
+
+    def bind_table(self, table):
+        table.bind(self)
 
     def get_table_by_name(self, name):
         return self.tables_by_name[name]

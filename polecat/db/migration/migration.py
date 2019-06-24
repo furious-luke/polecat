@@ -2,14 +2,15 @@ import re
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 
+from polecat.db.schema import Schema
+
 from ...utils import indent
 from ..connection import transaction
 from ..decorators import dbcursor
 from .utils import project_migrations_path
 
-migration_template = '''from polecat.db.migration import migration
-from polecat.db.migration import operation  # noqa
-from polecat.db.schema import column  # noqa
+migration_template = '''from polecat.db.migration import migration, operation
+from polecat.db.schema import column
 
 
 class Migration(migration.Migration):
@@ -37,19 +38,12 @@ class Migration:
         self.name = name
         self.dependencies = dependencies or getattr(self, 'dependencies', [])
 
-    # def apply(self, schema):
-    #     for operation in self.operations:
-    #         operation.apply(schema)
-
-    # @property
-    # def forward_sql(self):
-    #     sql, args = zip(*(op.sql for op in self.operations))
-    #     return (SQL('\n\n').join(sql), sum(args, ()))
-
     @dbcursor
-    def forward(self, migrations=None, cursor=None):
+    def forward(self, schema=None, migrations=None, cursor=None):
         if not getattr(self, '_applied', False):
             self._applied = True
+            if not schema:
+                schema = Schema()
             if self.app:
                 args = [self.app.name]
             else:
@@ -65,23 +59,24 @@ class Migration:
                 '= %s' if self.app else 'IS NULL'
             )
             cursor.execute(sql, args)
-            result = cursor.fetchone()
-            if result[0]:
-                return
+            is_applied = cursor.fetchone()[0]
             migrations = migrations or {}
             for dep in self.dependencies:
                 if isinstance(dep, str):
                     dep = migrations[dep]
-                dep.forward(migrations, cursor=cursor)
+                dep.forward(schema, migrations, cursor=cursor)
             # TODO: This transaction is slightly inefficient.
             with transaction(cursor):
                 for op in self.operations:
-                    op.forward(cursor=cursor)
-                sql = (
-                    'INSERT INTO polecat_migrations (app, name, applied)'
-                    '  VALUES(%s, %s, now());'
-                )
-                cursor.execute(sql, (self.app.name if self.app else None, self.name))
+                    op.forward_schema(schema)
+                    if not is_applied:
+                        op.forward(schema, cursor=cursor)
+                if not is_applied:
+                    sql = (
+                        'INSERT INTO polecat_migrations (app, name, applied)'
+                        '  VALUES(%s, %s, now());'
+                    )
+                    cursor.execute(sql, (self.app.name if self.app else None, self.name))
 
     @property
     def filename(self):

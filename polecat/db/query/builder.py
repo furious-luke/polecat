@@ -55,7 +55,7 @@ class Q:
             cursor.execute(SQL('SET LOCAL ROLE {}').format(
                 Identifier(self.role.Meta.role))
             )
-        print(cursor.mogrify(sql, args))
+        # print(cursor.mogrify(sql, args))
         cursor.execute(sql, args)
         # TODO: This is strange. For some reason I need to commit
         # the outcome of the query here. If I don't, then the

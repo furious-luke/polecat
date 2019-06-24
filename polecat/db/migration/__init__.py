@@ -19,8 +19,9 @@ def diff_schemas(to_schema, from_schema=None):
 def migrate(migration_paths=None, apps=None, cursor=None):
     bootstrap_migrations()
     migrations = load_migrations(migration_paths, apps=apps)
+    schema = Schema()
     for migration in migrations.values():
-        migration.forward(migrations, cursor=cursor)
+        migration.forward(schema, migrations, cursor=cursor)
 
 
 def load_migrations(migration_paths=None, apps=None):

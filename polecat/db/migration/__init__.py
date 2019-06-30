@@ -66,7 +66,7 @@ def load_app_migrations(app):
             match = Migration.filename_prog.match(path.name)
             if match:
                 migration_class = Migration.load_migration_class(path)
-                migration = migration_class(app=app.name, name=path.name[:-3])
+                migration = migration_class(app=app.name, name=path.name[:-3], filename=path.name)
                 migrations[f'{app.name}.{path.name[:-3]}'] = migration
                 migration.set_app(app)
     except FileNotFoundError:
@@ -77,7 +77,7 @@ def load_app_migrations(app):
 def load_path_migrations(path):
     migrations = {}
     try:
-        for file_path in Path(path).iterdir():
+        for file_path in (Path(path) / 'migrations').iterdir():
             match = Migration.filename_prog.match(file_path.name)
             if match:
                 migration_class = Migration.load_migration_class(file_path)
@@ -88,15 +88,18 @@ def load_path_migrations(path):
     return migrations
 
 
-def make_migrations(to_schema=None, output_path=None):
-    migrations = load_migrations()
-    # TODO: Make schema from migrations.
+def make_migrations(to_schema=None, output_path=None, apps=None, migration_paths=None):
+    from_schema = Schema()
+    migrations = load_migrations(apps=apps, migration_paths=migration_paths)
+    for mgr in migrations.values():
+        mgr.forward(schema=from_schema, migrations=migrations, schema_only=True)
     if to_schema is None:
         to_schema = active_context().db.schema
-    new_migrations = diff_schemas(to_schema)
+    new_migrations = diff_schemas(to_schema, from_schema)
     for mgr in new_migrations:
         # TODO: Feedback?
         mgr.save(output_path=output_path)
+    return new_migrations
 
 
 def make_migrations_for_app(app):

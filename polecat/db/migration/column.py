@@ -17,8 +17,11 @@ class Column(metaclass=RegistryMetaclass):
 
     def to_sql(self):
         col = self.schema_column
-        parts = [Identifier(col.name), self.get_type_sql()]
-        parts.append(self.get_constraints_sql())
+        parts = [
+            Identifier(col.name),
+            self.get_type_sql(),
+            self.get_constraints_sql()
+        ]
         return SQL(' ').join(parts)
 
     def get_constraints_sql(self):
@@ -69,11 +72,13 @@ class RelatedColumn(IntColumn):
 
     def to_sql(self):
         col = self.schema_column
-        return SQL('{} {} {}').format(
+        parts = [
             Identifier(col.name),
             self.get_type_sql(),
-            self.get_reference_sql()
-        )
+            self.get_reference_sql(),
+            self.get_constraints_sql()
+        ]
+        return SQL(' ').join(parts)
 
     def get_reference_sql(self):
         col = self.schema_column

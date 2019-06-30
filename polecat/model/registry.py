@@ -140,7 +140,7 @@ def make_type_meta(name, bases, attrs, meta):
         'name': name,
         'fields': fields,
         'cc_fields': make_cc_fields(fields),
-        'plural': get_plural(name),
+        'plural': get_plural(name, meta),
         'input': getattr(meta, 'input', False) if meta else False,  # TODO: Ugly
         'omit': getattr(meta, 'omit', NONE) if meta else NONE  # TODO: Ugly
     })
@@ -158,7 +158,7 @@ def make_model_meta(name, bases, attrs, meta):
         'table_name': name.lower(),
         'fields': fields,
         'cc_fields': make_cc_fields(fields),
-        'plural': get_plural(name),
+        'plural': get_plural(name, meta),
         'uniques': getattr(meta, 'uniques', ()) if meta else (),
         'checks': getattr(meta, 'checks', ()) if meta else (),
         'omit': getattr(meta, 'omit', NONE) if meta else NONE  # TODO: Duplicate of above
@@ -246,8 +246,8 @@ def make_cc_fields(fields):
     }
 
 
-def get_plural(name):
-    return f'{name}s'
+def get_plural(name, meta):
+    return getattr(meta, 'plural', f'{name}s')
 
 
 def is_field_class(value):

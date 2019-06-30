@@ -1,6 +1,7 @@
 from psycopg2.sql import Identifier
 
 from ...utils.repr import to_repr
+from .column import MutableColumn
 from .entity import Entity
 
 __all__ = ('Table',)
@@ -36,7 +37,7 @@ class Table(Entity):
 
     @property
     def signature(self):
-        return (Table, self.app, self.name)
+        return (Table, getattr(self.app, 'name', self.app), self.name)
 
     @property
     def name(self):
@@ -47,12 +48,23 @@ class Table(Entity):
 
     def has_changed(self, other):
         return (
-            self.app != other.app or
+            getattr(self.app, 'name', self.app) != getattr(other.app, 'name', other.app) or
             self.name != other.name or
             self.checks != other.checks or
             self.uniques != other.uniques or
-            self.columns != other.columns
+            self.have_columns_changed(other)
         )
+
+    def have_columns_changed(self, other):
+        from_columns = {
+            column.name: column
+            for column in self.iter_mutable_columns()
+        }
+        to_columns = {
+            column.name: column
+            for column in other.iter_mutable_columns()
+        }
+        return from_columns != to_columns
 
     # TODO: This is for making SQL expressions. It would be nice to
     # not have this here, as it's bleeding information between
@@ -94,6 +106,11 @@ class Table(Entity):
             raise KeyError(
                 f'Column "{name}" does not exist on table "{self.name}"'
             )
+
+    def iter_mutable_columns(self):
+        for column in self.columns:
+            if isinstance(column, MutableColumn):
+                yield column
 
     def iter_column_names(self):
         for column in self.columns:

@@ -8,7 +8,9 @@ class TableBuilder:
         return Table(
             model.Meta.table_name,
             columns=self.build_all_columns(model),
-            app=model.Meta.app
+            app=model.Meta.app,
+            uniques=model.Meta.uniques,
+            checks=model.Meta.checks
         )
 
     def build_all_columns(self, model):

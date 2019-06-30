@@ -47,10 +47,35 @@ def test_run_migrations(testdb):
         # TODO: Test something?
 
 
-def test_make_migration(testdb):
+def test_make_migrations(testdb):
     bootstrap_migrations()
     with TemporaryDirectory() as root:
         make_migrations(to_schema=schema, output_path=root)
+
+
+def test_no_new_migrations(testdb):
+    bootstrap_migrations()
+    with TemporaryDirectory() as root:
+        migrations = make_migrations(
+            to_schema=schema,
+            output_path=root,
+            apps=[type('App', (), {
+                'name': 'auth',
+                'path': Path(root) / 'auth'
+            })],
+            migration_paths=[root]
+        )
+        assert len(migrations) != 0
+        migrations = make_migrations(
+            to_schema=schema,
+            output_path=root,
+            apps=[type('App', (), {
+                'name': 'auth',
+                'path': Path(root) / 'auth'
+            })],
+            migration_paths=[root]
+        )
+        assert len(migrations) == 0
 
 
 @pytest.mark.skip(reason='need to mock app registry')

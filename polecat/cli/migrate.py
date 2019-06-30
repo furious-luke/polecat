@@ -1,6 +1,6 @@
 import click
-from polecat.db.migration import make_migrations as db_make_migrations
 from polecat.db.migration import migrate as db_migrate
+from polecat.model.db.migrate import make_migrations as db_make_migrations
 from polecat.project.project import load_project
 
 from .main import main
@@ -12,7 +12,10 @@ __all__ = ('migrate', 'empty_migration', 'make_migrations')
 def migrate():
     project = load_project()
     project.prepare()
-    db_migrate(apps=project.apps)
+    db_migrate(
+        apps=project.apps,
+        migration_paths=(project.path,)
+    )
 
 
 @main.command()
@@ -24,4 +27,4 @@ def empty_migration():
 def make_migrations():
     project = load_project()
     project.prepare()
-    db_make_migrations()
+    db_make_migrations(migration_paths=(project.path,))

@@ -1,7 +1,7 @@
 import inspect
 from pathlib import Path
 
-from ..core.registry import Registry, RegistryMetaclass
+from polecat.core.registry import Registry, RegistryMetaclass
 
 Registry('app_registry', construct=True)
 

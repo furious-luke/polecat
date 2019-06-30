@@ -37,6 +37,9 @@ class Operation:
     def forward_schema(self, schema):
         pass
 
+    def set_app(self, app):
+        pass
+
 
 class CreateExtension(Operation):
     def __init__(self, name):
@@ -64,6 +67,8 @@ class CreateTable(Operation):
     def __init__(self, name_or_table, *args, **kwargs):
         super().__init__()
         if not isinstance(name_or_table, Table):
+            # TODO: This is super sketchy. What if the app name changes?
+            name_or_table = name_or_table.split('_')[-1]
             name_or_table = Table(name_or_table, *args, **kwargs)
         self.table = name_or_table
 
@@ -94,6 +99,9 @@ class CreateTable(Operation):
             ),
             ()
         )
+
+    def set_app(self, app):
+        self.table.app = app
 
     def forward_schema(self, schema):
         schema.add_table(self.table)
@@ -288,6 +296,9 @@ class CreateRole(Operation):
             (role_name,)
         )
 
+    def set_app(self, app):
+        self.role.app = app
+
     def forward_schema(self, schema):
         schema.add_role(self.role)
 
@@ -359,7 +370,11 @@ class GrantAccess(Operation):
             Identifier(self.access.entity if isinstance(self.access.entity, str) else self.access.entity.name)
         )
 
+    def set_app(self, app):
+        self.access.app = app
+
     def forward_schema(self, schema):
+        raise NotImplementedError
         schema.add_access(self.access)
 
     def get_entity_tag(self, entity):
@@ -412,10 +427,19 @@ class GrantAccessToTable(GrantAccess):
     def get_entity_tag(self, entity):
         return 'TABLE'
 
+    def forward_schema(self, schema):
+        if isinstance(self.access.entity, str):
+            self.access.entity = schema.get_table_by_name(self.access.entity)
+        schema.add_access(self.access)
+
 
 class GrantAccessToRole(GrantAccess):
     def get_entity_tag(self, entity):
         return 'ROLE'
+
+    def forward_schema(self, schema):
+        self.access.entity = schema.get_role_by_name(self.access.entity)
+        schema.add_access(self.access)
 
 
 class RevokeAccess(Operation):
@@ -432,6 +456,9 @@ class RevokeAccess(Operation):
     @property
     def app(self):
         return self.access.app
+
+    def set_app(self, app):
+        self.access.app = app
 
     def forward_schema(self, schema):
         schema.remove_access(self.access)

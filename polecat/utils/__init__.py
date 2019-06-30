@@ -25,6 +25,10 @@ def to_class(value):
     return value if inspect.isclass(value) else value.__class__
 
 
+def get_class_path(value):
+    return Path(inspect.getfile(value)).parent
+
+
 def to_tuple(value):
     if isinstance(value, (tuple, list)):
         return tuple(value)

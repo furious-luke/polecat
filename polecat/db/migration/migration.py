@@ -32,14 +32,17 @@ class Migration:
         spec.loader.exec_module(module)
         return module.Migration
 
-    def __init__(self, operations=None, app=None, dependencies=None, name=None):
+    def __init__(self, operations=None, app=None, dependencies=None, name=None, filename=None):
         self.operations = operations or getattr(self, 'operations', [])
         self.app = app
         self.name = name
         self.dependencies = dependencies or getattr(self, 'dependencies', [])
+        self._filename = filename
 
     @dbcursor
-    def forward(self, schema=None, migrations=None, cursor=None):
+    def forward(self, schema=None, migrations=None, schema_only=False, cursor=None):
+        # TODO: This "_applied" thing means we can only run this
+        # once. Probably need to improve that.
         if not getattr(self, '_applied', False):
             self._applied = True
             if not schema:
@@ -69,9 +72,9 @@ class Migration:
             with transaction(cursor):
                 for op in self.operations:
                     op.forward_schema(schema)
-                    if not is_applied:
+                    if not is_applied and not schema_only:
                         op.forward(schema, cursor=cursor)
-                if not is_applied:
+                if not is_applied and not schema_only:
                     sql = (
                         'INSERT INTO polecat_migrations (app, name, applied)'
                         '  VALUES(%s, %s, now());'
@@ -80,12 +83,14 @@ class Migration:
 
     @property
     def filename(self):
-        existing_migrations = self.find_existing_migrations()
-        if existing_migrations:
-            next_number = existing_migrations[-1][0] + 1
-        else:
-            next_number = 1
-        return f'{next_number:04}_migration.py'
+        if not self._filename:
+            existing_migrations = self.find_existing_migrations()
+            if existing_migrations:
+                next_number = existing_migrations[-1][0] + 1
+            else:
+                next_number = 1
+            self._filename = f'{next_number:04}_migration.py'
+        return self._filename
 
     @property
     def migrations_path(self):
@@ -100,7 +105,8 @@ class Migration:
 
     def set_app(self, app):
         self.app = app
-        # TODO: Set app in everywhere else.
+        for op in self.operations:
+            op.set_app(app)
 
     def get_file_path(self, root=None):
         if not root:

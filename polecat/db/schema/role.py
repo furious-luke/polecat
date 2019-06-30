@@ -20,16 +20,19 @@ class Role(Entity):
         return (Role, self.name)
 
     def has_changed(self, other):
-        return (
-            self.name != other.name or
-            self.has_changed_parents(other)
-        )
+        if isinstance(other, str):
+            return self.name != other
+        else:
+            return (
+                self.name != other.name or
+                self.has_changed_parents(other)
+            )
 
     def has_changed_parents(self, other):
         # TODO: I don't like this much.
         return (
-            sorted(p.name for p in self.parents) !=
-            sorted(p.name for p in other.parents)
+            sorted(getattr(p, 'name', p) for p in self.parents) !=
+            sorted(getattr(p, 'name', p) for p in other.parents)
         )
 
 

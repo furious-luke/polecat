@@ -3,12 +3,13 @@ import re
 from importlib import import_module
 
 from graphql_server import HttpQueryError
+from polecat.admin.commands import *  # noqa
 from polecat.core.context import active_context
 from polecat.model.db.helpers import create_schema
 from polecat.model.registry import (access_registry, model_registry,
                                     role_registry)
+from polecat.utils import get_class_path
 
-from ..admin.commands import *  # noqa
 from .index import IndexHandler, get_index_html
 
 active_project = None
@@ -56,6 +57,10 @@ class Project:
     def apps(self):
         # TODO: Cache.
         return list(active_context().registries.app_registry)
+
+    @property
+    def path(self):
+        return get_class_path(self.__class__)
 
     @active_context
     def prepare(self, context):

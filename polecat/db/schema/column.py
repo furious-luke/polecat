@@ -66,7 +66,8 @@ class MutableColumn(Column):
     def get_construction_arguments(self):
         cargs = super().get_construction_arguments()
         return cargs.merge(
-            null=self.null,
+            unique=self.unique or self.primary_key,
+            null=self.null and not self.primary_key,
             primary_key=self.primary_key
         )
 
@@ -137,7 +138,7 @@ class RelatedColumn(IntColumn):
     def has_changed(self, other):
         return (
             super().has_changed(other) or
-            self.related_table != other.related_table or
+            self.related_table.signature != other.related_table.signature or
             self.related_column != other.related_column
         )
 
@@ -191,6 +192,6 @@ class ReverseColumn(Column):
     def has_changed(self, other):
         return (
             super().has_changed(other) or
-            self.related_table != other.related_table or
-            self.related_column != other.related_column
+            self.related_table.signature != other.related_table.signature or
+            self.related_column.signature != other.related_column.signature
         )

@@ -89,7 +89,7 @@ class Authenticate(model.Mutation):
     input = AuthenticateInput
     returns = JWTType
 
-    def resolve(self, email, password):
+    def resolve(self, email, password, **kwargs):
         result = (
             Q(User)
             .filter(email=email, password=password)

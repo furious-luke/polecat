@@ -20,12 +20,13 @@ class Q(BaseQ):
             if kwargs:
                 raise ValueError('Cannot pass both model and values to insert')
             return self.insert_from_model_argument(model_or_subquery)
-        elif not kwargs:
-            if not isinstance(self.model, Model):
-                raise ValueError(
-                    'Cannot pass nothing to insert when root queryable is not'
-                    ' a Model'
-                )
+        elif not kwargs and isinstance(self.model, Model):
+            # TODO: Ensure test for this.
+            # if not isinstance(self.model, Model):
+            #     raise ValueError(
+            #         'Cannot pass nothing to insert when root queryable is not'
+            #         ' a Model'
+            #     )
             return self.insert_from_root()
         else:
             return super().insert(**kwargs)

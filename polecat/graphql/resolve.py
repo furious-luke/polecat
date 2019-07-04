@@ -1,3 +1,4 @@
+from graphql import GraphQLError
 from graphql.type import GraphQLList
 from polecat.model.db import Q, S
 
@@ -40,7 +41,10 @@ def get_selector_from_node(graphql_type, node):
     lookups = {}
     for field_node in node.selection_set.selections:
         cc_field_name = field_node.name.value
-        graphql_field = graphql_type.fields[cc_field_name]
+        try:
+            graphql_field = graphql_type.fields[cc_field_name]
+        except KeyError:
+            raise GraphQLError(f'No field "{cc_field_name}" on type "{graphql_type}"')
         model_field = graphql_field._field.model_field
         if isinstance(graphql_field._field, RelatedField):
             lookups[model_field.name] = get_selector_from_node(
@@ -134,8 +138,13 @@ def resolve_query(obj, info, **kwargs):
 
 
 def resolve_mutation(obj, info, **kwargs):
+    node = info.field_nodes[0]
     graphql_field = info.parent_type.fields[info.field_name]
+    return_type = graphql_field.type
     mutation = graphql_field._mutation
     input = kwargs['input']
-    # TODO: Need to pass the context.
-    return mutation.resolve(**input)
+    # TODO: Want a better way of handing off the selector.
+    return mutation.resolve(
+        selector=get_selector_from_node(return_type, node),
+        **input
+    )

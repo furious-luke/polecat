@@ -67,6 +67,13 @@ def test_insert_expression(staticdb):
     )
 
 
+def test_insert_all_defaults(staticdb):
+    a_table = create_table('a_table')
+    expr = Insert(a_table)
+    sql = staticdb.mogrify(*expr.to_sql())
+    assert sql == b'INSERT INTO "a_table" DEFAULT VALUES RETURNING "id"'
+
+
 def test_update_expression(staticdb):
     b_table = create_table('b_table')
     a_table = create_table(related_table=b_table)

@@ -25,6 +25,7 @@ class JWTMiddleware:
                     algorithms=('HS256',)
                 )
         event.claims = claims
+        event.session['claims'] = claims
 
 
 class RoleMiddleware(JWTMiddleware):

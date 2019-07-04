@@ -1,6 +1,7 @@
 class Event:
     def __init__(self, event):
         self.event = event
+        self.session = {}
 
     def is_http(self):
         return False

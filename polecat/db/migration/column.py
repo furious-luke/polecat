@@ -62,6 +62,11 @@ class TextColumn(Column):
             return SQL(self.dbtype)
 
 
+class PasswordColumn(TextColumn):
+    sources = (schema.PasswordColumn,)
+    dbtype = 'chkpass'
+
+
 class TimestampColumn(Column):
     sources = (schema.TimestampColumn,)
     dbtype = 'timestamptz'

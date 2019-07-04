@@ -14,3 +14,7 @@ def main(ctx, project):
     ctx.obj.update(config)
     if project:
         ctx.obj['project'] = project
+    # TODO: Hmm.
+    from polecat.project.project import load_project
+    project = load_project()
+    project.prepare()

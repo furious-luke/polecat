@@ -35,5 +35,14 @@ class GraphqlAPI(Handler):
         )
         # TODO: This is a little ugly.
         if result[0]['errors']:
-            result[0]['errors'] = tuple(map(str, result[0]['errors']))
+            result[0]['errors'] = tuple(map(format_error, result[0]['errors']))
         return result
+
+
+def format_error(error):
+    original_error = getattr(error, 'original_error', None)
+    if original_error:
+        return str(original_error)
+    else:
+        # TODO: If in debug mode, include path: str(error)
+        return error.message

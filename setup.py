@@ -1,5 +1,3 @@
-import os
-
 from setuptools import find_packages, setup
 
 version = '0.0.7'
@@ -12,9 +10,7 @@ setup(
     maintainer='Luke Hodkinson',
     maintainer_email='furious.luke@gmail.com',
     description='',
-    long_description=open(
-        os.path.join(os.path.dirname(__file__), 'README.md')
-    ).read(),
+    long_description='',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',

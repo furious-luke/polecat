@@ -1,9 +1,14 @@
+import logging
+
+from polecat.core.context import active_context
 from psycopg2.sql import SQL, Identifier
 
 from ..connection import cursor as cursor_context  # TODO: Ugh.
 from ..decorators import dbcursor
 from .query import Common, Delete, Filter, Insert, Query, Select, Update
 from .selection import Selection
+
+logger = logging.getLogger(__name__)
 
 
 class Q:
@@ -44,6 +49,7 @@ class Q:
 
     @dbcursor(autocommit=False)
     def execute(self, cursor):
+        ctx = active_context()
         # TODO: This is pretty bad. How to keep this purely as a
         # builder, but also inject strategy and execution knowledge
         # for convenience?
@@ -55,7 +61,10 @@ class Q:
             cursor.execute(SQL('SET LOCAL ROLE {}').format(
                 Identifier(self.role.Meta.role))
             )
-        # print(cursor.mogrify(sql, args))
+        if ctx.config.log_sql:
+            # TODO: Get my logging sorted.
+            # logger.debug(cursor.mogrify(sql, args))
+            print(cursor.mogrify(sql, args))
         cursor.execute(sql, args)
         # TODO: This is strange. For some reason I need to commit
         # the outcome of the query here. If I don't, then the

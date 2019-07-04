@@ -5,7 +5,7 @@ from .value import value_to_sql
 
 
 class Insert(Expression):
-    def __init__(self, relation, values, returning=None):
+    def __init__(self, relation, values=None, returning=None):
         self.relation = relation
         self.values = values
         self.returning = returning or ()
@@ -23,15 +23,26 @@ class Insert(Expression):
             prefix_sql = SQL('')
             suffix_sql = SQL('')
             get_values_func = self.get_values_sql_from_expression
+        elif not self.values:
+            prefix_sql = SQL('DEFAULT VALUES')
+            suffix_sql = SQL('')
+            get_values_func = None
         else:
             prefix_sql = SQL('VALUES (')
             suffix_sql = SQL(')')
             get_values_func = self.get_values_sql_from_dict
-        column_names_sql, column_values_sql, column_values = get_values_func()
+        if get_values_func:
+            column_names_sql, column_values_sql, column_values = get_values_func()
+            column_names_sql = SQL('(') + SQL(', ').join(column_names_sql) + SQL(') ')
+        else:
+            column_names_sql = SQL('')
+            column_values_sql = ()
+            column_values = ()
         returning_sql = map(Identifier, self.returning)
-        sql = SQL('INSERT INTO {} ({}) {}{}{} RETURNING {}').format(
+        # TODO: This is a bit gross.
+        sql = SQL('INSERT INTO {} {}{}{}{} RETURNING {}').format(
             Identifier(self.relation.alias),
-            SQL(', ').join(column_names_sql),
+            column_names_sql,
             prefix_sql,
             SQL(', ').join(column_values_sql),
             suffix_sql,

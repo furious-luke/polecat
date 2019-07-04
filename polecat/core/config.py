@@ -26,6 +26,7 @@ active_context().Meta.add_options(
             Option('log_sql', bool, False),
             Option('jwt_secret'),
             Option('database_url')
-        )
+        ),
+        prefix='POLECAT'
     ))
 )

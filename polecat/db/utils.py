@@ -16,7 +16,11 @@ def push_database_url(url):
 
 
 def database_url(url=None):
-    return url or database_url_stack[-1]
+    try:
+        return url or database_url_stack[-1]
+    except IndexError:
+        # TODO: Better exception.
+        raise Exception('No database url specified')
 
 
 def parse_url(url=None):

@@ -47,22 +47,25 @@ class Migration:
             self._applied = True
             if not schema:
                 schema = Schema()
-            if self.app:
-                args = [self.app.name]
+            if not schema_only:
+                if self.app:
+                    args = [self.app.name]
+                else:
+                    args = []
+                args.append(self.name)
+                sql = (
+                    'SELECT EXISTS('
+                    '  SELECT 1 FROM polecat_migrations'
+                    '    WHERE app {}'
+                    '      AND name = %s'
+                    ');'
+                ).format(
+                    '= %s' if self.app else 'IS NULL'
+                )
+                cursor.execute(sql, args)
+                is_applied = cursor.fetchone()[0]
             else:
-                args = []
-            args.append(self.name)
-            sql = (
-                'SELECT EXISTS('
-                '  SELECT 1 FROM polecat_migrations'
-                '    WHERE app {}'
-                '      AND name = %s'
-                ');'
-            ).format(
-                '= %s' if self.app else 'IS NULL'
-            )
-            cursor.execute(sql, args)
-            is_applied = cursor.fetchone()[0]
+                is_applied = False
             migrations = migrations or {}
             for dep in self.dependencies:
                 if isinstance(dep, str):

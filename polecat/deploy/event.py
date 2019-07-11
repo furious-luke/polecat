@@ -1,7 +1,10 @@
+from polecat.db.session import Session
+
+
 class Event:
     def __init__(self, event):
         self.event = event
-        self.session = {}
+        self.session = Session()
 
     def is_http(self):
         return False

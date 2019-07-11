@@ -1,7 +1,6 @@
 import logging
 
 from polecat.core.context import active_context
-from psycopg2.sql import SQL, Identifier
 
 from ..connection import cursor as cursor_context  # TODO: Ugh.
 from ..decorators import dbcursor
@@ -12,10 +11,10 @@ logger = logging.getLogger(__name__)
 
 
 class Q:
-    def __init__(self, queryable, branches=None, role=None):
+    def __init__(self, queryable, branches=None, session=None):
         self.queryable = queryable
         self.branches = branches or []
-        self.role = role
+        self.session = session
 
     def __iter__(self):
         with cursor_context(autocommit=False) as cursor:
@@ -57,10 +56,6 @@ class Q:
         strategy = Strategy()
         expr = strategy.parse(self)
         sql, args = expr.to_sql()
-        if self.role:
-            cursor.execute(SQL('SET LOCAL ROLE {}').format(
-                Identifier(self.role.Meta.role))
-            )
         if ctx.config.log_sql:
             # TODO: Get my logging sorted.
             # logger.debug(cursor.mogrify(sql, args))
@@ -170,7 +165,7 @@ class Q:
             yield branch
 
     def chain(self, queryable):
-        return self.__class__(queryable, self.branches, role=self.role)
+        return self.__class__(queryable, self.branches, session=self.session)
 
     def merge_query_branches(self, query):
         queryable = query.queryable

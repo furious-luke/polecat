@@ -1,5 +1,7 @@
 from polecat.db.query import Q, S
+from polecat.db.session import Session
 
+from .models import DefaultRole
 from .schema import create_table
 
 
@@ -248,4 +250,17 @@ def test_filter_only(staticdb):
         b'SELECT row_to_json(__tl) FROM ('
         b'SELECT * FROM "a_table" WHERE "a_table"."col2" = 2'
         b') AS __tl'
+    )
+
+
+def test_session_with_role_and_variables(staticdb):
+    table = create_table()
+    query = (
+        Q(table, session=Session(DefaultRole, {'a': 1}))
+        .select()
+    )
+    sql = query.to_sql()
+    assert sql == (
+        b'SET LOCAL ROLE "default"; SET LOCAL "a" TO 1; SELECT'
+        b' row_to_json(__tl) FROM (SELECT * FROM "a_table") AS __tl'
     )

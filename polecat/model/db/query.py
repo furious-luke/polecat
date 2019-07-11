@@ -7,11 +7,11 @@ __all__ = ('Q', 'S')
 
 
 class Q(BaseQ):
-    def __init__(self, model, queryable=None, branches=None, role=None):
+    def __init__(self, model, queryable=None, branches=None, session=None):
         super().__init__(
             queryable or model_to_table(model),
             branches,
-            role
+            session
         )
         self.model = model
 
@@ -81,4 +81,4 @@ class Q(BaseQ):
         raise ValueError('No results returned from query')
 
     def chain(self, queryable):
-        return self.__class__(self.model, queryable, self.branches, self.role)
+        return self.__class__(self.model, queryable, self.branches, self.session)

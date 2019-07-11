@@ -24,7 +24,10 @@ class GraphqlAPI(Handler):
             event.request.json,
             # query_data=None,
             # batch_enabled=False,
-            # catch=False
+            # catch=False,
+            context_value={
+                'session': event.session
+            }
         )
         is_batch = False  # TODO: How to handle this?
         result = encode_execution_results(

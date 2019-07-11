@@ -1,5 +1,5 @@
 import pytest
-from polecat.model.db import Q, S
+from polecat.model.db import Q, S, Session
 from psycopg2 import ProgrammingError
 
 from .models import Address, DefaultRole, Movie, User, UserRole
@@ -131,7 +131,7 @@ def test_delete(db, factory):
 def test_set_role(db):
     with pytest.raises(ProgrammingError):
         (
-            Q(Address, role=DefaultRole)
+            Q(Address, session=Session(DefaultRole))
             .select('id')
             .execute()
         )
@@ -141,7 +141,7 @@ def test_set_role(db):
         .execute()
     )
     (
-        Q(Address, role=UserRole)
+        Q(Address, session=Session(UserRole))
         .select('id')
         .execute()
     )

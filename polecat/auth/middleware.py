@@ -25,7 +25,8 @@ class JWTMiddleware:
                     algorithms=('HS256',)
                 )
         event.claims = claims
-        event.session['claims'] = claims
+        for key, value in claims.items():
+            event.session.variables[f'claims.{key}'] = value
 
 
 class RoleMiddleware(JWTMiddleware):
@@ -50,3 +51,4 @@ class RoleMiddleware(JWTMiddleware):
                 # TODO: Better exception.
                 raise Exception('role not found')
         event.role = role
+        event.session.role = role

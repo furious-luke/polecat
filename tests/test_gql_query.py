@@ -1,7 +1,7 @@
 import pytest
 from polecat.graphql import build_graphql_schema, execute_query
 from polecat.graphql.utils import print_schema
-from polecat.model.db import Q
+from polecat.model.db import Q, Session
 
 from .models import *  # noqa
 from .queries import (all_actors_query, all_addresses_query, all_movies_query,
@@ -93,12 +93,12 @@ def test_mutation(db, factory):
 
 def test_set_role(db):
     schema = build_graphql_schema()
-    result = execute_query(schema, all_addresses_query, context={'role': DefaultRole})
+    result = execute_query(schema, all_addresses_query, context={'session': Session(DefaultRole)})
     assert len(result.errors) > 0
-    result = execute_query(schema, all_addresses_query, context={'role': UserRole})
+    result = execute_query(schema, all_addresses_query, context={'session': Session(UserRole)})
     assert result.errors is None
-    result = execute_query(schema, get_address_query, context={'role': DefaultRole})
+    result = execute_query(schema, get_address_query, context={'session': Session(DefaultRole)})
     assert len(result.errors) > 0
-    result = execute_query(schema, get_address_query, context={'role': UserRole})
+    result = execute_query(schema, get_address_query, context={'session': Session(UserRole)})
     assert result.errors is None
     # TODO: Create, delete, update.

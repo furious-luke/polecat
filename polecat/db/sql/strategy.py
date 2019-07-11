@@ -5,8 +5,10 @@ from .expression.alias import Alias
 from .expression.as_ import As
 from .expression.cte import CTE
 from .expression.json import JSON
+from .expression.multi import Multi
 from .expression.select import Select
 from .expression.subquery import Subquery
+from .expression.variable import LocalRole, LocalVariable
 from .expression.where import Where
 from .insert_strategy import InsertStrategy
 from .select_strategy import SelectStrategy
@@ -28,7 +30,7 @@ class Strategy:
         expr = self.wrap_final_expression(expr)
         self.cte.set_final_expression(expr)
         self.push_selection_to_relations()
-        return self.cte
+        return self.wrap_with_session(queryable_or_builder)
 
     def parse_queryable_or_builder(self, queryable_or_builder):
         if isinstance(queryable_or_builder, Q):
@@ -141,3 +143,15 @@ class Strategy:
     def push_selection_to_relations(self):
         for expr in self.cte.iter_expressions():
             expr.push_selection()
+
+    def wrap_with_session(self, builder):
+        session = getattr(builder, 'session', None)
+        if not session or session.is_empty():
+            return self.cte
+        local_expressions = []
+        if session.role:
+            local_expressions.append(LocalRole(session.role.Meta.role))
+        for key, value in session.variables.items():
+            local_expressions.append(LocalVariable(key, value))
+        local_expressions.append(self.cte)
+        return Multi(*local_expressions)

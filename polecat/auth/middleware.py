@@ -25,7 +25,7 @@ class JWTMiddleware:
                     algorithms=('HS256',)
                 )
         event.claims = claims
-        for key, value in claims.items():
+        for key, value in (claims or {}).items():
             event.session.variables[f'claims.{key}'] = value
 
 

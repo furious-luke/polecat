@@ -1,5 +1,6 @@
 from polecat import model
 from polecat.auth import jwt
+from polecat.db.schema.utils import Auto
 from polecat.model.db import Q
 from polecat.model.db.helpers import create_schema
 
@@ -27,6 +28,7 @@ class User(model.Model):
     name = model.TextField()
     email = model.EmailField(unique=True, null=False)
     password = model.PasswordField()
+    created = model.DatetimeField(default=Auto)
 
     class Meta:
         app = type('App', (), {'name': 'auth'})
@@ -46,7 +48,7 @@ class Actor(model.Model):
     last_name = model.TextField()
     age = model.IntField()
     address = model.RelatedField(Address)
-    user = model.RelatedField(User)
+    user = model.RelatedField(User, default=model.session('claims.user_id', 'int'))
 
     class Meta:
         uniques = (

@@ -12,6 +12,7 @@ def create_column_from_field(field, type, **kwargs):
         unique=field.unique,
         null=field.null,
         primary_key=field.primary_key,
+        default=field.default,
         **kwargs
     )
 
@@ -79,5 +80,6 @@ def convert_relatedfield(field):
         related_column=field.related_name,
         unique=field.unique,
         null=field.null,
-        primary_key=field.primary_key
+        primary_key=field.primary_key,
+        default=field.default
     )

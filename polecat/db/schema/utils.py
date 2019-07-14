@@ -1,3 +1,7 @@
+class Auto:
+    pass
+
+
 def table_to_identifier(table):
     if isinstance(table, str):
         ident = table

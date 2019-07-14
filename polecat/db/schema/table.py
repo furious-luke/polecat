@@ -56,6 +56,9 @@ class Table(Entity):
         )
 
     def have_columns_changed(self, other):
+        # TODO: I don't think this is sufficient. I think I need to be
+        # running "has_changed" on the columns in order to detect
+        # variations to columns.
         from_columns = {
             column.name: column
             for column in self.iter_mutable_columns()

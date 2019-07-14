@@ -526,7 +526,7 @@ class MutationBuilder:
                     } if mutation.input else None,
                     resolve_mutation
                 ),
-                '_mutation', mutation()  # TODO: Don't actually need to instantiate here.
+                '_mutation', mutation
             )
         return mutations
 

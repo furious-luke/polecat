@@ -45,10 +45,12 @@ class Column(Entity):
 
 
 class MutableColumn(Column):
-    def __init__(self, name, null=True, primary_key=False, **kwargs):
-        super().__init__(name, **kwargs)
-        self.null = null
+    def __init__(self, name, null=True, primary_key=False, default=None,
+                 unique=False, **kwargs):
+        super().__init__(name, unique=True if primary_key else unique, **kwargs)
+        self.null = False if primary_key else null
         self.primary_key = primary_key
+        self.default = default
 
     def __repr__(self):
         return to_repr(
@@ -60,15 +62,17 @@ class MutableColumn(Column):
         return (
             super().has_changed(other) or
             self.null != other.null or
-            self.primary_key != other.primary_key
+            self.primary_key != other.primary_key or
+            self.default != other.default
         )
 
     def get_construction_arguments(self):
         cargs = super().get_construction_arguments()
         return cargs.merge(
-            unique=self.unique or self.primary_key,
-            null=self.null and not self.primary_key,
-            primary_key=self.primary_key
+            unique=self.unique,
+            null=self.null,
+            primary_key=self.primary_key,
+            default=self.default
         )
 
 

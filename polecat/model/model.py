@@ -43,4 +43,6 @@ class Query(metaclass=QueryMetaclass):
 
 
 class Mutation(metaclass=MutationMetaclass):
-    pass
+    def __init__(self, selector=None, session=None):
+        self.selector = selector
+        self.session = session

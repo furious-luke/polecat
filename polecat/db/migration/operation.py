@@ -1,3 +1,6 @@
+# TODO: Migration shouldn't really be aware of SQL specifics, they
+# should live in "polecat.db.sql".
+import polecat.db.sql.postgres  # noqa
 from psycopg2.sql import SQL, Identifier
 
 from ...core.context import active_context
@@ -89,15 +92,16 @@ class CreateTable(Operation):
     @property
     def sql(self):
         table_name_ident = Identifier(self.get_table_name())
+        all_sql, all_args = self.all_sql()
         return (
             SQL('\n').join(
                 (SQL('CREATE TABLE {} (\n{}\n);').format(
                     table_name_ident,
-                    self.all_sql()
+                    all_sql
                 ),) +
                 self.access_sql(table_name_ident)
             ),
-            ()
+            all_args
         )
 
     def set_app(self, app):
@@ -108,17 +112,21 @@ class CreateTable(Operation):
         schema.bind_table(self.table)
 
     def all_sql(self):
+        columns_sql, columns_args = self.all_columns_sql()
         return SQL(',\n').join(tuple(filter(not_empty, (
-            self.all_columns_sql(),
+            columns_sql,
             self.all_uniques_sql(),
             self.all_checks_sql()
-        ))))
+        )))), columns_args
 
     def all_columns_sql(self):
-        return SQL(',\n').join(
-            SQL('  ') + self.column_sql(column)
-            for column in self.iter_valid_columns()
-        )
+        all_sql = []
+        all_args = ()
+        for col in self.iter_valid_columns():
+            sql, args = self.column_sql(col)
+            all_sql.append(sql)
+            all_args += args
+        return SQL(',\n').join(all_sql), all_args
 
     def all_uniques_sql(self):
         uniques = self.table.uniques

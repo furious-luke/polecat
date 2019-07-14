@@ -1,7 +1,8 @@
 from functools import partial
 
 from factory import declarations
-from factory.fuzzy import FuzzyInteger, FuzzyText
+from factory.fuzzy import FuzzyDateTime, FuzzyInteger, FuzzyText
+from polecat.utils import timezone
 
 from ...core.registry import MappedRegistry, RegistryMetaclass
 from ...model import field as mf
@@ -63,6 +64,14 @@ class NumberField(Field):
     def get_declaration(self, model_field, factory):
         # TODO: 0 isn't good.
         return FuzzyInteger(0)
+
+
+class DatetimeField(Field):
+    sources = (mf.DatetimeField,)
+
+    @classmethod
+    def get_declaration(self, model_field, factory):
+        return FuzzyDateTime(timezone.now())
 
 
 class RelatedField(Field):

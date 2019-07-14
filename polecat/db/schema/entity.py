@@ -1,5 +1,16 @@
 from polecat.utils.repr import to_repr_attrs
 
+from .utils import Auto
+from .variable import SessionVariable
+
+
+class AsIs:
+    def __init__(self, value):
+        self.value = value
+
+    def __repr__(self):
+        return self.value
+
 
 class ConstructionArguments:
     def __init__(self, *args, **kwargs):
@@ -13,14 +24,30 @@ class ConstructionArguments:
 
     def filter_kwargs(self):
         return {
-            name: value
+            name: self.map_value(value)
             for name, value in self.kwargs.items()
             if value is not None
         }
 
+    def map_value(self, value):
+        if isinstance(value, SessionVariable):
+            args = [repr(value.name)]
+            if value.type:
+                args.append(repr(value.type))
+            args = ', '.join(args)
+            return AsIs(f'schema.SessionVariable({args})')
+        elif value == Auto:
+            return AsIs('schema.Auto')
+        else:
+            return value
+
     def merge(self, *args, **kwargs):
         self.args += args
-        self.kwargs.update(kwargs)
+        self.kwargs.update({
+            k: v
+            for k, v in kwargs.items()
+            if v is not None
+        })
         return self
 
 

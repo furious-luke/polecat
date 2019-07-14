@@ -141,10 +141,10 @@ def resolve_mutation(obj, info, **kwargs):
     node = info.field_nodes[0]
     graphql_field = info.parent_type.fields[info.field_name]
     return_type = graphql_field.type
-    mutation = graphql_field._mutation
-    input = kwargs['input']
-    # TODO: Want a better way of handing off the selector.
-    return mutation.resolve(
+    options = info.context or {}
+    mutation = graphql_field._mutation(
         selector=get_selector_from_node(return_type, node),
-        **input
+        **options
     )
+    input = kwargs['input']
+    return mutation.resolve(**input)

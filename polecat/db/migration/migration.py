@@ -10,6 +10,7 @@ from ..decorators import dbcursor
 from .utils import project_migrations_path
 
 migration_template = '''from polecat.db.migration import migration, operation
+from polecat.db import schema
 from polecat.db.schema import column
 
 

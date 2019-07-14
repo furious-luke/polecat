@@ -1,13 +1,9 @@
+from polecat.db.schema.utils import Auto
+
 from ..utils.stringcase import camelcase, snakecase
 from .exceptions import InvalidModelDataError
 
 default_resolver = None
-
-
-# TODO: Maybe move this elsewhere?
-# TODO: Make sure it's clear this is a field default.
-class Auto:
-    pass
 
 
 class Field:

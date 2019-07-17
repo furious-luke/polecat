@@ -176,6 +176,10 @@ class RelatedField(MutableField):
             return value
         else:
             try:
+                value = {'id': int(value)}
+            except TypeError:
+                pass
+            try:
                 return self.other(**value)
             except TypeError:
                 raise InvalidModelDataError(self.other, value)

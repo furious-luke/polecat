@@ -48,4 +48,7 @@ def format_error(error):
         return str(original_error)
     else:
         # TODO: If in debug mode, include path: str(error)
-        return error.message
+        try:
+            return error.message
+        except AttributeError:
+            return str(error)

@@ -4,7 +4,8 @@ from functools import partial
 
 from graphql.type import (GraphQLField, GraphQLInputField,
                           GraphQLInputObjectType, GraphQLInt, GraphQLList,
-                          GraphQLObjectType, GraphQLSchema, GraphQLString)
+                          GraphQLNonNull, GraphQLObjectType, GraphQLSchema,
+                          GraphQLString)
 
 from ..core.context import active_context
 from ..model import (Model, model_registry, mutation_registry, omit,
@@ -16,9 +17,9 @@ from .registry import (add_graphql_create_input, add_graphql_type,
                        add_graphql_update_input, graphql_create_input_registry,
                        graphql_field_registry, graphql_reverse_input_registry,
                        graphql_type_registry, graphql_update_input_registry)
-from .resolve import (resolve_all_query, resolve_create_mutation,
-                      resolve_delete_mutation, resolve_get_query,
-                      resolve_mutation, resolve_query, resolve_update_mutation)
+from .resolve import (CreateResolver, UpdateOrCreateResolver, UpdateResolver,
+                      resolve_all_query, resolve_delete_mutation,
+                      resolve_get_query, resolve_mutation, resolve_query)
 from .type import scalars
 
 logger = logging.getLogger(__name__)
@@ -173,20 +174,37 @@ class ModelBuilder:
     def build_mutations(self, model, type):
         mutations = {}
         if not model.Meta.omit & omit.CREATE:
+            args = {}
+            create_input = CreateInputBuilder(self.schema_builder).build(model)
+            if create_input:
+                args['input'] = create_input
             mutations[self.create_mutation_inflection(model)] = GraphQLField(
                 type,
-                {
-                    'input': CreateInputBuilder(self.schema_builder).build(model)
-                },
-                resolve_create_mutation
+                args,
+                CreateResolver.as_function
             )
         if not model.Meta.omit & omit.UPDATE:
+            args = {
+                'id': GraphQLNonNull(GraphQLInt)
+            }
+            update_input = UpdateInputBuilder(self.schema_builder).build(model)
+            if update_input:
+                args['input'] = update_input
             mutations[self.update_mutation_inflection(model)] = GraphQLField(
                 type,
-                {
-                    'input': UpdateInputBuilder(self.schema_builder).build(model)
-                },
-                resolve_update_mutation
+                args,
+                UpdateResolver.as_function
+            )
+        if not model.Meta.omit & omit.UPDATE and not model.Meta.omit & omit.CREATE:
+            args = {
+                'id': GraphQLInt
+            }
+            if update_input:
+                args['input'] = update_input
+            mutations[self.update_or_create_mutation_inflection(model)] = GraphQLField(
+                type,
+                args,
+                UpdateOrCreateResolver.as_function
             )
         if not model.Meta.omit & omit.DELETE:
             # TODO: Need to use type instead of delete_output_type
@@ -252,6 +270,9 @@ class ModelBuilder:
 
     def update_mutation_inflection(self, model):
         return f'update{model.Meta.name}'
+
+    def update_or_create_mutation_inflection(self, model):
+        return f'updateOrCreate{model.Meta.name}'
 
     def delete_mutation_inflection(self, model):
         return f'delete{model.Meta.name}'
@@ -397,6 +418,8 @@ class UpdateInputBuilder(InputBuilder):
     def iter_fields(self, model):
         for name, field in model.Meta.cc_fields.items():
             if field.omit & omit.UPDATE:
+                continue
+            if name == 'id':
                 continue
             yield name, field
 

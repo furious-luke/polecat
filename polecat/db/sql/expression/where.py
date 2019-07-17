@@ -7,7 +7,7 @@ from ....utils import to_tuple
 
 
 class Where:
-    FILTER_PROG = re.compile(r'^([a-zA-Z][a-zA-Z0-9]+(?:__[a-zA-Z][a-zA-Z0-9]+)*)$')
+    FILTER_PROG = re.compile(r'^([a-zA-Z][a-zA-Z0-9_]+(?:__[a-zA-Z][a-zA-Z0-9_]+)*)$')
     FILTER_TYPES = None
 
     def __init__(self, *args, **kwargs):
@@ -25,7 +25,7 @@ class Where:
         for k, v in kwargs.items():
             m = self.FILTER_PROG.match(k)
             if not m:
-                continue
+                raise ValueError(f'Unable to match filter condition: {k}')
             target = m.group(1)
             lookup, flt_cls = self.parse_target(target)
             flt = flt_cls(self, lookup, v)

@@ -7,7 +7,9 @@ from .models import *  # noqa
 from .queries import (all_actors_query, all_addresses_query, all_movies_query,
                       authenticate_query, create_actor_and_movies_query,
                       create_actors_query, delete_movie_query,
-                      get_address_query, update_actors_query)
+                      get_address_query, update_actors_query,
+                      update_or_create_actor_query,
+                      update_or_create_store_query)
 
 
 def test_schema():
@@ -67,6 +69,32 @@ def test_update(db):
     assert result.errors is None
     assert result.data['firstActor']['age'] == 60
     assert result.data['secondActor']['age'] == 80
+
+
+def test_update_or_create(db):
+    schema = build_graphql_schema()
+    result = execute_query(schema, update_or_create_actor_query, variables={
+        'firstName': 'a'
+    })
+    assert result.errors is None
+    assert result.data['updateOrCreateActor']['id'] is not None
+    assert result.data['updateOrCreateActor']['firstName'] == 'a'
+    result = execute_query(schema, update_or_create_actor_query, variables={
+        'id': result.data['updateOrCreateActor']['id'],
+        'firstName': 'b'
+    })
+    assert result.errors is None
+    assert result.data['updateOrCreateActor']['firstName'] == 'b'
+
+
+def test_custom_resolver(db):
+    schema = build_graphql_schema()
+    result = execute_query(schema, update_or_create_store_query, variables={
+        'name': 'a'
+    })
+    assert result.errors is None
+    assert result.data['updateOrCreateStore']['id'] is not None
+    assert result.data['updateOrCreateStore']['name'] == 'override'
 
 
 def test_delete(db, factory):

@@ -4,7 +4,110 @@ from polecat.model.db import Q, S
 
 from ..utils.exceptions import traceback
 from .field import RelatedField
-from .input import Input
+from .input import Input, parse_id
+
+
+class Resolver:
+    @classmethod
+    def as_function(cls, *args, **kwargs):
+        return cls(*args, **kwargs).resolve()
+
+    def __init__(self, root, info, **kwargs):
+        self.root = root
+        self.info = info
+        self.kwargs = kwargs
+
+    def resolve(self):
+        raise NotImplementedError
+
+    def parse_input(self):
+        try:
+            return Input(self.input_type, self.kwargs['input'])
+        except KeyError:
+            raise Exception('Missing "input" argument')
+
+    @property
+    def field_name(self):
+        return self.info.field_name
+
+    @property
+    def field(self):
+        # TODO: Cache.
+        return self.info.parent_type.fields[self.field_name]
+
+    @property
+    def return_type(self):
+        return self.info.return_type
+
+    @property
+    def context(self):
+        return self.info.context
+
+    @property
+    def polecat_model_class(self):
+        return self.return_type._model
+
+    @property
+    def input_type(self):
+        return self.field.args['input'].type
+
+    def parse_id(self):
+        try:
+            id = parse_id(self.kwargs['id'])
+        except KeyError:
+            id = None
+        return id
+
+
+class CreateResolver(Resolver):
+    def resolve(self):
+        model_class = self.polecat_model_class
+        model = self.build_model(model_class)
+        custom_resolver = model_class.Meta.mutation_resolver
+        if custom_resolver:
+            return custom_resolver(model, self.complete_resolve)
+        else:
+            return self.complete_resolve(model)
+
+    def build_model(self, model_class):
+        input = self.parse_input()
+        return model_class(**input.change)
+
+    def complete_resolve(self, model):
+        query = self.build_query(model)
+        return resolve_get_query(self.root, self.info, query=query)
+
+    def build_query(self, model):
+        return Q(model).insert()
+
+
+class UpdateResolver(CreateResolver):
+    def build_model(self, model_class):
+        input = self.parse_input()
+        self._id = self.parse_id()
+        model = model_class(id=self._id, **input.change)
+        return model
+
+    def build_query(self, model):
+        return Q(model).update()
+
+
+class UpdateOrCreateResolver(CreateResolver):
+    def build_model(self, model_class):
+        input = self.parse_input()
+        self._id = self.parse_id()
+        if self._id is not None:
+            model = model_class(id=self._id, **input.change)
+        else:
+            model = model_class(**input.change)
+        return model
+
+    def build_query(self, model):
+        if self._id is not None:
+            query = Q(model).update()
+        else:
+            query = Q(model).insert()
+        return query
 
 
 def resolve_all_query(obj, info):
@@ -56,34 +159,34 @@ def get_selector_from_node(graphql_type, node):
     return S(*fields, **lookups)
 
 
-def resolve_create_mutation(obj, info, **kwargs):
-    mutation = info.parent_type.fields[info.field_name]
-    return_type = info.return_type
-    input_type = mutation.args['input'].type
-    model_class = return_type._model
-    try:
-        input = Input(input_type, kwargs['input'])
-    except KeyError:
-        raise Exception('Missing "input" argument')
-    # Perform any deletes.
-    # TODO: While these are all done together, I'd like to add them to
-    # the insert below.
-    queries = []
-    for delete_class, ids in input.delete.items():
-        options = info.context or {}
-        queries.extend([
-            Q(delete_class, **options)
-            .filter(id=id)
-            .delete()
-            for id in ids
-        ])
-    if queries:
-        Q.common(*queries).execute()
-    model = model_class(**input.change)
-    # TODO: We can optimise this operation for the case where there
-    # are no nested insertions like this...
-    query = Q(model).insert()
-    return resolve_get_query(obj, info, query=query)
+# def resolve_create_mutation(obj, info, **kwargs):
+#     mutation = info.parent_type.fields[info.field_name]
+#     return_type = info.return_type
+#     input_type = mutation.args['input'].type
+#     model_class = return_type._model
+#     try:
+#         input = Input(input_type, kwargs['input'])
+#     except KeyError:
+#         raise Exception('Missing "input" argument')
+#     # Perform any deletes.
+#     # TODO: While these are all done together, I'd like to add them to
+#     # the insert below.
+#     queries = []
+#     for delete_class, ids in input.delete.items():
+#         options = info.context or {}
+#         queries.extend([
+#             Q(delete_class, **options)
+#             .filter(id=id)
+#             .delete()
+#             for id in ids
+#         ])
+#     if queries:
+#         Q.common(*queries).execute()
+#     model = model_class(**input.change)
+#     # TODO: We can optimise this operation for the case where there
+#     # are no nested insertions like this...
+#     query = Q(model).insert()
+#     return resolve_get_query(obj, info, query=query)
 
 
 def resolve_update_mutation(obj, info, **kwargs):
@@ -110,7 +213,7 @@ def resolve_update_mutation(obj, info, **kwargs):
         ])
     if queries:
         Q.common(*queries).execute()
-    model = model_class(**input.change)
+    model = model_class(id=parse_id(kwargs['id']), **input.change)
     # TODO: We can optimise this operation for the case where there
     # are no nested insertions like this...
     # TODO: Delete...
@@ -118,9 +221,49 @@ def resolve_update_mutation(obj, info, **kwargs):
     return resolve_get_query(obj, info, query=query)
 
 
+# def resolve_update_or_create_mutation(obj, info, **kwargs):
+#     mutation = info.parent_type.fields[info.field_name]
+#     return_type = info.return_type
+#     input_type = mutation.args['input'].type
+#     model_class = return_type._model
+#     try:
+#         input = Input(input_type, kwargs['input'])
+#     except KeyError:
+#         raise Exception('Missing "input" argument')
+#     # Perform any deletes.
+#     # TODO: This can one day be merged together. Before then, I need
+#     # to create a CTE system that allows me to combine queries more
+#     # elegantly.
+#     queries = []
+#     for delete_class, ids in input.delete.items():
+#         options = info.context or {}
+#         queries.extend([
+#             Q(delete_class, **options)
+#             .filter(id=id)
+#             .delete()
+#             for id in ids
+#         ])
+#     if queries:
+#         Q.common(*queries).execute()
+#     try:
+#         id = parse_id(kwargs['id'])
+#     except KeyError:
+#         id = None
+#     # TODO: We can optimise this operation for the case where there
+#     # are no nested insertions like this...
+#     # TODO: Delete...
+#     if id is not None:
+#         model = model_class(id=id, **input.change)
+#         query = Q(model).update()
+#     else:
+#         model = model_class(**input.change)
+#         query = Q(model).insert()
+#     return resolve_get_query(obj, info, query=query)
+
+
 def resolve_delete_mutation(obj, info, **kwargs):
     return_type = info.return_type
-    id = kwargs['input']['id']
+    id = parse_id(kwargs['input']['id'])
     model_class = return_type._model
     model = model_class(id=id)
     options = info.context or {}

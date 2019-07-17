@@ -1,6 +1,6 @@
 class Input:
     def __init__(self, type=None, input=None):
-        if type and input:
+        if type is not None and input is not None:
             self.translate(type, input)
 
     def translate(self, type, input):
@@ -19,3 +19,12 @@ class Input:
             source = self.delete
         for model, ids in delete.items():
             source.setdefault(model, set()).update(ids)
+
+
+def parse_id(id):
+    if id is None:
+        return id
+    try:
+        return int(id)
+    except ValueError:
+        raise ValueError(f'Cannot parse ID: {id}')

@@ -8,6 +8,11 @@ from polecat.model.db.helpers import create_schema
 # assist with easier testing?
 
 
+def override_name_resolver(model, resolver):
+    model.name = 'override'
+    return resolver(model)
+
+
 class AdminRole(model.Role):
     pass
 
@@ -75,6 +80,13 @@ class MovieAccess(model.Access):
     entity = Movie
     all = (UserRole,)
     select = (DefaultRole,)
+
+
+class Store(model.Model):
+    name = model.TextField()
+
+    class Meta:
+        mutation_resolver = override_name_resolver
 
 
 class AuthenticateInput(model.Type):

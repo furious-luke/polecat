@@ -1,9 +1,9 @@
 from functools import singledispatch
 
-from .. import field
 from ...db.schema import (BoolColumn, FloatColumn, IntColumn, PasswordColumn,
                           RelatedColumn, SerialColumn, TextColumn,
                           TimestampColumn, UUIDColumn)
+from .. import field
 
 
 def create_column_from_field(field, type, **kwargs):

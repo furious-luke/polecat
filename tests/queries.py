@@ -85,17 +85,33 @@ create_actor_and_movies_query = '''mutation {
 '''
 
 update_actors_query = '''mutation($id1: Int!, $id2: Int!) {
-  firstActor: updateActor(input: {id: $id1, age: 60}) {
+  firstActor: updateActor(id: $id1, input: {age: 60}) {
     id,
     firstName,
     lastName,
     age
   }
-  secondActor: updateActor(input: {id: $id2, age: 80}) {
+  secondActor: updateActor(id: $id2, input: {age: 80}) {
     id,
     firstName,
     lastName,
     age
+  }
+}
+'''
+
+update_or_create_actor_query = '''mutation($id: Int, $firstName: String!) {
+  updateOrCreateActor(id: $id, input: {firstName: $firstName}) {
+    id,
+    firstName
+  }
+}
+'''
+
+update_or_create_store_query = '''mutation($name: String!) {
+  updateOrCreateStore(input: {name: $name}) {
+    id,
+    name
   }
 }
 '''

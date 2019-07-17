@@ -1,14 +1,17 @@
 from polecat.graphql import build_graphql_schema
 from polecat.graphql.utils import print_schema
-from polecat.model import Model, RelatedField, omit
+from polecat.model import IntField, Model, RelatedField, omit
 
 
 class AllOmitted(Model):
+    col = IntField()
+
     class Meta:
         omit = omit.ALL
 
 
 class ListOmitted(Model):
+    col = IntField()
     all = RelatedField(AllOmitted)
 
     class Meta:
@@ -16,6 +19,7 @@ class ListOmitted(Model):
 
 
 class GetOmitted(Model):
+    col = IntField()
     list = RelatedField(ListOmitted)
 
     class Meta:
@@ -23,11 +27,15 @@ class GetOmitted(Model):
 
 
 class CreateOmitted(Model):
+    col = IntField()
+
     class Meta:
         omit = omit.CREATE
 
 
 class UpdateOmitted(Model):
+    col = IntField()
+
     class Meta:
         omit = omit.UPDATE
 

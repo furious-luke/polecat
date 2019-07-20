@@ -3,14 +3,17 @@ from polecat.auth import jwt
 from polecat.db.schema.utils import Auto
 from polecat.model.db import Q
 from polecat.model.db.helpers import create_schema
+from polecat.model.resolver import Resolver
 
 # TODO: Convert this to use a function to generate the models to
 # assist with easier testing?
 
 
-def override_name_resolver(model, resolver):
-    model.name = 'override'
-    return resolver(model)
+class OverrideNameResolver(Resolver):
+    def build_model(self):
+        model = super().build_model()
+        model.name = 'override'
+        return model
 
 
 class AdminRole(model.Role):
@@ -86,7 +89,14 @@ class Store(model.Model):
     name = model.TextField()
 
     class Meta:
-        mutation_resolver = override_name_resolver
+        mutation_resolver = [
+            UpdatedTimestampResolver('updated'),
+            TrackChangedResolver
+        ]
+        
+        def mutation_resolver(ctx, resolver):
+            ctx.model.name = 'override'
+            return resolver()
 
 
 class AuthenticateInput(model.Type):

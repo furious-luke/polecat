@@ -1,24 +1,24 @@
 from graphql import GraphQLError
 from graphql.type import GraphQLList
 from polecat.model.db import Q, S
+from polecat.model.resolver import ModelResolver
 
 from ..utils.exceptions import traceback
 from .field import RelatedField
 from .input import Input, parse_id
+from .utils import get_model_class_from_info
 
 
-class Resolver:
+class Resolver(ModelResolver):
     @classmethod
-    def as_function(cls, *args, **kwargs):
-        return cls(*args, **kwargs).resolve()
+    def factory(cls, *args, **kwargs):
+        return cls(*args, **kwargs)
 
     def __init__(self, root, info, **kwargs):
+        super().__init__()
         self.root = root
         self.info = info
         self.kwargs = kwargs
-
-    def resolve(self):
-        raise NotImplementedError
 
     def parse_input(self):
         try:
@@ -44,7 +44,7 @@ class Resolver:
         return self.info.context
 
     @property
-    def polecat_model_class(self):
+    def model_class(self):
         return self.return_type._model
 
     @property
@@ -59,23 +59,26 @@ class Resolver:
         return id
 
 
-class CreateResolver(Resolver):
+class MutationResolver:
+    @classmethod
+    def as_function(cls, root, info, *args, **kwargs):
+        model_class = get_model_class_from_info(info)
+        resolver_class = getattr(model_class.Meta, 'mutation_resolver', cls)
+        if not isinstance(resolver_class, Resolver):
+            raise TypeError('Custom resolvers must inherit from Resolver')
+        return resolver_class(root, info, *args, **kwargs).resolve()
+
+
+class CreateResolver(MutationResolver):
     def resolve(self):
-        model_class = self.polecat_model_class
+        model_class = self.model_class
         model = self.build_model(model_class)
-        custom_resolver = model_class.Meta.mutation_resolver
-        if custom_resolver:
-            return custom_resolver(model, self.complete_resolve)
-        else:
-            return self.complete_resolve(model)
+        query = self.build_query(model)
+        return resolve_get_query(self.root, self.info, query=query)
 
     def build_model(self, model_class):
         input = self.parse_input()
         return model_class(**input.change)
-
-    def complete_resolve(self, model):
-        query = self.build_query(model)
-        return resolve_get_query(self.root, self.info, query=query)
 
     def build_query(self, model):
         return Q(model).insert()

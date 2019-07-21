@@ -1,6 +1,7 @@
-from ..core.registry import Registry, RegistryMetaclass
-from ..utils import add_attribute
-from ..utils.stringcase import camelcase, snakecase
+from polecat.core.registry import Registry, RegistryMetaclass
+from polecat.utils import add_attribute, to_list
+from polecat.utils.stringcase import camelcase, snakecase
+
 from .field import Field, SerialField
 from .omit import NONE
 
@@ -147,10 +148,14 @@ def make_type_meta(name, bases, attrs, meta):
 
 
 def make_model_meta(name, bases, attrs, meta):
+    # TODO: Ugh.
+    from .resolver import (CreateResolver, ResolverChain,
+                           UpdateOrCreateResolver, UpdateResolver)
     fields = {
         f.name: f
         for f in get_model_fields(attrs)
     }
+    mutation_resolver = to_list(getattr(meta, 'mutation_resolver', []))
     return type('Meta', (), {
         'options': meta.__dict__ if meta else {},
         'app': getattr(meta, 'app', None),
@@ -162,7 +167,9 @@ def make_model_meta(name, bases, attrs, meta):
         'uniques': getattr(meta, 'uniques', ()) if meta else (),
         'checks': getattr(meta, 'checks', ()) if meta else (),
         'omit': getattr(meta, 'omit', NONE) if meta else NONE,  # TODO: Duplicate of above
-        'mutation_resolver': getattr(meta, 'mutation_resolver', None)
+        'create_resolver': ResolverChain(mutation_resolver + [CreateResolver()]),
+        'update_resolver': ResolverChain(mutation_resolver + [UpdateResolver()]),
+        'update_or_create_resolver': ResolverChain(mutation_resolver + [UpdateOrCreateResolver()])
     })
 
 

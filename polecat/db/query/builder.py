@@ -133,6 +133,11 @@ class Q:
     def filter(self, **options):
         return self.chain(Filter(self.queryable, options))
 
+    def branch(self, query):
+        self.branches.append(self.queryable)
+        self.branches.extend(query.branches)
+        return self.chain(query.queryable)
+
     def parse_value_dict(self, queryable, values):
         parsed_values = {}
         for column_name, value in values.items():

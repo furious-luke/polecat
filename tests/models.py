@@ -10,8 +10,8 @@ from polecat.model.resolver import Resolver
 
 
 class OverrideNameResolver(Resolver):
-    def build_model(self):
-        model = super().build_model()
+    def build_model(self, context, iterator, **kwargs):
+        model = next(iterator)()
         model.name = 'override'
         return model
 
@@ -90,13 +90,8 @@ class Store(model.Model):
 
     class Meta:
         mutation_resolver = [
-            UpdatedTimestampResolver('updated'),
-            TrackChangedResolver
+            OverrideNameResolver()
         ]
-        
-        def mutation_resolver(ctx, resolver):
-            ctx.model.name = 'override'
-            return resolver()
 
 
 class AuthenticateInput(model.Type):

@@ -1,8 +1,8 @@
 from polecat.db.schema.utils import Auto
 from psycopg2.sql import SQL, Identifier
 
-from .. import schema
 from ...core.registry import MappedRegistry, RegistryMetaclass
+from .. import schema
 
 __all__ = ('Column', 'IntColumn')
 
@@ -52,6 +52,11 @@ class Column(metaclass=RegistryMetaclass):
 class IntColumn(Column):
     sources = (schema.IntColumn,)
     dbtype = 'int'
+
+
+class FloatColumn(Column):
+    sources = (schema.FloatColumn,)
+    dbtype = 'real'
 
 
 class SerialColumn(Column):

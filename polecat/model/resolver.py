@@ -1,176 +1,191 @@
-import inspect
 from functools import partial
 
 from cached_property import cached_property
+
 from polecat.utils import to_list
 
-
-class ResolverChain:
-    def __init__(self):
-        self.resolvers = []
-        self.root_resolver = None
-        self.chained_methods = {}
-
-    def use(self, resolver):
-        self.resolvers = to_list(resolver) + self.resolvers
-
-    def prepare(self):
-        self.prepare_root_resolver()
-        self.prepare_chained_methods()
-
-    def prepare_root_resolver(self):
-        root_resolver = None
-        for resolver in self.resolvers[::-1]:
-            resolver = self.instantiate_resolver(resolver)
-            root_resolver = partial(resolver, resolver=root_resolver)
-        self.root_resolver = root_resolver
-
-    def instantiate_resolver(self, resolver):
-        if inspect.isclass(resolver):
-            return resolver()
-        else:
-            return resolver
-
-    def prepare_chained_methods(self):
-        for ii, base_resolver in enumerate(self.resolver[::-1]):
-            if not isinstance(base_resolver, Resolver):
-                continue
-            for method_name in base_resolver.chained_methods:
-                root_method = None
-                for resolver in self.resolver[:ii:-1]:
-                    try:
-                        root_method = partial(getattr(resolver, method_name), method=root_method)
-                    except AttributeError:
-                        pass
-                self.chained_methods[method_name] = root_method
-
-    def resolve(self, context):
-        try:
-            return self.root_resolver(context)
-        except AttributeError:
-            # TODO: Better error type.
-            raise Exception('ResolverChain has not been prepared, or no resolvers used')
-
-    def chain_method(self, method_name, *args, **kwargs):
-        try:
-            return self.chained_methods[method_name](*args, **kwargs)
-        except KeyError:
-            raise KeyError(f'Invalid chained method name: {method_name}')
+from .db.query import Q
 
 
 class ResolverContext:
     def __init__(self, event=None):
         self.event = event
 
-    @cached_property
-    def model(self):
-        # TODO: Cache.
+    def parse_argument(self, name):
+        raise NotImplementedError
+
+    def parse_input(self):
         raise NotImplementedError
 
     @cached_property
-    def query(self):
-        # TODO: Cache.
+    def model_class(self):
+        return self.get_model_class()
+
+    def get_model_class(self):
         raise NotImplementedError
+
+    @cached_property
+    def selector(self):
+        return self.get_selector()
+
+    def get_selector(self):
+        raise NotImplementedError
+
+
+class ResolverChain:
+    def __init__(self, resolvers=None):
+        self.resolvers = []
+        self.use(resolvers)
+
+    def __call__(self, context, *args, **kwargs):
+        return self.resolve(context, *args, **kwargs)
+
+    def use(self, resolvers):
+        resolvers = to_list(resolvers)
+        for resolver in resolvers:
+            resolver.set_chain(self)
+        self.resolvers = resolvers + self.resolvers
+
+    def resolve(self, context, *args, **kwargs):
+        iterator = iter(ResolverIterator(self, context))
+        return next(iterator)(*args, **kwargs)
+
+    def chain_method(self, method_name, context, *args, **kwargs):
+        iterator = iter(ResolverMethodIterator(self, context, method_name))
+        return next(iterator)(*args, **kwargs)
+
+
+class ResolverIterator:
+    def __init__(self, chain, context):
+        self.chain = chain
+        self.context = context
+
+    def __iter__(self):
+        self.resolver_iter = iter(self.chain.resolvers)
+        return self
+
+    def __next__(self):
+        resolver = next(self.resolver_iter)
+        return partial(resolver, self.context, iterator=self)
+
+
+class ResolverMethodIterator(ResolverIterator):
+    def __init__(self, chain, context, method_name):
+        super().__init__(chain, context)
+        self.method_name = method_name
+
+    def __next__(self):
+        while True:
+            resolver = next(self.resolver_iter)
+            if hasattr(resolver, self.method_name):
+                break
+        return partial(getattr(resolver, self.method_name), self.context, iterator=self)
 
 
 class Resolver:
-    @classmethod
-    def factory(cls, *args, **kwargs):
-        return cls(*args, **kwargs)
+    def __init__(self, chain=None):
+        self.chain = chain
 
-    def __init__(self, root, info, **kwargs):
-        super().__init__()
-        self.root = root
-        self.info = info
-        self.kwargs = kwargs
+    def __call__(self, context, *args, **kwargs):
+        return self.resolve(context, *args, **kwargs)
 
-    def parse_input(self):
-        try:
-            return Input(self.input_type, self.kwargs['input'])
-        except KeyError:
-            raise Exception('Missing "input" argument')
+    def set_chain(self, chain):
+        self.chain = chain
 
-    @property
-    def field_name(self):
-        return self.info.field_name
+    def resolve(self, context, iterator, *args, **kwargs):
+        return next(iterator)(*args, **kwargs)
 
-    @property
-    def field(self):
-        # TODO: Cache.
-        return self.info.parent_type.fields[self.field_name]
-
-    @property
-    def return_type(self):
-        return self.info.return_type
-
-    @property
-    def context(self):
-        return self.info.context
-
-    @property
-    def model_class(self):
-        return self.return_type._model
-
-    @property
-    def input_type(self):
-        return self.field.args['input'].type
-
-    def parse_id(self):
-        try:
-            id = parse_id(self.kwargs['id'])
-        except KeyError:
-            id = None
-        return id
+    def chain_method(self, method_name, *args, **kwargs):
+        return self.chain.chain_method(method_name, *args, **kwargs)
 
 
-class MutationResolver:
-    @classmethod
-    def as_function(cls, root, info, *args, **kwargs):
-        model_class = get_model_class_from_info(info)
-        resolver_class = getattr(model_class.Meta, 'mutation_resolver', cls)
-        if not isinstance(resolver_class, Resolver):
-            raise TypeError('Custom resolvers must inherit from Resolver')
-        return resolver_class(root, info, *args, **kwargs).resolve()
+class QueryResolver(Resolver):
+    def resolve(self, context, query=None):
+        query = self.chain_method('build_query', context, query)
+        results = self.chain_method('build_results', query)
+        return results
+
+    def build_query(self, context, query=None, **kwargs):
+        if not query:
+            query = Q(context.model_class)
+        return query
+
+
+class AllResolver(QueryResolver):
+    def build_query(self, context, query=None, **kwargs):
+        query = super().build_query(context, query)
+        return query.select(context.selector)
+
+    def build_results(self, context, query, **kwargs):
+        return list(query)
+
+
+class GetResolver(QueryResolver):
+    def build_query(self, context, query=None, **kwargs):
+        query = super().build_query(context, query)
+        id = context.parse_argument('id')
+        return (
+            query
+            .select(context.selector)
+            .filter(id=id)
+        )
+
+    def build_results(self, context, query, **kwargs):
+        return query.get()
+
+
+class MutationResolver(Resolver):
+    def resolve(self, context, **kwargs):
+        model = self.chain_method('build_model', context)
+        query = self.chain_method('build_query', context, model)
+        query = self.chain_method('select_query', context, query)
+        results = self.chain_method('build_results', context, query)
+        return results
+
+    def select_query(self, context, query, **kwargs):
+        return (
+            query
+            .select(context.selector)
+        )
+
+    def build_results(self, context, query, **kwargs):
+        return query.get()
 
 
 class CreateResolver(MutationResolver):
-    def resolve(self):
-        model_class = self.model_class
-        model = self.build_model(model_class)
-        query = self.build_query(model)
-        return resolve_get_query(self.root, self.info, query=query)
-
-    def build_model(self, model_class):
-        input = self.parse_input()
+    def build_model(self, context, **kwargs):
+        model_class = context.model_class
+        input = context.parse_input()
         return model_class(**input.change)
 
-    def build_query(self, model):
+    def build_query(self, context, model, **kwargs):
         return Q(model).insert()
 
 
 class UpdateResolver(CreateResolver):
-    def build_model(self, model_class):
-        input = self.parse_input()
-        self._id = self.parse_id()
-        model = model_class(id=self._id, **input.change)
-        return model
+    def build_model(self, context, **kwargs):
+        model_class = context.model_class
+        input = context.parse_input()
+        context._id = context.parse_argument('id')
+        return model_class(id=context._id, **input.change)
 
-    def build_query(self, model):
+    def build_query(self, context, model, **kwargs):
         return Q(model).update()
 
 
 class UpdateOrCreateResolver(CreateResolver):
-    def build_model(self, model_class):
-        input = self.parse_input()
-        self._id = self.parse_id()
-        if self._id is not None:
-            model = model_class(id=self._id, **input.change)
+    def build_model(self, context, **kwargs):
+        model_class = context.model_class
+        input = context.parse_input()
+        context._id = context.parse_argument('id')
+        if context._id is not None:
+            model = model_class(id=context._id, **input.change)
         else:
             model = model_class(**input.change)
         return model
 
-    def build_query(self, model):
-        if self._id is not None:
+    def build_query(self, context, model, **kwargs):
+        if context._id is not None:
             query = Q(model).update()
         else:
             query = Q(model).insert()

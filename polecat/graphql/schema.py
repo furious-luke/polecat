@@ -17,9 +17,10 @@ from .registry import (add_graphql_create_input, add_graphql_type,
                        add_graphql_update_input, graphql_create_input_registry,
                        graphql_field_registry, graphql_reverse_input_registry,
                        graphql_type_registry, graphql_update_input_registry)
-from .resolve import (CreateResolver, UpdateOrCreateResolver, UpdateResolver,
-                      resolve_all_query, resolve_delete_mutation,
-                      resolve_get_query, resolve_mutation, resolve_query)
+from .resolve import (resolve_all_query, resolve_create_mutation,
+                      resolve_delete_mutation, resolve_get_query,
+                      resolve_mutation, resolve_query, resolve_update_mutation,
+                      resolve_update_or_create_mutation)
 from .type import scalars
 
 logger = logging.getLogger(__name__)
@@ -181,7 +182,7 @@ class ModelBuilder:
             mutations[self.create_mutation_inflection(model)] = GraphQLField(
                 type,
                 args,
-                CreateResolver.as_function
+                resolve_create_mutation
             )
         if not model.Meta.omit & omit.UPDATE:
             args = {
@@ -193,7 +194,7 @@ class ModelBuilder:
             mutations[self.update_mutation_inflection(model)] = GraphQLField(
                 type,
                 args,
-                UpdateResolver.as_function
+                resolve_update_mutation
             )
         if not model.Meta.omit & omit.UPDATE and not model.Meta.omit & omit.CREATE:
             args = {
@@ -204,7 +205,7 @@ class ModelBuilder:
             mutations[self.update_or_create_mutation_inflection(model)] = GraphQLField(
                 type,
                 args,
-                UpdateOrCreateResolver.as_function
+                resolve_update_or_create_mutation
             )
         if not model.Meta.omit & omit.DELETE:
             # TODO: Need to use type instead of delete_output_type

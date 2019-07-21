@@ -1,7 +1,7 @@
 from graphql import GraphQLError
 from graphql.type import GraphQLList
 from polecat.model.db import Q, S
-from polecat.model.resolver import ModelResolver
+from polecat.model.resolver import ResolverContext
 
 from ..utils.exceptions import traceback
 from .field import RelatedField
@@ -9,16 +9,15 @@ from .input import Input, parse_id
 from .utils import get_model_class_from_info
 
 
-class Resolver(ModelResolver):
-    @classmethod
-    def factory(cls, *args, **kwargs):
-        return cls(*args, **kwargs)
-
+class GraphQLResolverContext(ResolverContext):
     def __init__(self, root, info, **kwargs):
         super().__init__()
         self.root = root
         self.info = info
         self.kwargs = kwargs
+
+    def parse_argument(self, name):
+        return self.kwargs.get(name)
 
     def parse_input(self):
         try:
@@ -40,7 +39,11 @@ class Resolver(ModelResolver):
         return self.info.return_type
 
     @property
-    def context(self):
+    def root_node(self):
+        return self.info.field_nodes[0]
+
+    @property
+    def graphql_context(self):
         return self.info.context
 
     @property
@@ -58,59 +61,8 @@ class Resolver(ModelResolver):
             id = None
         return id
 
-
-class MutationResolver:
-    @classmethod
-    def as_function(cls, root, info, *args, **kwargs):
-        model_class = get_model_class_from_info(info)
-        resolver_class = getattr(model_class.Meta, 'mutation_resolver', cls)
-        if not isinstance(resolver_class, Resolver):
-            raise TypeError('Custom resolvers must inherit from Resolver')
-        return resolver_class(root, info, *args, **kwargs).resolve()
-
-
-class CreateResolver(MutationResolver):
-    def resolve(self):
-        model_class = self.model_class
-        model = self.build_model(model_class)
-        query = self.build_query(model)
-        return resolve_get_query(self.root, self.info, query=query)
-
-    def build_model(self, model_class):
-        input = self.parse_input()
-        return model_class(**input.change)
-
-    def build_query(self, model):
-        return Q(model).insert()
-
-
-class UpdateResolver(CreateResolver):
-    def build_model(self, model_class):
-        input = self.parse_input()
-        self._id = self.parse_id()
-        model = model_class(id=self._id, **input.change)
-        return model
-
-    def build_query(self, model):
-        return Q(model).update()
-
-
-class UpdateOrCreateResolver(CreateResolver):
-    def build_model(self, model_class):
-        input = self.parse_input()
-        self._id = self.parse_id()
-        if self._id is not None:
-            model = model_class(id=self._id, **input.change)
-        else:
-            model = model_class(**input.change)
-        return model
-
-    def build_query(self, model):
-        if self._id is not None:
-            query = Q(model).update()
-        else:
-            query = Q(model).insert()
-        return query
+    def get_selector(self):
+        return get_selector_from_node(self.return_type, self.root_node)
 
 
 def resolve_all_query(obj, info):
@@ -162,106 +114,22 @@ def get_selector_from_node(graphql_type, node):
     return S(*fields, **lookups)
 
 
-# def resolve_create_mutation(obj, info, **kwargs):
-#     mutation = info.parent_type.fields[info.field_name]
-#     return_type = info.return_type
-#     input_type = mutation.args['input'].type
-#     model_class = return_type._model
-#     try:
-#         input = Input(input_type, kwargs['input'])
-#     except KeyError:
-#         raise Exception('Missing "input" argument')
-#     # Perform any deletes.
-#     # TODO: While these are all done together, I'd like to add them to
-#     # the insert below.
-#     queries = []
-#     for delete_class, ids in input.delete.items():
-#         options = info.context or {}
-#         queries.extend([
-#             Q(delete_class, **options)
-#             .filter(id=id)
-#             .delete()
-#             for id in ids
-#         ])
-#     if queries:
-#         Q.common(*queries).execute()
-#     model = model_class(**input.change)
-#     # TODO: We can optimise this operation for the case where there
-#     # are no nested insertions like this...
-#     query = Q(model).insert()
-#     return resolve_get_query(obj, info, query=query)
+def resolve_create_mutation(obj, info, **kwargs):
+    with traceback():
+        ctx = GraphQLResolverContext(obj, info, **kwargs)
+        return ctx.model_class.Meta.create_resolver(ctx)
 
 
 def resolve_update_mutation(obj, info, **kwargs):
-    mutation = info.parent_type.fields[info.field_name]
-    return_type = info.return_type
-    input_type = mutation.args['input'].type
-    model_class = return_type._model
-    try:
-        input = Input(input_type, kwargs['input'])
-    except KeyError:
-        raise Exception('Missing "input" argument')
-    # Perform any deletes.
-    # TODO: This can one day be merged together. Before then, I need
-    # to create a CTE system that allows me to combine queries more
-    # elegantly.
-    queries = []
-    for delete_class, ids in input.delete.items():
-        options = info.context or {}
-        queries.extend([
-            Q(delete_class, **options)
-            .filter(id=id)
-            .delete()
-            for id in ids
-        ])
-    if queries:
-        Q.common(*queries).execute()
-    model = model_class(id=parse_id(kwargs['id']), **input.change)
-    # TODO: We can optimise this operation for the case where there
-    # are no nested insertions like this...
-    # TODO: Delete...
-    query = Q(model).update()
-    return resolve_get_query(obj, info, query=query)
+    with traceback():
+        ctx = GraphQLResolverContext(obj, info, **kwargs)
+        return ctx.model_class.Meta.update_resolver(ctx)
 
 
-# def resolve_update_or_create_mutation(obj, info, **kwargs):
-#     mutation = info.parent_type.fields[info.field_name]
-#     return_type = info.return_type
-#     input_type = mutation.args['input'].type
-#     model_class = return_type._model
-#     try:
-#         input = Input(input_type, kwargs['input'])
-#     except KeyError:
-#         raise Exception('Missing "input" argument')
-#     # Perform any deletes.
-#     # TODO: This can one day be merged together. Before then, I need
-#     # to create a CTE system that allows me to combine queries more
-#     # elegantly.
-#     queries = []
-#     for delete_class, ids in input.delete.items():
-#         options = info.context or {}
-#         queries.extend([
-#             Q(delete_class, **options)
-#             .filter(id=id)
-#             .delete()
-#             for id in ids
-#         ])
-#     if queries:
-#         Q.common(*queries).execute()
-#     try:
-#         id = parse_id(kwargs['id'])
-#     except KeyError:
-#         id = None
-#     # TODO: We can optimise this operation for the case where there
-#     # are no nested insertions like this...
-#     # TODO: Delete...
-#     if id is not None:
-#         model = model_class(id=id, **input.change)
-#         query = Q(model).update()
-#     else:
-#         model = model_class(**input.change)
-#         query = Q(model).insert()
-#     return resolve_get_query(obj, info, query=query)
+def resolve_update_or_create_mutation(obj, info, **kwargs):
+    with traceback():
+        ctx = GraphQLResolverContext(obj, info, **kwargs)
+        return ctx.model_class.Meta.update_or_create_resolver(ctx)
 
 
 def resolve_delete_mutation(obj, info, **kwargs):

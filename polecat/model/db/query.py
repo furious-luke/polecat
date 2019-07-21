@@ -1,5 +1,6 @@
-from ...db.query import Q as BaseQ
-from ...db.query import S
+from polecat.db.query import Q as BaseQ
+from polecat.db.query import S
+
 from ..model import Model
 from .helpers import model_to_table, model_to_values, set_values_on_model
 

@@ -43,7 +43,8 @@ class ResolverChain:
     def use(self, resolvers):
         resolvers = to_list(resolvers)
         for resolver in resolvers:
-            resolver.set_chain(self)
+            if hasattr(resolver, 'set_chain'):
+                resolver.set_chain(self)
         self.resolvers = resolvers + self.resolvers
 
     def resolve(self, context, *args, **kwargs):

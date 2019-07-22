@@ -1,5 +1,7 @@
 import pytest
-from polecat.utils.container import Option, OptionDict, passthrough
+from polecat.utils.optiondict import (BoolOption, ListOption, Option,
+                                      OptionDict, UndefinedOptionError)
+from polecat.utils.passthrough import passthrough
 
 OptionDict = passthrough(OptionDict)
 
@@ -10,7 +12,8 @@ def setup_optiondict():
         Option('no_default'),
         Option('has_default', default='has_default_value'),
         Option('very_different'),
-        Option('a_bool', type=bool, default=False)
+        BoolOption('a_bool', default=False),
+        ListOption('a_list')
     )
     return od
 
@@ -34,7 +37,7 @@ def test_default_values():
 
 def test_missing_option():
     od = setup_optiondict()
-    with pytest.raises(ValueError):
+    with pytest.raises(UndefinedOptionError):
         od.no_default
     with pytest.raises(KeyError):
         od.not_default
@@ -63,3 +66,31 @@ def test_boolean_option():
     assert od.a_bool == True  # noqa
     od.a_bool = ''
     assert od.a_bool == False  # noqa
+
+
+def test_list_option_assignment():
+    od = setup_optiondict()
+    od.a_list = []
+    assert od.a_list == []
+    od.a_list = [0]
+    assert od.a_list == [0]
+    od.a_list = 1
+    assert od.a_list == [1]
+
+
+def test_list_option_merge_value():
+    od = setup_optiondict()
+    od.a_list = [0]
+    od.Meta.merge({
+        'a_list': 1
+    })
+    assert od.a_list == [0, 1]
+
+
+def test_list_option_merge_list():
+    od = setup_optiondict()
+    od.a_list = [0]
+    od.Meta.merge({
+        'a_list': [1, 2]
+    })
+    assert od.a_list == [0, 1, 2]

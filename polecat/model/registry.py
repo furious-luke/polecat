@@ -167,6 +167,7 @@ def make_model_meta(name, bases, attrs, meta):
         'uniques': getattr(meta, 'uniques', ()) if meta else (),
         'checks': getattr(meta, 'checks', ()) if meta else (),
         'omit': getattr(meta, 'omit', NONE) if meta else NONE,  # TODO: Duplicate of above
+        'mutation_resolver': mutation_resolver,
         'create_resolver': ResolverChain(mutation_resolver + [CreateResolver()]),
         'update_resolver': ResolverChain(mutation_resolver + [UpdateResolver()]),
         'update_or_create_resolver': ResolverChain(mutation_resolver + [UpdateOrCreateResolver()])

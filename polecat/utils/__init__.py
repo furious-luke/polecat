@@ -6,6 +6,10 @@ from pathlib import Path
 from .stringcase import snakecase
 
 
+class Undefined:
+    pass
+
+
 def add_attribute(obj, key, value):
     setattr(obj, key, value)
     return obj
@@ -30,7 +34,9 @@ def get_class_path(value):
 
 
 def to_tuple(value):
-    if isinstance(value, (tuple, list)):
+    if isinstance(value, tuple):
+        return value
+    if isinstance(value, list):
         return tuple(value)
     elif value is None:
         return ()
@@ -50,6 +56,15 @@ def to_set(value):
         return set()
     else:
         return set(value)
+
+
+def to_dict(value):
+    if isinstance(value, None):
+        return {}
+    elif not isinstance(value, dict):
+        return dict(value)
+    else:
+        return value
 
 
 def merge(target, source):

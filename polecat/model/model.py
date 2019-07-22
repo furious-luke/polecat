@@ -1,3 +1,5 @@
+from polecat.utils import to_list
+
 from .exceptions import InvalidFieldError
 from .registry import (AccessMetaclass, ModelMetaclass, MutationMetaclass,
                        QueryMetaclass, RoleMetaclass, TypeMetaclass)
@@ -46,3 +48,22 @@ class Mutation(metaclass=MutationMetaclass):
     def __init__(self, selector=None, session=None):
         self.selector = selector
         self.session = session
+
+
+class ModelResolverMetaclass(type):
+    def __new__(meta, name, bases, attrs):
+        if name != 'ModelResolver':
+            model_class = attrs['model_class']
+            mutation_resolvers = to_list(attrs.get('mutation_resolver', []))
+            resolver_class = attrs.get('MutationResolver', None)
+            if resolver_class:
+                mutation_resolvers.append(resolver_class())
+            model_class.Meta.mutation_resolver = mutation_resolvers + to_list(model_class.Meta.mutation_resolver)
+            model_class.Meta.create_resolver.use(mutation_resolvers)
+            model_class.Meta.update_resolver.use(mutation_resolvers)
+            model_class.Meta.update_or_create_resolver.use(mutation_resolvers)
+        return super().__new__(meta, name, bases, attrs)
+
+
+class ModelResolver(metaclass=ModelResolverMetaclass):
+    pass

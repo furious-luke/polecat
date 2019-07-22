@@ -1,6 +1,7 @@
 import os
 
-from ..utils.container import Option, OptionDict, passthrough
+from polecat.utils.container import Option, OptionDict, passthrough
+
 from .context import active_context
 
 __all__ = ('ConfigDict',)

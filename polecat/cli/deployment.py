@@ -33,3 +33,12 @@ def list_deployments(ctx):
     else:
         for dep in deployments:
             print(f'    {dep}')
+
+
+@deployment.command('delete')
+@click.argument('deployment')
+@click.pass_context
+def delete_deployment(ctx, deployment):
+    from ..deploy.aws.deployment import delete_deployment as aws_delete_deployment
+    project = ctx.obj['project']
+    aws_delete_deployment(project, deployment, feedback=HaloFeedback())

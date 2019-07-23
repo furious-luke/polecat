@@ -4,7 +4,8 @@ from botocore.exceptions import ClientError
 
 from ...utils import set_path, substitute
 from .exceptions import EntityDoesNotExist
-from .utils import aws_client, aws_exists, aws_resource, default_path
+from .utils import (aws_client, aws_does_not_exist, aws_exists, aws_resource,
+                    default_path)
 
 
 def create_policy(name, document, path=None, iam=None):
@@ -17,6 +18,13 @@ def create_policy(name, document, path=None, iam=None):
         )
 
 
+def delete_policy(name, iam=None):
+    iam = aws_client('iam', iam)
+    with aws_does_not_exist():
+        arn = find_policy(name).arn
+        iam.delete_policy(PolicyArn=arn)
+
+
 def create_group(name, path=None, iam=None):
     iam = aws_client('iam', iam)
     with aws_exists():
@@ -26,10 +34,25 @@ def create_group(name, path=None, iam=None):
         )
 
 
+def delete_group(name, iam=None):
+    iam = aws_client('iam', iam)
+    with aws_does_not_exist():
+        iam.delete_group(GroupName=name)
+
+
 def attach_group_policy(group_name, policy_arn, iam=None):
     iam = aws_client('iam', iam)
     with aws_exists():
         iam.attach_group_policy(
+            GroupName=group_name,
+            PolicyArn=policy_arn
+        )
+
+
+def detach_group_policy(group_name, policy_arn, iam=None):
+    iam = aws_client('iam', iam)
+    with aws_does_not_exist():
+        iam.detach_group_policy(
             GroupName=group_name,
             PolicyArn=policy_arn
         )
@@ -71,7 +94,7 @@ def create_bucket(name, s3=None):
         s3.create_bucket(
             Bucket=name,
             CreateBucketConfiguration={
-                'LocationConstraint': os.environ['AWS_REGION']
+                'LocationConstraint': os.environ['AWS_DEFAULT_REGION']
             }
         )
 

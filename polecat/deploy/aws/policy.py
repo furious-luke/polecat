@@ -112,6 +112,8 @@ administrator_policy = '''{
                 "iam:DeleteUser",
                 "iam:CreatePolicy",
                 "iam:ListGroupsForUser",
+                "iam:DetachGroupPolicy",
+                "iam:DeletePolicy",
                 "logs:*",
                 "s3:CreateBucket",
                 "s3:ListBucket",

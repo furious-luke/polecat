@@ -33,3 +33,12 @@ def list_projects():
     else:
         for proj in projects:
             print(f'    {proj}')
+
+
+@project.command('delete')
+@click.argument('project')
+@click.pass_context
+def delete_project(ctx, project):
+    from ..deploy.aws.project import delete_project as aws_delete_project
+    aws_delete_project(project, feedback=HaloFeedback())
+    update_config(delete=['project'])

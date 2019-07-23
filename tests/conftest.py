@@ -1,8 +1,9 @@
 from contextlib import contextmanager
 
 import pytest
-from polecat.db.connection import cursor
-from polecat.db.utils import parse_url, push_database_url, unparse_url
+from polecat.db.connection import cursor, manager
+# from polecat.db.utils import parse_url, push_database_url, unparse_url
+from polecat.db.utils import unparse_url
 from polecat.deploy.aws.server import LambdaServer
 from polecat.deploy.server.server import Server
 from polecat.model.db.migrate import sync
@@ -19,13 +20,13 @@ def staticdb():
 
 @contextmanager
 def create_database():
-    dbinfo = parse_url()
+    dbinfo = manager.parse_url()
     test_dbname = random_ident()
     with cursor() as curs:
         curs.execute(f'create database {test_dbname}')
     try:
         test_url = unparse_url({**dbinfo, 'dbname': test_dbname})
-        with push_database_url(test_url):
+        with manager.push_url(test_url):
             with cursor(test_url) as curs:
                 yield curs
     finally:
@@ -49,7 +50,7 @@ def migrateddb():
 @pytest.fixture
 def db(migrateddb):
     url = migrateddb.connection.dsn
-    dbinfo = parse_url(url)
+    dbinfo = manager.parse_url(url)
     local_dbname = random_ident()
     migrateddb.execute(
         f'create database {local_dbname}'
@@ -57,7 +58,7 @@ def db(migrateddb):
     )
     try:
         local_url = unparse_url({**dbinfo, 'dbname': local_dbname})
-        with push_database_url(local_url):
+        with manager.push_url(local_url):
             with cursor() as curs:
                 yield curs
     finally:

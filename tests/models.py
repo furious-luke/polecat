@@ -3,15 +3,14 @@ from polecat.auth import jwt
 from polecat.db.schema.utils import Auto
 from polecat.model.db import Q
 from polecat.model.db.helpers import create_schema
-from polecat.model.resolver import Resolver
 
 # TODO: Convert this to use a function to generate the models to
 # assist with easier testing?
 
 
-class OverrideNameResolver(Resolver):
-    def build_model(self, context, iterator, **kwargs):
-        model = next(iterator)()
+class OverrideNameResolver:
+    def build_model(self, context):
+        model = context()
         model.name = 'override'
         return model
 
@@ -89,7 +88,7 @@ class Store(model.Model):
     name = model.TextField()
 
     class Meta:
-        mutation_resolver = [
+        mutation_resolvers = [
             OverrideNameResolver()
         ]
 

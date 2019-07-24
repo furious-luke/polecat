@@ -1,26 +1,35 @@
-def test_resolver_chain_resolver_iteration():
-    pass
+from polecat.model.resolver import APIContext, ResolverManager
 
 
-def test_resolver_chain_method_iteration():
-    pass
+def resolver_0(context):
+    context.called.append(resolver_0)
+    return context()
 
 
-def test_all_resolver():
-    pass
+def resolver_1(context):
+    context.called.append(resolver_1)
+    return 'result'
 
 
-def test_get_resolver():
-    pass
+def build_resolver_manager():
+    class TestResolverManager(ResolverManager):
+        def iter_resolvers(self, context):
+            yield resolver_0
+            yield resolver_1
+    return TestResolverManager()
 
 
-def test_create_resolver():
-    pass
+def build_api_context():
+    class TestAPIContext(APIContext):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.called = []
+    return TestAPIContext()
 
 
-def test_update_resolver():
-    pass
-
-
-def test_update_or_create_resolver():
-    pass
+def test_multiple_function_resolvers():
+    manager = build_resolver_manager()
+    api_ctx = build_api_context()
+    result = manager.resolve(api_ctx)
+    assert result == 'result'
+    assert api_ctx.called == [resolver_0, resolver_1]

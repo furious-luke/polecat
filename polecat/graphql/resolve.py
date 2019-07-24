@@ -1,15 +1,14 @@
 from graphql import GraphQLError
 from graphql.type import GraphQLList
 from polecat.model.db import Q, S
-from polecat.model.resolver import ResolverContext
+from polecat.model.resolver import APIContext
 
 from ..utils.exceptions import traceback
 from .field import RelatedField
 from .input import Input, parse_id
-from .utils import get_model_class_from_info
 
 
-class GraphQLResolverContext(ResolverContext):
+class GraphQLAPIContext(APIContext):
     def __init__(self, root, info, **kwargs):
         super().__init__()
         self.root = root
@@ -116,20 +115,20 @@ def get_selector_from_node(graphql_type, node):
 
 def resolve_create_mutation(obj, info, **kwargs):
     with traceback():
-        ctx = GraphQLResolverContext(obj, info, **kwargs)
-        return ctx.model_class.Meta.create_resolver(ctx)
+        ctx = GraphQLAPIContext(obj, info, **kwargs)
+        return ctx.model_class.Meta.create_resolver_manager(ctx)
 
 
 def resolve_update_mutation(obj, info, **kwargs):
     with traceback():
-        ctx = GraphQLResolverContext(obj, info, **kwargs)
-        return ctx.model_class.Meta.update_resolver(ctx)
+        ctx = GraphQLAPIContext(obj, info, **kwargs)
+        return ctx.model_class.Meta.update_resolver_manager(ctx)
 
 
 def resolve_update_or_create_mutation(obj, info, **kwargs):
     with traceback():
-        ctx = GraphQLResolverContext(obj, info, **kwargs)
-        return ctx.model_class.Meta.update_or_create_resolver(ctx)
+        ctx = GraphQLAPIContext(obj, info, **kwargs)
+        return ctx.model_class.Meta.update_or_create_resolver_manager(ctx)
 
 
 def resolve_delete_mutation(obj, info, **kwargs):

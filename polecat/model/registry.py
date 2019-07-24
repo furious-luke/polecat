@@ -149,13 +149,15 @@ def make_type_meta(name, bases, attrs, meta):
 
 def make_model_meta(name, bases, attrs, meta):
     # TODO: Ugh.
-    from .resolver import (CreateResolver, ResolverChain,
-                           UpdateOrCreateResolver, UpdateResolver)
+    from .resolver import (
+        CreateResolver, ResolverList, ResolverManager, CreateResolverManager,
+        UpdateResolverManager, UpdateResolver, UpdateOrCreateResolverManager
+    )
     fields = {
         f.name: f
         for f in get_model_fields(attrs)
     }
-    mutation_resolver = to_list(getattr(meta, 'mutation_resolver', []))
+    mutation_resolvers = to_list(getattr(meta, 'mutation_resolvers', []))
     return type('Meta', (), {
         'options': meta.__dict__ if meta else {},
         'app': getattr(meta, 'app', None),
@@ -167,10 +169,12 @@ def make_model_meta(name, bases, attrs, meta):
         'uniques': getattr(meta, 'uniques', ()) if meta else (),
         'checks': getattr(meta, 'checks', ()) if meta else (),
         'omit': getattr(meta, 'omit', NONE) if meta else NONE,  # TODO: Duplicate of above
-        'mutation_resolver': mutation_resolver,
-        'create_resolver': ResolverChain(mutation_resolver + [CreateResolver()]),
-        'update_resolver': ResolverChain(mutation_resolver + [UpdateResolver()]),
-        'update_or_create_resolver': ResolverChain(mutation_resolver + [UpdateOrCreateResolver()])
+        'mutation_resolvers': ResolverList(mutation_resolvers),
+        'create_resolvers': ResolverList(CreateResolver()),
+        'update_resolvers': ResolverList(UpdateResolver()),
+        'create_resolver_manager': CreateResolverManager(),
+        'update_resolver_manager': UpdateResolverManager(),
+        'update_or_create_resolver_manager': UpdateOrCreateResolverManager()
     })
 
 

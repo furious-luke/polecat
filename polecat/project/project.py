@@ -95,6 +95,7 @@ class Project:
         for handler in self.handlers:
             handler.prepare()
         self.index_html = self.get_index_html()
+        self.prepare_resolvers()
 
     @active_context
     def prepare_apps(self, context=None):
@@ -163,6 +164,9 @@ class Project:
             bundle_version=self.bundle_version,
             **kwargs
         )
+
+    def prepare_resolvers(self):
+        pass
 
     async def handle_event(self, event):
         for handler in self.handlers:

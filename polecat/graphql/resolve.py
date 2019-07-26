@@ -14,13 +14,14 @@ class GraphQLAPIContext(APIContext):
         self.root = root
         self.info = info
         self.kwargs = kwargs
+        self.session = getattr(self.graphql_context, 'session', None)
 
     def parse_argument(self, name):
         return self.kwargs.get(name)
 
     def parse_input(self):
         try:
-            return Input(self.input_type, self.kwargs['input'])
+            return Input(self.input_type, self.kwargs['input']).change
         except KeyError:
             raise Exception('Missing "input" argument')
 

@@ -50,5 +50,9 @@ class RoleMiddleware(JWTMiddleware):
             if not found:
                 # TODO: Better exception.
                 raise Exception('role not found')
+        if role is None:
+            # TODO: Better exception.
+            raise Exception('No role specified')
+        # TODO: Need both of these? Probs not.
         event.role = role
         event.session.role = role

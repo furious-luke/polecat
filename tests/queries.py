@@ -37,6 +37,14 @@ all_movies_query = '''query {
 }
 '''
 
+all_movies_without_actors_query = '''query {
+  allMovies {
+    id,
+    title
+  }
+}
+'''
+
 all_actors_query = '''query {
   allActors {
     id,

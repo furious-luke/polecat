@@ -5,8 +5,8 @@ from ..event import HttpEvent
 
 
 class Server:
-    def __init__(self, production=False):
-        self.project = load_project()
+    def __init__(self, project=None, production=False):
+        self.project = project or load_project()
         self.project.prepare()
         self.production = production
         self.port = 80 if production else 8000

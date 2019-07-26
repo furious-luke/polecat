@@ -9,7 +9,7 @@ import ujson
 
 from .main import main
 
-__all__ = ('test_production',)
+__all__ = ('test_production', 'test_with_pytest')
 
 api_gateway_request = {
     'path': '/graphql',
@@ -44,3 +44,10 @@ def test_production(ctx, source):
             f' lambci/lambda:python3.7 main.handler \'{ujson.dumps(request)}\''  # TODO: Escape
         )
         subprocess.call(shlex.split(cmd))
+
+
+@test.command('pytest')
+@click.pass_context
+def test_with_pytest(ctx):
+    cmd = 'pytest'
+    subprocess.call(shlex.split(cmd))

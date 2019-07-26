@@ -39,6 +39,7 @@ class Project:
     config = None
 
     def __init__(self, name=None, default_role=None, config=None):
+        self.models = {}  # TODO: Will remove later.
         self.name = name or self.name
         if not self.name:
             self.name = self.__class__.__name__.lower()
@@ -116,9 +117,15 @@ class Project:
             except AttributeError:
                 # TODO: Should we require apps?
                 # raise Exception(f'model {model.Meta.name} has no app')
+                # TODO: I should be able to remove this once I get
+                # models into the app context.
+                self.models[model.Meta.name] = model
                 continue
             app.models.append(model)
             model.Meta.app = app
+            # TODO: I should be able to remove this once I get models
+            # into the app context.
+            self.models[f'{app.name}.{model.Meta.name}'] = model
         for type in context.registries.type_registry:
             module_name = r'.'.join(type.__module__.split('.')[:-1])
             match = prog.search(module_name)

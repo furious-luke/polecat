@@ -124,7 +124,7 @@ class UpdateOrCreateResolverManager(ResolverManager):
     def resolve_with_context(self, context, *args, **kwargs):
         model_class = context.model_class
         input = context.parse_input()
-        if input.change.get('id') is None:
+        if input.get('id') is None:
             manager = model_class.Meta.create_resolver_manager
         else:
             manager = model_class.Meta.update_resolver_manager
@@ -181,7 +181,7 @@ class QueryResolver:
 
     def build_query(self, context, query=None):
         if not query:
-            query = Q(context.model_class)
+            query = Q(context.model_class, session=context.session)
         return query
 
 
@@ -230,10 +230,10 @@ class CreateResolver(MutationResolver):
     def build_model(self, context):
         model_class = context.model_class
         input = context.parse_input()
-        return model_class(**input.change)
+        return model_class(**input)
 
     def build_query(self, context, model):
-        return Q(model).insert()
+        return Q(model, session=context.session).insert()
 
 
 class UpdateResolver(CreateResolver):
@@ -241,10 +241,10 @@ class UpdateResolver(CreateResolver):
         model_class = context.model_class
         input = context.parse_input()
         context._id = context.parse_argument('id')
-        return model_class(id=context._id, **input.change)
+        return model_class(id=context._id, **input)
 
     def build_query(self, context, model):
-        return Q(model).update()
+        return Q(model, session=context.session).update()
 
 
 # class UpdateOrCreateResolver(CreateResolver):

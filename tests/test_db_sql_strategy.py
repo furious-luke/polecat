@@ -5,7 +5,7 @@ from .models import DefaultRole
 from .schema import create_table
 
 
-def test_select_strategy_unnested(staticdb):
+def test_select_strategy_unnested(immutabledb):
     table = create_table()
     query = Q(table).select('col1', 'col2')
     sql = query.to_sql()
@@ -16,7 +16,7 @@ def test_select_strategy_unnested(staticdb):
     )
 
 
-def test_select_strategy_lateral(staticdb):
+def test_select_strategy_lateral(immutabledb):
     b_table = create_table('b_table')
     a_table = create_table('a_table', related_table=b_table)
     query = Q(a_table).select('col1', 'col2', col3=S('col1', 'col2'))
@@ -30,7 +30,7 @@ def test_select_strategy_lateral(staticdb):
     )
 
 
-def test_select_strategy_reverse_lateral(staticdb):
+def test_select_strategy_reverse_lateral(immutabledb):
     b_table = create_table('b_table')
     create_table('a_table', related_table=b_table)
     query = Q(b_table).select('col1', 'col2', a_tables=S('col1', 'col2'))
@@ -45,7 +45,7 @@ def test_select_strategy_reverse_lateral(staticdb):
     )
 
 
-def test_select_strategy_detached(staticdb):
+def test_select_strategy_detached(immutabledb):
     a_table = create_table('a_table')
     b_table = create_table('b_table')
     b_query = Q(b_table).select('col1', 'col2')
@@ -60,7 +60,7 @@ def test_select_strategy_detached(staticdb):
     )
 
 
-def test_insert_strategy_unnested(staticdb):
+def test_insert_strategy_unnested(immutabledb):
     table = create_table('a_table')
     query = Q(table).insert(col1=1, col2=2)
     sql = query.to_sql()
@@ -71,7 +71,7 @@ def test_insert_strategy_unnested(staticdb):
     )
 
 
-def test_insert_strategy_with_value_subquery(staticdb):
+def test_insert_strategy_with_value_subquery(immutabledb):
     b_table = create_table('b_table')
     a_table = create_table('a_table', related_table=b_table)
     query = Q(a_table).insert(
@@ -86,7 +86,7 @@ def test_insert_strategy_with_value_subquery(staticdb):
     )
 
 
-def test_insert_strategy_with_subquery(staticdb):
+def test_insert_strategy_with_subquery(immutabledb):
     b_table = create_table('b_table')
     a_table = create_table('a_table', related_table=b_table)
     query = Q(a_table).insert(Q(a_table).select('id'))
@@ -98,7 +98,7 @@ def test_insert_strategy_with_subquery(staticdb):
     )
 
 
-def test_insert_strategy_with_nesting(staticdb):
+def test_insert_strategy_with_nesting(immutabledb):
     b_table = create_table('b_table')
     a_table = create_table('a_table', related_table=b_table)
     query = Q(a_table).insert(
@@ -119,7 +119,7 @@ def test_insert_strategy_with_nesting(staticdb):
     )
 
 
-def test_insert_strategy_with_explicit_reverse(staticdb):
+def test_insert_strategy_with_explicit_reverse(immutabledb):
     b_table = create_table('b_table')
     a_table = create_table('a_table', related_table=b_table)
     b_query = Q(b_table).insert(col1=1)
@@ -138,7 +138,7 @@ def test_insert_strategy_with_explicit_reverse(staticdb):
     )
 
 
-def test_insert_strategy_with_implicit_reverse(staticdb):
+def test_insert_strategy_with_implicit_reverse(immutabledb):
     b_table = create_table('b_table')
     create_table('a_table', related_table=b_table)
     b_query = Q(b_table).insert(
@@ -159,7 +159,7 @@ def test_insert_strategy_with_implicit_reverse(staticdb):
     )
 
 
-def test_update_strategy_with_nesting(staticdb):
+def test_update_strategy_with_nesting(immutabledb):
     b_table = create_table('b_table')
     a_table = create_table('a_table', related_table=b_table)
     query = Q(a_table).update(
@@ -179,7 +179,7 @@ def test_update_strategy_with_nesting(staticdb):
     )
 
 
-def test_update_strategy_with_filter(staticdb):
+def test_update_strategy_with_filter(immutabledb):
     table = create_table()
     query = (
         Q(table)
@@ -194,7 +194,7 @@ def test_update_strategy_with_filter(staticdb):
     )
 
 
-def test_multiple_inserts(staticdb):
+def test_multiple_inserts(immutabledb):
     table = create_table()
     query = Q(table).insert(col1=1).insert(col1=2)
     sql = query.to_sql()
@@ -206,7 +206,7 @@ def test_multiple_inserts(staticdb):
     )
 
 
-def test_insert_and_select_returning(staticdb):
+def test_insert_and_select_returning(immutabledb):
     table = create_table()
     query = Q(table).insert(col1=1).select('col1', 'col2')
     sql = query.to_sql()
@@ -217,21 +217,21 @@ def test_insert_and_select_returning(staticdb):
     )
 
 
-def test_delete_strategy_unnested(staticdb):
+def test_delete_strategy_unnested(immutabledb):
     table = create_table()
     query = Q(table).delete()
     sql = query.to_sql()
     assert sql == b'DELETE FROM "a_table"'
 
 
-def test_multiple_deletes(staticdb):
+def test_multiple_deletes(immutabledb):
     table = create_table()
     query = Q(table).delete().delete()
     sql = query.to_sql()
     assert sql == b'WITH "c0" AS (DELETE FROM "a_table") DELETE FROM "a_table"'
 
 
-def test_filter_and_select(staticdb):
+def test_filter_and_select(immutabledb):
     table = create_table()
     query = Q(table).filter(col2=2).select('col1')
     sql = query.to_sql()
@@ -242,7 +242,7 @@ def test_filter_and_select(staticdb):
     )
 
 
-def test_filter_only(staticdb):
+def test_filter_only(immutabledb):
     table = create_table()
     query = Q(table).filter(col2=2)
     sql = query.to_sql()
@@ -253,7 +253,7 @@ def test_filter_only(staticdb):
     )
 
 
-def test_session_with_role_and_variables(staticdb):
+def test_session_with_role_and_variables(immutabledb):
     table = create_table()
     query = (
         Q(table, session=Session(DefaultRole, {'a': 1}))

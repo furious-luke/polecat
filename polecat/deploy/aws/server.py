@@ -8,8 +8,8 @@ from .event import LambdaEvent
 
 
 class LambdaServer:
-    def __init__(self):
-        self.project = load_project()
+    def __init__(self, project=None):
+        self.project = project or load_project()
         self.project.prepare()
 
     def handle(self, event, context=None):

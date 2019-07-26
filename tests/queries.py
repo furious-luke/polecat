@@ -45,6 +45,13 @@ all_movies_without_actors_query = '''query {
 }
 '''
 
+get_movie_query = '''query($id: Int) {
+  getMovie(id: $id) {
+    id
+  }
+}
+'''
+
 all_actors_query = '''query {
   allActors {
     id,

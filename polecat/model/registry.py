@@ -150,13 +150,16 @@ def make_type_meta(name, bases, attrs, meta):
 def make_model_meta(name, bases, attrs, meta):
     # TODO: Ugh.
     from .resolver import (
-        CreateResolver, ResolverList, ResolverManager, CreateResolverManager,
-        UpdateResolverManager, UpdateResolver, UpdateOrCreateResolverManager
+        CreateResolver, ResolverList, CreateResolverManager,
+        UpdateResolverManager, UpdateResolver, UpdateOrCreateResolverManager,
+        AllResolver, AllResolverManager, GetResolver, GetResolverManager,
+        DeleteResolver, DeleteResolverManager
     )
     fields = {
         f.name: f
         for f in get_model_fields(attrs)
     }
+    query_resolvers = to_list(getattr(meta, 'query_resolvers', []))
     mutation_resolvers = to_list(getattr(meta, 'mutation_resolvers', []))
     return type('Meta', (), {
         'options': meta.__dict__ if meta else {},
@@ -169,12 +172,19 @@ def make_model_meta(name, bases, attrs, meta):
         'uniques': getattr(meta, 'uniques', ()) if meta else (),
         'checks': getattr(meta, 'checks', ()) if meta else (),
         'omit': getattr(meta, 'omit', NONE) if meta else NONE,  # TODO: Duplicate of above
+        'query_resolvers': ResolverList(query_resolvers),
+        'all_resolvers': ResolverList(AllResolver()),
+        'get_resolvers': ResolverList(GetResolver()),
+        'all_resolver_manager': AllResolverManager(),
+        'get_resolver_manager': GetResolverManager(),
         'mutation_resolvers': ResolverList(mutation_resolvers),
         'create_resolvers': ResolverList(CreateResolver()),
         'update_resolvers': ResolverList(UpdateResolver()),
+        'delete_resolvers': ResolverList(DeleteResolver()),
         'create_resolver_manager': CreateResolverManager(),
         'update_resolver_manager': UpdateResolverManager(),
-        'update_or_create_resolver_manager': UpdateOrCreateResolverManager()
+        'update_or_create_resolver_manager': UpdateOrCreateResolverManager(),
+        'delete_resolver_manager': DeleteResolverManager()
     })
 
 

@@ -102,6 +102,24 @@ class ResolverManager:
         raise NotImplementedError
 
 
+class AllResolverManager(ResolverManager):
+    def iter_resolvers(self, context):
+        model_class = context.model_class
+        return chain(
+            model_class.Meta.query_resolvers,
+            model_class.Meta.all_resolvers
+        )
+
+
+class GetResolverManager(ResolverManager):
+    def iter_resolvers(self, context):
+        model_class = context.model_class
+        return chain(
+            model_class.Meta.query_resolvers,
+            model_class.Meta.get_resolvers
+        )
+
+
 class CreateResolverManager(ResolverManager):
     def iter_resolvers(self, context):
         model_class = context.model_class
@@ -131,6 +149,14 @@ class UpdateOrCreateResolverManager(ResolverManager):
         # TODO: Not too sure about this hard override of manager.
         context.manager = manager
         return manager.resolve_with_context(context, *args, **kwargs)
+
+
+class DeleteResolverManager(ResolverManager):
+    def iter_resolvers(self, context):
+        model_class = context.model_class
+        return chain(
+            model_class.Meta.delete_resolvers
+        )
 
 
 class ResolverIterator:
@@ -176,7 +202,7 @@ class ResolverMethodIterator(ResolverIterator):
 class QueryResolver:
     def resolve(self, context, query=None):
         query = context.cut_point('build_query', context, query)
-        results = context.cut_point('build_results', query)
+        results = context.cut_point('build_results', context, query)
         return results
 
     def build_query(self, context, query=None):
@@ -200,8 +226,8 @@ class GetResolver(QueryResolver):
         id = context.parse_argument('id')
         return (
             query
-            .select(context.selector)
             .filter(id=id)
+            .select(context.selector)
         )
 
     def build_results(self, context, query):
@@ -247,20 +273,22 @@ class UpdateResolver(CreateResolver):
         return Q(model, session=context.session).update()
 
 
-# class UpdateOrCreateResolver(CreateResolver):
-#     def build_model(self, context):
-#         model_class = context.model_class
-#         input = context.parse_input()
-#         context._id = context.parse_argument('id')
-#         if context._id is not None:
-#             model = model_class(id=context._id, **input.change)
-#         else:
-#             model = model_class(**input.change)
-#         return model
+class DeleteResolver:
+    def resolve(self, context):
+        model = context.cut_point('build_model', context)
+        query = context.cut_point('build_query', context, model)
+        results = context.cut_point('build_results', context, query)
+        return results
 
-#     def build_query(self, context, model):
-#         if context._id is not None:
-#             query = Q(model).update()
-#         else:
-#             query = Q(model).insert()
-#         return query
+    def build_model(self, context):
+        model_class = context.model_class
+        # TODO: Should be from arguments. :(
+        context._id = context.raw_input()['id']
+        return model_class(id=context._id)
+
+    def build_query(self, context, model):
+        return Q(model, session=context.session).delete()
+
+    def build_results(self, context, query):
+        query.execute()
+        return {'id': context._id}

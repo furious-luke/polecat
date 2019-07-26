@@ -14,7 +14,7 @@ class GraphQLAPIContext(APIContext):
         self.root = root
         self.info = info
         self.kwargs = kwargs
-        self.session = getattr(self.graphql_context, 'session', None)
+        self.session = self.graphql_context.get('session')
 
     def parse_argument(self, name):
         return self.kwargs.get(name)
@@ -24,6 +24,9 @@ class GraphQLAPIContext(APIContext):
             return Input(self.input_type, self.kwargs['input']).change
         except KeyError:
             raise Exception('Missing "input" argument')
+
+    def raw_input(self):
+        return self.kwargs['input']
 
     @property
     def field_name(self):
@@ -44,11 +47,14 @@ class GraphQLAPIContext(APIContext):
 
     @property
     def graphql_context(self):
-        return self.info.context
+        return self.info.context or {}
 
     @property
     def model_class(self):
-        return self.return_type._model
+        try:
+            return self.return_type._model
+        except AttributeError:
+            return self.return_type.of_type._model
 
     @property
     def input_type(self):
@@ -65,20 +71,49 @@ class GraphQLAPIContext(APIContext):
         return get_selector_from_node(self.return_type, self.root_node)
 
 
-def resolve_all_query(obj, info):
-    graphql_type = info.return_type.of_type
-    options = info.context or {}
-    query = build_all_query(graphql_type, info.field_nodes[0], options=options)
-    return list(query)
-
-
-def resolve_get_query(obj, info, query=None):
-    graphql_type = info.return_type
-    options = info.context or {}
+def resolve_all_query(obj, info, **kwargs):
     with traceback():
-        query = build_all_query(graphql_type, info.field_nodes[0], query=query, options=options)
-        # TODO: Should use execute above.
-        return query.get()
+        ctx = GraphQLAPIContext(obj, info, **kwargs)
+        return ctx.model_class.Meta.all_resolver_manager(ctx)
+
+
+def resolve_get_query(obj, info, **kwargs):
+    with traceback():
+        ctx = GraphQLAPIContext(obj, info, **kwargs)
+        return ctx.model_class.Meta.get_resolver_manager(ctx)
+
+
+def resolve_create_mutation(obj, info, **kwargs):
+    with traceback():
+        ctx = GraphQLAPIContext(obj, info, **kwargs)
+        return ctx.model_class.Meta.create_resolver_manager(ctx)
+
+
+def resolve_update_mutation(obj, info, **kwargs):
+    with traceback():
+        ctx = GraphQLAPIContext(obj, info, **kwargs)
+        return ctx.model_class.Meta.update_resolver_manager(ctx)
+
+
+def resolve_update_or_create_mutation(obj, info, **kwargs):
+    with traceback():
+        ctx = GraphQLAPIContext(obj, info, **kwargs)
+        return ctx.model_class.Meta.update_or_create_resolver_manager(ctx)
+
+
+def resolve_delete_mutation(obj, info, **kwargs):
+    with traceback():
+        ctx = GraphQLAPIContext(obj, info, **kwargs)
+        return ctx.model_class.Meta.delete_resolver_manager(ctx)
+    # return_type = info.return_type
+    # id = parse_id(kwargs['input']['id'])
+    # model_class = return_type._model
+    # model = model_class(id=id)
+    # options = info.context or {}
+    # Q(model).delete().execute(**options)
+    # return {
+    #     'id': id
+    # }
 
 
 def build_all_query(graphql_type, node, query=None, options=None):
@@ -112,36 +147,6 @@ def get_selector_from_node(graphql_type, node):
         else:
             fields.append(model_field.name)
     return S(*fields, **lookups)
-
-
-def resolve_create_mutation(obj, info, **kwargs):
-    with traceback():
-        ctx = GraphQLAPIContext(obj, info, **kwargs)
-        return ctx.model_class.Meta.create_resolver_manager(ctx)
-
-
-def resolve_update_mutation(obj, info, **kwargs):
-    with traceback():
-        ctx = GraphQLAPIContext(obj, info, **kwargs)
-        return ctx.model_class.Meta.update_resolver_manager(ctx)
-
-
-def resolve_update_or_create_mutation(obj, info, **kwargs):
-    with traceback():
-        ctx = GraphQLAPIContext(obj, info, **kwargs)
-        return ctx.model_class.Meta.update_or_create_resolver_manager(ctx)
-
-
-def resolve_delete_mutation(obj, info, **kwargs):
-    return_type = info.return_type
-    id = parse_id(kwargs['input']['id'])
-    model_class = return_type._model
-    model = model_class(id=id)
-    options = info.context or {}
-    Q(model).delete().execute(**options)
-    return {
-        'id': id
-    }
 
 
 def resolve_query(obj, info, **kwargs):

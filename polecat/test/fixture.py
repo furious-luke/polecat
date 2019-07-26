@@ -25,6 +25,17 @@ class ServerFixture:
         api_context = self.build_api_context(model_class, **kwargs)
         return model_class.Meta.all_resolver_manager(api_context)
 
+    def get_query(self, model_class, id, **kwargs):
+        model_class = self.get_model_class(model_class)
+        api_context = self.build_api_context(
+            model_class,
+            arguments={
+                'id': id
+            },
+            **kwargs
+        )
+        return model_class.Meta.all_resolver_manager(api_context)
+
     def create_mutation(self, model_class, input, **kwargs):
         model_class = self.get_model_class(model_class)
         api_context = self.build_api_context(
@@ -33,6 +44,29 @@ class ServerFixture:
             **kwargs
         )
         return model_class.Meta.create_resolver_manager(api_context)
+
+    def update_mutation(self, model_class, id, input, **kwargs):
+        model_class = self.get_model_class(model_class)
+        api_context = self.build_api_context(
+            model_class,
+            arguments={
+                'id': id
+            },
+            input=input,
+            **kwargs
+        )
+        return model_class.Meta.create_resolver_manager(api_context)
+
+    def delete_mutation(self, model_class, id, **kwargs):
+        model_class = self.get_model_class(model_class)
+        api_context = self.build_api_context(
+            model_class,
+            input={
+                'id': id
+            },
+            **kwargs
+        )
+        return model_class.Meta.delete_resolver_manager(api_context)
 
     def build_api_context(self, model_class=None, arguments=None, input=None,
                           role=None):
@@ -71,6 +105,9 @@ class TestAPIContext(APIContext):
         return self._arguments.get(name)
 
     def parse_input(self):
+        return self._input
+
+    def raw_input(self):
         return self._input
 
     def get_selector(self):

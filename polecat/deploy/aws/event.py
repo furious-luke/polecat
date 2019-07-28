@@ -44,3 +44,6 @@ class LambdaEvent(Event):
 
     def is_admin(self):
         return self.event.get('event') == 'admin'
+
+    def get_authorization_header(self):
+        return self.request.headers.get('Authorization', None)

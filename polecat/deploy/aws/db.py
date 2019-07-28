@@ -3,7 +3,7 @@ from psycopg2.sql import SQL, Identifier
 from termcolor import colored
 
 from ...db.connection import cursor
-from ...utils import capitalize, random_ident
+from ...utils import random_ident
 from ...utils.feedback import feedback
 from .constants import DEPLOYMENT_PREFIX
 from .exceptions import KnownError
@@ -14,7 +14,7 @@ from .utils import aws_client
 
 
 def get_db_name(project, deployment):
-    return f'{capitalize(project)}{capitalize(deployment)}'
+    return f'{project.lower()}_{deployment.lower()}'
 
 
 def get_rds_instance(instance_id, rds=None):
@@ -198,6 +198,12 @@ def delete_db(project, deployment, feedback=None):
             f'/polecat/aws/db/instances/{info["instance_name"]}/url'
         )
         with cursor(instance_url) as curs:
+            curs.execute('''
+              SELECT pg_terminate_backend(pg_stat_activity.pid)
+              FROM pg_stat_activity
+              WHERE pg_stat_activity.datname = '{}'
+                AND pid <> pg_backend_pid();
+            '''.format(db_name))
             curs.execute(SQL('DROP DATABASE {}').format(Identifier(db_name)))
             curs.execute(SQL('DROP USER {}').format(Identifier(db_name)))
         delete_parameter([

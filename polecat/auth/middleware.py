@@ -14,7 +14,7 @@ class JWTMiddleware:
     @active_context
     def run(self, event, context):
         claims = None
-        jwt = event.request.headers.get('authorization', None)
+        jwt = event.get_authorization_header()
         if jwt:
             match = self.bearer_prog.match(jwt)
             if match:
@@ -55,4 +55,4 @@ class RoleMiddleware(JWTMiddleware):
             raise Exception('No role specified')
         # TODO: Need both of these? Probs not.
         event.role = role
-        event.session.role = role
+        event.session.role = role.Meta.dbrole if role else None

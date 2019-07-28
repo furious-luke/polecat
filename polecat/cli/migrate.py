@@ -1,4 +1,5 @@
-import click
+import click  # noqa
+
 from polecat.db.migration import migrate as db_migrate
 from polecat.model.db.migrate import make_migrations as db_make_migrations
 from polecat.project.project import load_project

@@ -33,7 +33,23 @@ class Model(metaclass=ModelMetaclass):
 
 
 class Role(metaclass=RoleMetaclass):
-    pass
+    @classmethod
+    def db_name(self):
+        # TODO: This is the worst.
+        from polecat.project.project import get_active_project
+        # TODO: Plus, this whole thing is duplicated from "db". I need
+        # to be able to map from these declarative roles to the DB
+        # ones. Probably just create the DB one during preparation?
+        name = ''
+        project = get_active_project()
+        if project:
+            name += project.name
+        if self.Meta.app:
+            name += self.Meta.app.name
+        if name:
+            name += '_'
+        name += self.Meta.role
+        return name
 
 
 class Access(metaclass=AccessMetaclass):

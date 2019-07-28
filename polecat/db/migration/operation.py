@@ -4,7 +4,6 @@ import polecat.db.sql.postgres  # noqa
 from psycopg2.sql import SQL, Identifier
 
 from ...core.context import active_context
-from ...model.registry import make_role_from_name
 from ...utils import indent
 from ...utils.predicates import not_empty
 from ..decorators import dbcursor
@@ -14,9 +13,12 @@ from .column import Column  # noqa
 create_role_sql = '''do $$
   BEGIN
     IF NOT EXISTS(SELECT FROM pg_catalog.pg_roles WHERE rolname = %s) THEN
-      CREATE ROLE {};
+      CREATE ROLE {role};
     END IF;
-  END
+    GRANT {role} TO CURRENT_USER;
+    GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO {role};
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO {role};
+  END;
 $$;'''
 
 create_table_template = '''operation.CreateTable(
@@ -189,7 +191,7 @@ class CreateTable(Operation):
                 for role in roles:
                     yield SQL('GRANT %s ON {} TO {};' % perm).format(
                         table_name,
-                        Identifier(role.Meta.role)
+                        Identifier(role.Meta.dbrole.dbname)  # TODO: Should already be DB roles.
                     )
 
     def get_table_name(self):
@@ -298,7 +300,7 @@ class CreateRole(Operation):
         role_name_ident = Identifier(role_name)
         return (
             SQL('\n').join(
-                (SQL(create_role_sql).format(role_name_ident),) +
+                (SQL(create_role_sql).format(role=role_name_ident),) +
                 self.grants_sql(role_name_ident)
             ),
             (role_name,)
@@ -309,19 +311,19 @@ class CreateRole(Operation):
 
     def forward_schema(self, schema):
         schema.add_role(self.role)
+        schema.bind_role(self.role)
 
     def grants_sql(self, role_name):
         return tuple(
             SQL('GRANT {} TO {};').format(
                 role_name,
-                Identifier(getattr(parent, 'name', parent))
+                Identifier(getattr(parent, 'dbname', parent))
             )
             for parent in self.role.parents
         )
 
     def get_role_name(self):
-        # TODO: Same operation in models/registry.py.
-        return self.role.options.get('role', make_role_from_name(self.role.name))
+        return self.role.dbname
 
     def serialize(self):
         parents = self.serialize_role_parents(self.role)
@@ -363,10 +365,10 @@ class GrantAccess(Operation):
         access_sql = filter(not_empty, [
             self.get_access_sql(access, roles)
             for access, roles in [
-                ('SELECT', set(map(lambda r: getattr(r, 'name', r), self.access.all)) | set(map(lambda r: getattr(r, 'name', r), self.access.select))),
-                ('INSERT', set(map(lambda r: getattr(r, 'name', r), self.access.all)) | set(map(lambda r: getattr(r, 'name', r), self.access.insert))),
-                ('UPDATE', set(map(lambda r: getattr(r, 'name', r), self.access.all)) | set(map(lambda r: getattr(r, 'name', r), self.access.update))),
-                ('DELETE', set(map(lambda r: getattr(r, 'name', r), self.access.all)) | set(map(lambda r: getattr(r, 'name', r), self.access.delete))),
+                ('SELECT', set(map(lambda r: getattr(r, 'dbname', r), self.access.all)) | set(map(lambda r: getattr(r, 'dbname', r), self.access.select))),
+                ('INSERT', set(map(lambda r: getattr(r, 'dbname', r), self.access.all)) | set(map(lambda r: getattr(r, 'dbname', r), self.access.insert))),
+                ('UPDATE', set(map(lambda r: getattr(r, 'dbname', r), self.access.all)) | set(map(lambda r: getattr(r, 'dbname', r), self.access.update))),
+                ('DELETE', set(map(lambda r: getattr(r, 'dbname', r), self.access.all)) | set(map(lambda r: getattr(r, 'dbname', r), self.access.delete))),
             ]
         ])
         return SQL('\n').join(access_sql), ()
@@ -383,7 +385,6 @@ class GrantAccess(Operation):
 
     def forward_schema(self, schema):
         raise NotImplementedError
-        schema.add_access(self.access)
 
     def get_entity_tag(self, entity):
         raise NotImplementedError
@@ -394,7 +395,7 @@ class GrantAccess(Operation):
         return SQL('GRANT %s ON {} TO {};' % access).format(
             self.entity_sql,
             SQL(', ').join([
-                Identifier(r if isinstance(r, str) else r.name)  # TODO: Explain
+                Identifier(r if isinstance(r, str) else r.dbname)  # TODO: Explain
                 for r in roles
             ])
         )
@@ -439,6 +440,7 @@ class GrantAccessToTable(GrantAccess):
         if isinstance(self.access.entity, str):
             self.access.entity = schema.get_table_by_name(self.access.entity)
         schema.add_access(self.access)
+        schema.bind_access(self.access)
 
 
 class GrantAccessToRole(GrantAccess):
@@ -448,6 +450,7 @@ class GrantAccessToRole(GrantAccess):
     def forward_schema(self, schema):
         self.access.entity = schema.get_role_by_name(self.access.entity)
         schema.add_access(self.access)
+        schema.bind_access(self.access)
 
 
 class RevokeAccess(Operation):

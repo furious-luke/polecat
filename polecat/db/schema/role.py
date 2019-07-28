@@ -1,4 +1,6 @@
-from ...utils.repr import to_repr
+from polecat.utils.repr import to_repr
+
+from ..role_prefix import get_role_prefix
 from .entity import Entity
 
 
@@ -8,12 +10,21 @@ class Role(Entity):
         self.name = name
         self.parents = parents or ()
         self.options = options or {}
+        self.schema = None
 
     def __repr__(self):
         return to_repr(
             self,
             name=self.name
         )
+
+    @property
+    def dbname(self):
+        prefix = get_role_prefix()
+        if prefix:
+            return f'{prefix}_{self.name}'
+        else:
+            return self.name
 
     @property
     def signature(self):
@@ -35,6 +46,14 @@ class Role(Entity):
             sorted(getattr(p, 'name', p) for p in other.parents)
         )
 
+    def bind(self, schema):
+        if self.schema is None:
+            self.schema = schema
+            self.parents = [
+                p if isinstance(p, Role) else schema.get_role_by_name(p)
+                for p in self.parents
+            ]
+
 
 class Access(Entity):
     def __init__(self, entity, all=None, select=None, insert=None, update=None,
@@ -46,6 +65,7 @@ class Access(Entity):
         self.update = update or ()
         self.delete = delete or ()
         self.app = app
+        self.schema = None
 
     def __repr__(self):
         return to_repr(
@@ -66,3 +86,28 @@ class Access(Entity):
             self.update != other.update or
             self.delete != other.delete
         )
+
+    def bind(self, schema):
+        if self.schema is None:
+            self.schema = schema
+            # TODO: Cleanup
+            self.all = [
+                p if isinstance(p, Role) else schema.get_role_by_name(p)
+                for p in self.all
+            ]
+            self.select = [
+                p if isinstance(p, Role) else schema.get_role_by_name(p)
+                for p in self.select
+            ]
+            self.insert = [
+                p if isinstance(p, Role) else schema.get_role_by_name(p)
+                for p in self.insert
+            ]
+            self.update = [
+                p if isinstance(p, Role) else schema.get_role_by_name(p)
+                for p in self.update
+            ]
+            self.delete = [
+                p if isinstance(p, Role) else schema.get_role_by_name(p)
+                for p in self.delete
+            ]

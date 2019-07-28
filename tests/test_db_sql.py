@@ -131,7 +131,7 @@ def test_delete(db, factory):
 def test_set_role(db):
     with pytest.raises(ProgrammingError):
         (
-            Q(Address, session=Session(DefaultRole))
+            Q(Address, session=Session(DefaultRole.Meta.dbrole))
             .select('id')
             .execute()
         )
@@ -141,7 +141,7 @@ def test_set_role(db):
         .execute()
     )
     (
-        Q(Address, session=Session(UserRole))
+        Q(Address, session=Session(UserRole.Meta.dbrole))
         .select('id')
         .execute()
     )

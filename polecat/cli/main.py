@@ -1,4 +1,5 @@
 import click
+
 from termcolor import colored
 
 from .config import load_config
@@ -15,6 +16,10 @@ def main(ctx, project):
     if project:
         ctx.obj['project'] = project
     # TODO: Hmm.
-    from polecat.project.project import load_project
-    project = load_project()
-    project.prepare()
+    try:
+        from polecat.project.project import load_project
+        project = load_project()
+        project.prepare()
+    except ModuleNotFoundError:
+        # TODO: Make this nicer.
+        print('Warning: unable to find Polecat project')

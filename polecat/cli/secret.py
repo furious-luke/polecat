@@ -1,4 +1,5 @@
 import click
+
 from termcolor import colored
 
 from .feedback import HaloFeedback
@@ -36,3 +37,13 @@ def list_secrets(ctx, deployment):
     else:
         for secret, value in secrets.items():
             print(f'    {secret} = {value}')
+
+
+@secret.command('delete')
+@click.argument('deployment')
+@click.argument('key')
+@click.pass_context
+def delete_secret(ctx, deployment, key):
+    from ..deploy.aws.secret import delete_secret as aws_delete_secret
+    project = ctx.obj['project']
+    aws_delete_secret(project, deployment, key, feedback=HaloFeedback())

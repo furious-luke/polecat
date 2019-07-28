@@ -5,6 +5,7 @@ from importlib import import_module
 from graphql_server import HttpQueryError
 from polecat.admin.commands import *  # noqa
 from polecat.core.context import active_context
+from polecat.db.role_prefix import set_role_prefix
 from polecat.model.db.helpers import create_schema
 from polecat.model.registry import (access_registry, model_registry,
                                     role_registry)
@@ -18,6 +19,11 @@ active_project = None
 def get_active_project():
     global active_project
     return active_project
+
+
+def set_active_project(project):
+    global active_project
+    active_project = project
 
 
 def load_project():
@@ -34,17 +40,21 @@ def load_project():
 
 class Project:
     name = None
+    deployment = None
     bundle = None
     default_role = None
     config = None
 
-    def __init__(self, name=None, default_role=None, config=None):
+    def __init__(self, name=None, deployment=None, default_role=None, config=None):
         self.models = {}  # TODO: Will remove later.
         self.name = name or self.name
         if not self.name:
             self.name = self.__class__.__name__.lower()
             if self.name.endswith('project'):
                 self.name = self.name[:-7]
+        self.deployment = deployment or self.deployment
+        if not self.deployment:
+            self.deployment = os.environ.get('DEPLOYMENT', '')
         self.default_role = default_role or self.default_role
         self.bucket = os.environ.get('BUCKET')
         self.bundle = os.environ.get('BUNDLE', self.bundle)
@@ -65,6 +75,7 @@ class Project:
 
     @active_context
     def prepare(self, context):
+        set_role_prefix(f'{self.name}_{self.deployment}')
         # TODO: This should be a method on the config, but it would
         # need to have an underscore prefix, which I'm starting to
         # hate.

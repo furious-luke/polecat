@@ -45,9 +45,19 @@ class Schema:
     def bind(self):
         for table in self.tables:
             self.bind_table(table)
+        for role in self.roles:
+            self.bind_role(role)
+        for access in self.access:
+            self.bind_access(access)
 
     def bind_table(self, table):
         table.bind(self)
+
+    def bind_role(self, role):
+        role.bind(self)
+
+    def bind_access(self, access):
+        access.bind(self)
 
     def get_table_by_name(self, name):
         return self.tables_by_name[name]

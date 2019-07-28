@@ -20,3 +20,6 @@ class HttpEvent(Event):
 
     def is_http(self):
         return True
+
+    def get_authorization_header(self):
+        return self.request.headers.get('authorization', None)

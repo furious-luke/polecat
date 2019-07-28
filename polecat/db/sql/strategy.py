@@ -1,5 +1,6 @@
 from ..query import Q
 from ..query import query as query_module
+from ..schema.role import Role
 from .delete_strategy import DeleteStrategy
 from .expression.alias import Alias
 from .expression.as_ import As
@@ -150,7 +151,9 @@ class Strategy:
             return self.cte
         local_expressions = []
         if session.role:
-            local_expressions.append(LocalRole(session.role.Meta.role))
+            # TODO: Need to type this.
+            assert isinstance(session.role, Role)
+            local_expressions.append(LocalRole(session.role.dbname))
         for key, value in session.variables.items():
             local_expressions.append(LocalVariable(key, value))
         local_expressions.append(self.cte)

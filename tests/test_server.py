@@ -1,10 +1,12 @@
+import pytest
 import ujson as json
 
 from .models import *  # noqa
 from .queries import all_movies_without_actors_query
 
 
-def test_server(db, factory, sanic_server):
+@pytest.mark.skip(reason='DB migrates before project is created')
+def test_server(factory, sanic_server):
     factory.Movie.create_batch(5)
     request, response = sanic_server.sanic_app.test_client.post(
         '/graphql',

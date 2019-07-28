@@ -33,7 +33,8 @@ setup(
         # Used to be in extras...
         'click==7.0',
         'halo==0.0.23',
-        'termcolor==1.1.0'
+        'termcolor==1.1.0',
+        'cached-property==1.5.1'
     ],
     extras_require={
         'cli': [

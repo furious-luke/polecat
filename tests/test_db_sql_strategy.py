@@ -256,7 +256,7 @@ def test_filter_only(immutabledb):
 def test_session_with_role_and_variables(immutabledb):
     table = create_table()
     query = (
-        Q(table, session=Session(DefaultRole, {'a': 1}))
+        Q(table, session=Session(DefaultRole.Meta.dbrole, {'a': 1}))
         .select()
     )
     sql = query.to_sql()

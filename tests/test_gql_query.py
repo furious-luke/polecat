@@ -131,11 +131,23 @@ def test_mutation(db, factory):
 def test_set_role(db):
     # TOOD: Really need to check the kind of error returned.
     schema = build_graphql_schema()
-    result = execute_query(schema, all_addresses_query, context={'session': Session(DefaultRole)})
+    result = execute_query(
+        schema,
+        all_addresses_query,
+        context={'session': Session(DefaultRole.Meta.dbrole)}
+    )
     assert len(result.errors) > 0
-    result = execute_query(schema, all_addresses_query, context={'session': Session(UserRole)})
+    result = execute_query(
+        schema,
+        all_addresses_query,
+        context={'session': Session(UserRole.Meta.dbrole)}
+    )
     assert result.errors is None
-    result = execute_query(schema, get_address_query, context={'session': Session(DefaultRole)})
+    result = execute_query(
+        schema,
+        get_address_query,
+        context={'session': Session(DefaultRole.Meta.dbrole)}
+    )
     assert len(result.errors) > 0
     # TODO: Ugh, getting a strange error here...
     # result = execute_query(schema, get_address_query, context={'session': Session(UserRole)})

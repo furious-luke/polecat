@@ -4,7 +4,8 @@ from tempfile import TemporaryDirectory
 import pytest
 from polecat.db.migration import (bootstrap_migrations, diff_schemas,
                                   make_migrations, migrate)
-from polecat.db.schema import Column, RelatedColumn, Schema, Table
+from polecat.db.schema import (CASCADE, Column, IntColumn, RelatedColumn,
+                               Schema, Table)
 
 from ..models import schema  # noqa
 
@@ -96,3 +97,21 @@ def test_dependencies(testdb):
     assert len(migrations) == 2
     for mgr in migrations:
         mgr.forward()
+
+
+def test_cascade_constraint(testdb):
+    t0 = Table('t0', columns=[
+        IntColumn('id', 'int', primary_key=True)
+    ])
+    t1 = Table('t1', columns=[
+        IntColumn('id', 'int', primary_key=True),
+        RelatedColumn('t0', t0, 'int', on_delete=CASCADE)
+    ])
+    schema = Schema(tables=[t0, t1])
+    schema.bind()
+    migrations = diff_schemas(schema)
+    sql = testdb.mogrify(*migrations[0].operations[1].sql)
+    assert sql == (
+        b'CREATE TABLE "t1" (\n"id" int PRIMARY KEY,\n"t0" int REFERENCES'
+        b' "t0"("id") ON DELETE CASCADE \n);'
+    )

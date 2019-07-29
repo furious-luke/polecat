@@ -30,7 +30,8 @@ class Q(BaseQ):
             #     )
             return self.insert_from_root()
         else:
-            return super().insert(**kwargs)
+            args = (model_or_subquery,) if (model_or_subquery is not None) else ()
+            return super().insert(*args, **kwargs)
 
     def insert_from_model_argument(self, model):
         return super().insert(**model_to_values(model))

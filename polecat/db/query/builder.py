@@ -15,12 +15,17 @@ class Q:
         self.queryable = queryable
         self.branches = branches or []
         self.session = session
+        self.row_count = 0
 
     def __iter__(self):
         with cursor_context(autocommit=False) as cursor:
             self.execute(cursor=cursor)
             for row in cursor:
                 yield row[0]
+
+    def __len__(self):
+        # TODO: If we haven't executed, we probably should?
+        return self.row_count
 
     def get(self):
         with cursor_context(autocommit=False) as cursor:
@@ -61,6 +66,7 @@ class Q:
             # logger.debug(cursor.mogrify(sql, args))
             print(cursor.mogrify(sql, args))
         cursor.execute(sql, args)
+        self.row_count = cursor.rowcount
         # TODO: This is strange. For some reason I need to commit
         # the outcome of the query here. If I don't, then the
         # changes are somehow lost.

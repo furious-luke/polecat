@@ -27,6 +27,9 @@ def set_active_project(project):
 
 
 def load_project():
+    global active_project
+    if active_project:
+        return active_project
     module_path = os.environ.get('POLECAT_PROJECT_MODULE')
     if module_path is None:
         raise Exception('Please set POLECAT_PROJECT_MODULE')
@@ -34,6 +37,7 @@ def load_project():
     module_name, class_name = '.'.join(parts[:-1]), parts[-1]
     project_class = getattr(import_module(module_name), class_name)
     project = project_class()
+    active_project = project
     # proxy_project.set_target(project)
     return project
 
@@ -61,8 +65,6 @@ class Project:
         self.bundle_version = os.environ.get('BUNDLE_VERSION')
         self.handlers = []
         self.config = config or self.config or {}
-        global active_project
-        active_project = self
 
     @property
     def apps(self):
@@ -75,6 +77,9 @@ class Project:
 
     @active_context
     def prepare(self, context):
+        if getattr(self, '_prepared', False):
+            return
+        self._prepared = True
         set_role_prefix(f'{self.name}_{self.deployment}')
         # TODO: This should be a method on the config, but it would
         # need to have an underscore prefix, which I'm starting to

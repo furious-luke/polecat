@@ -81,5 +81,6 @@ def convert_relatedfield(field):
         unique=field.unique,
         null=field.null,
         primary_key=field.primary_key,
-        default=field.default
+        default=field.default,
+        on_delete=field.on_delete
     )

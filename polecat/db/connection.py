@@ -13,6 +13,7 @@ class ConnectionManager:
             if x is not None
         ]
         self.connections = {}
+        self.current_cursor = {}
 
     def get_url(self, url=None):
         try:
@@ -21,6 +22,9 @@ class ConnectionManager:
             # TODO: Better exception.
             raise Exception('No database url specified')
 
+    # TODO: autocommit really doesn't make sense here for the
+    # manager. It needs to be in the __init__ method, as the
+    # connection gets retained across calls.
     @contextmanager
     def connection(self, url=None, autocommit=True):
         url = self.get_url(url)
@@ -41,13 +45,19 @@ class ConnectionManager:
         # TODO: This conditional is ugly.
         if cursor:
             yield cursor
+        url = self.get_url(url)
+        curs = self.current_cursor.get(url)
+        if curs:
+            yield curs
         else:
             with self.connection(url, autocommit=autocommit) as conn:
                 curs = conn.cursor()
+                self.current_cursor[url] = curs
                 try:
                     yield curs
                 finally:
                     curs.close()
+                    del self.current_cursor[url]
 
     def open_connection(self, url, autocommit=True):
         url = self.get_url(url)
@@ -103,10 +113,23 @@ cursor = manager.cursor
 
 
 @contextmanager
-def transaction(cursor):
-    cursor.execute('BEGIN')
-    try:
-        yield
-        cursor.execute('COMMIT')
-    finally:
-        cursor.execute('ROLLBACK')
+def transaction(curs=None):
+    # TODO: Not super happy about how manual the BEGIN and COMMIT
+    # calls are. Performance hit?
+    if curs is None:
+        with cursor() as curs:
+            try:
+                curs.execute('BEGIN')
+                yield curs
+                curs.execute('COMMIT')
+            except Exception:
+                curs.execute('ROLLBACK')
+                raise
+    else:
+        try:
+            curs.execute('BEGIN')
+            yield curs
+            curs.execute('COMMIT')
+        except Exception:
+            curs.execute('ROLLBACK')
+            raise

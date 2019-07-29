@@ -165,5 +165,6 @@ def resolve_mutation(obj, info, **kwargs):
         selector=get_selector_from_node(return_type, node),
         **options
     )
-    input = kwargs['input']
+    api_context = GraphQLAPIContext(obj, info, **kwargs)
+    input = api_context.parse_input()
     return mutation.resolve(**input)

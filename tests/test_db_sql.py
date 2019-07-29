@@ -2,7 +2,7 @@ import pytest
 from polecat.model.db import Q, S, Session
 from psycopg2 import ProgrammingError
 
-from .models import Address, DefaultRole, Movie, User, UserRole
+from .models import Address, DefaultRole, Movie, Store, User, UserRole
 
 
 def test_insert_sql(db):
@@ -56,6 +56,22 @@ def test_insert_and_select(db, factory):
     assert getattr(movie, 'id', None) is None
 
 
+def test_insert_subquery(db, factory):
+    store = factory.Store()
+    copied_store = (
+        Q(Store)
+        .insert(
+            Q(Store)
+            .filter(id=1)
+            .select('name')
+        )
+        .select('id', 'name')
+        .get()
+    )
+    assert store.id != copied_store['id']
+    assert store.name == copied_store['name']
+
+
 def test_update_sql(db):
     inst = Address(country='AU')
     Q(inst).insert().into(inst)
@@ -94,6 +110,16 @@ def test_get_sql(db, factory):
         Q(Movie)
         .filter(star__id=1)
         .select('id', 'title')
+        .execute()
+    )
+
+
+def test_get_sql_nested(db, factory):
+    factory.Movie.create_batch(2)
+    (
+        Q(Movie)
+        .filter(star__id=1)
+        .select('id', star=S('id'))
         .execute()
     )
 

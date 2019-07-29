@@ -1,3 +1,4 @@
+import pytest
 from polecat.db.sql.expression import Insert, Select, Subquery, Update, Where
 
 from .schema import create_table
@@ -64,6 +65,45 @@ def test_insert_expression(immutabledb):
         b'INSERT INTO "a_table" ("col1", "col3") VALUES (1, (INSERT INTO'
         b' "b_table" ("col2") VALUES (2) RETURNING "id")) RETURNING'
         b' "col1", "col3", "id"'
+    )
+
+
+@pytest.mark.skip(reason='This is probably an antipattern')
+def test_insert_subquery_with_all_columns(immutabledb):
+    b_table = create_table('b_table')
+    a_table = create_table(related_table=b_table)
+    expr = Insert(
+        a_table,
+        Select(
+            a_table,
+            where=Where(id=1)
+        ),
+        ['col1', 'col3']
+    )
+    sql = immutabledb.mogrify(*expr.to_sql())
+    assert sql == (
+        b'INSERT INTO "a_table" SELECT * FROM "a_table" WHERE'
+        b' "a_table"."id" = 1 RETURNING "col1", "col3", "id"'
+    )
+
+
+def test_insert_subquery_with_selected_columns(immutabledb):
+    b_table = create_table('b_table')
+    a_table = create_table(related_table=b_table)
+    expr = Insert(
+        a_table,
+        Select(
+            a_table,
+            ['col1', 'col3'],
+            where=Where(id=1)
+        ),
+        ['col1', 'col3']
+    )
+    sql = immutabledb.mogrify(*expr.to_sql())
+    assert sql == (
+        b'INSERT INTO "a_table" ("col1", "col3") SELECT "a_table"."col1" AS'
+        b' "col1", "a_table"."col3" AS "col3" FROM "a_table" WHERE'
+        b' "a_table"."id" = 1 RETURNING "col1", "col3", "id"'
     )
 
 

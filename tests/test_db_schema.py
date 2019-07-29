@@ -1,5 +1,5 @@
 from polecat.db.schema import (Column, FloatColumn, IntColumn, RelatedColumn,
-                               Schema, SessionVariable, Table)
+                               Schema, Table)
 
 
 def test_create_from_migrations():

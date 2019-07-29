@@ -1,5 +1,5 @@
 from ...utils.repr import to_repr
-from .entity import ConstructionArguments, Entity
+from .entity import AsIs, ConstructionArguments, Entity
 from .utils import column_to_identifier, table_to_identifier
 
 __all__ = ('Column', 'MutableColumn', 'IntColumn', 'TextColumn',
@@ -124,10 +124,11 @@ class UUIDColumn(MutableColumn):
 
 class RelatedColumn(IntColumn):
     def __init__(self, name, related_table, *args, related_column=None,
-                 **kwargs):
+                 on_delete=None, **kwargs):
         super().__init__(name, *args, **kwargs)
         self.related_table = related_table
         self.related_column = related_column
+        self.on_delete = on_delete
 
     def __repr__(self):
         return to_repr(
@@ -174,10 +175,13 @@ class RelatedColumn(IntColumn):
 
     def get_construction_arguments(self):
         cargs = super().get_construction_arguments()
-        return cargs.merge(
-            related_table=table_to_identifier(self.related_table),
-            related_column=column_to_identifier(self.related_column)
-        )
+        kwargs = {
+            'related_table': table_to_identifier(self.related_table),
+            'related_column': column_to_identifier(self.related_column),
+        }
+        if self.on_delete:
+            kwargs['on_delete'] = AsIs(f'schema.{self.on_delete}')
+        return cargs.merge(**kwargs)
 
 
 class ReverseColumn(Column):

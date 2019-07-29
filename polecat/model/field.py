@@ -128,10 +128,12 @@ class ReverseField(Field):
 
 
 class RelatedField(MutableField):
-    def __init__(self, other, related_name=Auto, *args, **kwargs):
+    def __init__(self, other, related_name=Auto, on_delete=None, *args,
+                 **kwargs):
         super().__init__(*args, **kwargs)
         self.other = other
         self.related_name = related_name
+        self.on_delete = on_delete
 
     def prepare(self, model):
         if self.other == 'self':

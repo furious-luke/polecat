@@ -37,7 +37,9 @@ class SelectStrategy:
         return self.root.parse_chained_relation(relation)
 
     def create_alias_for_relation(self, relation):
-        alias = As(relation, f't{self.relation_counter}')
+        # TODO: Using the factory here when we've already got an "As"
+        # spuriously increments the relation counter.
+        alias = As.factory(relation, f't{self.relation_counter}')
         self.relation_counter += 1
         return alias
 

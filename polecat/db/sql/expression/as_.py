@@ -4,6 +4,13 @@ from .expression import Expression
 
 
 class As(Expression):
+    @classmethod
+    def factory(cls, expression, alias):
+        if not isinstance(expression, As):
+            return cls(expression, alias)
+        else:
+            return expression
+
     def __init__(self, expression, alias):
         self.expression = expression
         self.alias = alias

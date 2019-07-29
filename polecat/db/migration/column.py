@@ -1,3 +1,4 @@
+from polecat.db.schema import CASCADE
 from polecat.db.schema.utils import Auto
 from psycopg2.sql import SQL, Identifier
 
@@ -108,7 +109,16 @@ class RelatedColumn(IntColumn):
 
     def get_reference_sql(self):
         col = self.schema_column
-        return SQL('REFERENCES {}({})').format(
+        return SQL('REFERENCES {}({}){}').format(
             Identifier(getattr(col.related_table, 'name', col.related_table)),
-            Identifier('id')
+            Identifier('id'),
+            self.get_on_delete_sql()
         )
+
+    def get_on_delete_sql(self):
+        col = self.schema_column
+        if col.on_delete == CASCADE:
+            sql = SQL(' ON DELETE CASCADE')
+        else:
+            sql = SQL('')
+        return sql

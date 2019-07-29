@@ -95,6 +95,9 @@ class Select(Expression):
         # TODO: Not sure a select should be running "get_column".
         return self.relation.get_column(name)
 
+    def get_subrelation(self, name):
+        return self.relation.get_subrelation(name)
+
     def push_selection(self, selection=None):
         from ...schema import ReverseColumn
         # TODO: Efficiency. Everything.

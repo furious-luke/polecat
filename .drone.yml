@@ -1,8 +1,19 @@
-pipeline:
-  build:
+kind: pipeline
+name: default
+
+steps:
+  - name: build
     image: python:3.7-alpine3.7
+    environment:
+      DATABASE_URL: postgres://postgres@db/postgres
     commands:
       - apk add --no-cache --update bash postgresql-libs tzdata postgresql-dev gcc git musl-dev
       - pip install --upgrade pip setuptools wheel pipenv
       - pipenv install -d --three
       - pipenv run scripts/test.sh
+
+services:
+  - name: db
+    image: postgres:10-alpine
+    ports:
+      - 5432

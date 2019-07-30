@@ -1,4 +1,4 @@
-# Polecat
+# Polecat [![Build Status](https://cloud.drone.io/api/badges/furious-luke/polecat/status.svg)](https://cloud.drone.io/furious-luke/polecat)
 
 A lean, powerful, and enjoyable web framework.
 

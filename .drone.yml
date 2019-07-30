@@ -2,7 +2,7 @@ pipeline:
   build:
     image: python:3.7-alpine3.7
     commands:
-      - apk add --no-cache --update bash git postgresql-libs tzdata
+      - apk add --no-cache --update bash postgresql-libs tzdata postgresql-dev gcc git
       - pip install --upgrade pip setuptools wheel pipenv
       - pipenv install -d --three
       - pipenv run scripts/test.sh

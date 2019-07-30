@@ -6,7 +6,7 @@ LABEL description="Development Polecat image."
 ENV TZ=Australia/Melbourne
 
 RUN    apk add --no-cache --update \
-	bash git postgresql-libs tzdata \
+	bash postgresql-libs tzdata \
     && pip install pipenv \
     && rm -rf /var/lib/apt/lists/* /root/.cache \
     && ln -sf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone \
@@ -14,10 +14,13 @@ RUN    apk add --no-cache --update \
 
 ADD setup.py /app/
 ADD polecat /app/polecat
+ADD Pipfile /app/
+ADD Pipfile.lock /app/
 WORKDIR /app
 
-RUN     apk add --no-cache --virtual .build-deps postgresql-dev \
-    && python setup.py install \
+RUN    apk add --no-cache --virtual .build-deps \
+        postgresql-dev gcc git \
+    && pipenv install -d --three \
     && apk --purge del .build-deps \
     && rm -rf /var/lib/apt/lists/* /root/.cache
 

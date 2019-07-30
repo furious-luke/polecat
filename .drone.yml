@@ -6,11 +6,12 @@ steps:
     image: python:3.7-alpine3.7
     environment:
       DATABASE_URL: postgres://postgres@db/postgres
+      POLECAT_JWT_SECRET: secret
     commands:
       - apk add --no-cache --update bash postgresql-libs tzdata postgresql-dev gcc git musl-dev
       - pip install --upgrade pip setuptools wheel pipenv
       - pipenv install -d --three
-      - pipenv run scripts/test.sh
+      - pipenv run pytest
 
 services:
   - name: db

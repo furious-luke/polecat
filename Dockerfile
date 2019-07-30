@@ -13,7 +13,6 @@ RUN    apk add --no-cache --update \
     && mkdir -p /app
 
 ADD setup.py /app/
-ADD polecat /app/polecat
 ADD Pipfile /app/
 ADD Pipfile.lock /app/
 WORKDIR /app
@@ -24,4 +23,10 @@ RUN    apk add --no-cache --virtual .build-deps \
     && apk --purge del .build-deps \
     && rm -rf /var/lib/apt/lists/* /root/.cache
 
+ADD polecat /app/polecat
+ADD tests /app/tests
+ADD scripts /app/scripts
+ADD .env /app/
+
 EXPOSE 8000
+CMD pipenv run pytest

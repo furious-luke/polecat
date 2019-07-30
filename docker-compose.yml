@@ -4,3 +4,11 @@ services:
     image: postgres:10-alpine
     ports:
       - 5432:5432
+  polecat:
+    build:
+      context: .
+    environment:
+      DATABASE_URL: postgres://postgres@db/postgres
+      POLECAT_JWT_SECRET: secret
+    depends_on:
+      - db

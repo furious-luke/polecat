@@ -39,9 +39,17 @@ class Column(metaclass=RegistryMetaclass):
             if col.unique:
                 constraints.append('UNIQUE')
             if col.default is not None:
-                constraints.append('DEFAULT %s')
-                args += (self.translate_default_value(col.default),)
+                def_str, def_args = self.get_default_str()
+                constraints.append(def_str)
+                args += def_args
         return SQL(' '.join(constraints)), args
+
+    def get_default_str(self):
+        col = self.schema_column
+        return (
+            'DEFAULT %s',
+            (self.translate_default_value(col.default),)
+        )
 
     def get_type_sql(self):
         return SQL(self.dbtype)
@@ -86,11 +94,12 @@ class TimestampColumn(Column):
     sources = (schema.TimestampColumn,)
     dbtype = 'timestamptz'
 
-    def translate_default_value(self, value):
-        if value == Auto:
-            return 'now()'
+    def get_default_str(self):
+        col = self.schema_column
+        if col.default == Auto:
+            return 'DEFAULT now()', ()
         else:
-            return value
+            return super().get_default_str()
 
 
 class RelatedColumn(IntColumn):

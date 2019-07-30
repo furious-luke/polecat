@@ -129,6 +129,15 @@ class Strategy:
                 ),
                 f'r{counter}'
             )
+        elif isinstance(relation, query_module.Select):
+            counter = self.chained_relation_counter
+            self.chained_relation_counter += 1
+            return As(
+                Subquery(
+                    self.create_select(relation)
+                ),
+                f'r{counter}'
+            )
         else:
             return relation
 

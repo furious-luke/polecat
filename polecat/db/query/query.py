@@ -128,7 +128,8 @@ class Delete(Query):
 
     def __init__(self, source, **kwargs):
         super().__init__(source, **kwargs)
-        self.assert_mutatable(source)
+        # TODO: Need to remove this to support filters.
+        # self.assert_mutatable(source)
 
     def iter_column_names(self):
         return iter(self.source.iter_column_names())

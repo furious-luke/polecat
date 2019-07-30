@@ -129,7 +129,11 @@ class Q:
         return self.chain(Update(source, values))
 
     def delete(self):
-        source = self.get_mutation_source()
+        # TODO: Would be good to remove this conditional.
+        if isinstance(self.queryable, Filter):
+            source = self.queryable
+        else:
+            source = self.get_mutation_source()
         return self.chain(Delete(source))
 
     def delete_from(self, source):

@@ -28,7 +28,8 @@ class Delete(Expression):
 
     def get_where_sql(self):
         if self.where:
-            return self.where.get_sql()
+            sql, args = self.where.get_sql(self.relation)
+            return SQL(' WHERE {}').format(sql), args
         else:
             return SQL(''), ()
 

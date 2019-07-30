@@ -242,6 +242,15 @@ def test_filter_and_select(immutabledb):
     )
 
 
+def test_filter_and_delete(immutabledb):
+    table = create_table()
+    query = Q(table).filter(id=1).delete()
+    sql = query.to_sql()
+    assert sql == (
+        b'DELETE FROM "a_table" WHERE "a_table"."id" = 1'
+    )
+
+
 def test_filter_only(immutabledb):
     table = create_table()
     query = Q(table).filter(col2=2)

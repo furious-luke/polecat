@@ -19,7 +19,7 @@ ADD Pipfile.lock /app/
 WORKDIR /app
 
 RUN    apk add --no-cache --virtual .build-deps \
-        postgresql-dev gcc git \
+        postgresql-dev gcc git musl-dev \
     && pipenv install -d --three \
     && apk --purge del .build-deps \
     && rm -rf /var/lib/apt/lists/* /root/.cache

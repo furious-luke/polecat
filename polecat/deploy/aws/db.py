@@ -102,9 +102,8 @@ def delete_instance(name, feedback=None):
         )
 
 
-@feedback
 def list_instances(feedback=None):
-    with feedback(f'List database instances'):
+    with feedback('Fetch instances') as fb:
         instances = get_parameters_by_path(f'/polecat/aws/db/instances/')
     return instances.keys()
 

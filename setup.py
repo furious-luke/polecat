@@ -40,10 +40,12 @@ setup(
         'cli': [
             'pytest==4.3.1',
             'pytest-asyncio==0.10.0',
+            'pytest-polecat==0.0.0',
             'factory-boy==2.11.1',
             'sanic==19.3.1',
             'boto3==1.9.125',
             'coolname==1.1.0',
+            'polecat-feedback==0.0.0',
             'python-Levenshtein==0.12.0'
         ]
     },

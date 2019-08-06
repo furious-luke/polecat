@@ -1,10 +1,30 @@
 import sys
+from functools import wraps
 
 from halo import Halo
+from polecat_feedback.decorators import feedback
+from polecat_feedback.renderer import Renderer
 from termcolor import colored
 
 from ..core.context import active_context
 from ..utils.feedback import Feedback
+
+
+def cli_feedback(title):
+    def outer(func):
+        @wraps(func)
+        def inner(*args, **kwargs):
+            ctx = args[0]
+            renderer = Renderer(max_width=88)
+            with feedback(title, app_name='Polecat', version='v0.0.8', renderer=renderer) as fb:
+                path = ctx.obj.get('config_path')
+                if path:
+                    # TODO: Should be hiding this.
+                    path = fb.renderer.t.bright_white(path)
+                    fb.add_notice(f'Loaded configuration from {path}')
+                return func(*args, feedback=fb, **kwargs)
+        return inner
+    return outer
 
 
 class HaloFeedback(Feedback):

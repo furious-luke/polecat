@@ -48,12 +48,14 @@ def build_graphql_schema():
 class SchemaBuilder:
     def build(self):
         logger.debug('Building GraphQL schema')
+        self.post_build_hooks = []
         self.types = []
         self.queries = {}
         self.mutations = {}
         self.build_models()
         self.build_queries()
         self.build_mutations()
+        self.run_post_build_hooks()
         return GraphQLSchema(
             query=GraphQLObjectType(
                 name='Query',
@@ -142,6 +144,10 @@ class SchemaBuilder:
             )
             self._delete_output_type = type
         return type
+
+    def run_post_build_hooks(self):
+        for hook in self.post_build_hooks:
+            hook()
 
 
 class ModelBuilder:
@@ -316,7 +322,15 @@ class TypeBuilder:
                 pass
             else:
                 fields[name] = result
+            self.add_hooks_from_field(model, field, name)
         return fields
+
+    def add_hooks_from_field(self, model, field, field_name):
+        hooks = field.post_build_hooks
+        self.schema_builder.post_build_hooks.extend([
+            partial(h, self.schema_builder, model, field, field_name)
+            for h in hooks
+        ])
 
     def build_field(self, model, field):
         for base_class in inspect.getmro(field.__class__):

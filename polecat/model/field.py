@@ -7,6 +7,10 @@ default_resolver = None
 
 
 class Field:
+    query_resolver = None
+    mutation_resolver = None
+    post_build_hooks = []
+
     def __init__(self, resolver=None, omit=None):
         self.resolver = resolver or default_resolver
         self.omit = omit or 0

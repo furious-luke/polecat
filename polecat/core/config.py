@@ -1,10 +1,11 @@
 import os
+from functools import wraps
 
 from polecat.utils.container import Option, OptionDict, passthrough
 
 from .context import active_context
 
-__all__ = ('ConfigDict',)
+__all__ = ('ConfigDict', 'active_config')
 
 
 class ConfigDict(OptionDict):
@@ -31,3 +32,13 @@ active_context().Meta.add_options(
         prefix='POLECAT'
     ))
 )
+
+
+def active_config(*args):
+    if len(args):
+        func = args[0]
+        @wraps(func)
+        def inner(*args, **kwargs):
+            return func(*args, config=active_context().confg, **kwargs)
+        return inner
+    return active_context().config

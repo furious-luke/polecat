@@ -11,6 +11,13 @@ def camelcase(value):
     )
 
 
+def pascalcase(value):
+    return (
+        value[0].upper() +
+        CAMELCASE_PROG.sub(lambda m: m.group(1).upper(), value[1:])
+    )
+
+
 def snakecase(value):
     # TODO: Needs testing.
     def do_sub(m):

@@ -24,6 +24,7 @@ sanic = "==19.3.1"
 boto3 = "==1.9.125"
 cached-property = "==1.5.1"
 coolname = "==1.1.0"
+polecat-feedback = "*"
 python-Levenshtein = "==0.12.0"
 pytz = "==2019.1"
 

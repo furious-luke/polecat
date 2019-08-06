@@ -1,7 +1,9 @@
 import click
+
+from polecat_feedback.summary import ListSummary
 from termcolor import colored
 
-from .feedback import HaloFeedback
+from .feedback import HaloFeedback, cli_feedback
 from .main import main
 
 __all__ = ('create_instance', 'delete_instance', 'list_instances',
@@ -23,14 +25,19 @@ def create_instance(ctx, url):
 
 @db.command()
 @click.pass_context
-def list_instances(ctx):
+@cli_feedback('List database instances')
+def list_instances(ctx, feedback=None):
     from ..deploy.aws.db import list_instances as aws_list_instances
-    instances = aws_list_instances(feedback=HaloFeedback())
-    if len(instances) == 0:
-        print(colored('    No instances', 'grey'))
-    else:
-        for inst in instances:
-            print(f'    {inst}')
+    instances = aws_list_instances(feedback=feedback)
+    # instances = ['blahdy-blah', 'hello-world']
+    feedback.add_summary(
+        ListSummary('Database instances', instances)
+    )
+    # if len(instances) == 0:
+    #     print(colored('    No instances', 'grey'))
+    # else:
+    #     for inst in instances:
+    #         print(f'    {inst}')
 
 
 @db.command()

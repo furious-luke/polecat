@@ -6,10 +6,10 @@ from graphql.type import (GraphQLField, GraphQLInputField,
                           GraphQLInputObjectType, GraphQLInt, GraphQLList,
                           GraphQLNonNull, GraphQLObjectType, GraphQLSchema,
                           GraphQLString)
+from polecat.model import default_blueprint
 
 from ..core.context import active_context
-from ..model import (Model, model_registry, mutation_registry, omit,
-                     query_registry)
+from ..model import Model, omit
 from ..utils import add_attribute, capitalize, uncapitalize
 from ..utils.stringcase import camelcase
 # from .field import *  # noqa
@@ -102,21 +102,20 @@ class SchemaBuilder:
             builder = builder_class(self)
             builder.build(mutation)
 
-    @active_context
-    def iter_models(self, context=None):
-        for type in context.registries.type_registry:
+    def iter_models(self):
+        for type in default_blueprint.iter_types():
             if not type.Meta.omit == omit.ALL:
                 yield type
-        for model in model_registry:
+        for model in default_blueprint.iter_models():
             if not model.Meta.omit == omit.ALL:
                 yield model
 
     def iter_queries(self):
-        for query in query_registry:
+        for query in default_blueprint.iter_queries():
             yield query
 
     def iter_mutations(self):
-        for mutation in mutation_registry:
+        for mutation in default_blueprint.iter_mutations():
             yield mutation
 
     def build_delete_type(self):
@@ -326,7 +325,7 @@ class TypeBuilder:
         return fields
 
     def add_hooks_from_field(self, model, field, field_name):
-        hooks = field.post_build_hooks
+        hooks = field.graphql_post_build_hooks
         self.schema_builder.post_build_hooks.extend([
             partial(h, self.schema_builder, model, field, field_name)
             for h in hooks

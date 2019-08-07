@@ -1,69 +1,49 @@
-from polecat.core.registry import Registry, RegistryMetaclass
 from polecat.utils import add_attribute, to_list
 from polecat.utils.stringcase import camelcase, snakecase
 
+from .defaults import default_blueprint
 from .field import Field, SerialField
 from .omit import NONE
 
 
-def model_registry_name_mapper(registry):
-    return registry.Meta.name
+class RegisteredType(type):
+    BASE_TYPE_NAME = None
+
+    def build_type(metaclass, name, bases, attrs):
+        cls = super().__new__(metaclass, name, bases, attrs)
+        if metaclass.is_sub_type(metaclass, name, bases):
+            metaclass.register_type(metaclass, cls)
+        return cls
+
+    def is_sub_type(metaclass, name, bases):
+        return bases and name != metaclass.BASE_TYPE_NAME
+
+    def register_type(metaclass, cls):
+        pass
 
 
-Registry('type_registry', name_mapper=model_registry_name_mapper)
-# TODO: Remaining registries.
-model_registry = []
-role_registry = []
-query_registry = []
-mutation_registry = []
-access_registry = []
-
-
-# TODO: Too much overlap between types and models.
-class TypeMetaclass(RegistryMetaclass):
-    def __new__(meta, name, bases, attrs):
-        if not RegistryMetaclass.is_baseclass(name, bases):
-            attrs['Meta'] = make_type_meta(
-                name, bases, attrs,
-                attrs.get('Meta')
+class ConstructableMetaType(RegisteredType):
+    def build_type(metaclass, name, bases, attrs):
+        is_sub = metaclass.is_sub_type(metaclass, name, bases)
+        if is_sub:
+            meta = metaclass.build_meta(
+                metaclass, name, attrs, attrs.get('Meta')
             )
-            cls = super().__new__(meta, name, bases, {
+            if meta is not None:
+                attrs['Meta'] = meta
+            cls = super().__new__(metaclass, name, bases, {
                 k: v
                 for k, v in attrs.items()
                 if k not in attrs['Meta'].fields
             })
         else:
-            cls = super().__new__(meta, name, bases, attrs)
+            cls = super().__new__(metaclass, name, bases, attrs)
+        if is_sub:
+            metaclass.register_type(metaclass, cls)
         return cls
 
     def __init__(cls, name, bases, attrs):
         super().__init__(name, bases, attrs)
-        meta = getattr(cls, 'Meta', None)
-        if meta:
-            for field in meta.fields.values():
-                field.prepare(cls)
-
-
-class ModelMetaclass(type):
-    def __new__(meta, name, bases, attrs):
-        is_sub = bases and name != 'Model'
-        if is_sub:
-            attrs['Meta'] = make_model_meta(
-                name, bases, attrs,
-                attrs.get('Meta')
-            )
-            cls = super().__new__(meta, name, bases, {
-                k: v
-                for k, v in attrs.items()
-                if k not in attrs['Meta'].fields
-            })
-        else:
-            cls = super().__new__(meta, name, bases, attrs)
-        if is_sub:
-            model_registry.append(cls)
-        return cls
-
-    def __init__(cls, name, bases, attrs):
         meta = getattr(cls, 'Meta', None)
         if meta:
             # Must first dump all fields as any related field that
@@ -73,65 +53,104 @@ class ModelMetaclass(type):
             for field in all_fields:
                 field.prepare(cls)
 
+    def build_meta(metaclass, name, attrs, meta):
+        return None
 
-class RoleMetaclass(type):
+
+class TypeMetaclass(ConstructableMetaType):
+    BASE_TYPE_NAME = 'Type'
+
     def __new__(meta, name, bases, attrs):
-        is_sub = bases and name != 'Role'
+        return meta.build_type(meta, name, bases, attrs)
+
+    def build_meta(metaclass, name, attrs, meta):
+        return make_type_meta(name, attrs, meta)
+
+    def register_type(metaclass, cls):
+        default_blueprint.add_type(cls)
+
+
+class ModelMetaclass(ConstructableMetaType):
+    BASE_TYPE_NAME = 'Model'
+
+    def __new__(metaclass, name, bases, attrs):
+        return metaclass.build_type(metaclass, name, bases, attrs)
+
+    def build_meta(metaclass, name, attrs, meta):
+        return make_model_meta(name, attrs, meta)
+
+    def register_type(metaclass, cls):
+        default_blueprint.add_model(cls)
+
+
+class RoleMetaclass(RegisteredType):
+    BASE_TYPE_NAME = 'Role'
+
+    def __new__(metaclass, name, bases, attrs):
+        is_sub = metaclass.is_sub_type(metaclass, name, bases)
         if is_sub:
             attrs['Meta'] = make_role_meta(
-                name, bases, attrs,
-                attrs.get('Meta')
+                name, bases, attrs, attrs.get('Meta')
             )
-        cls = super().__new__(meta, name, bases, make_role_attrs(attrs))
+        cls = super().__new__(metaclass, name, bases, make_role_attrs(attrs))
         if is_sub:
-            role_registry.append(cls)
+            metaclass.register_type(metaclass, cls)
         return cls
 
+    def register_type(metaclass, cls):
+        default_blueprint.add_role(cls)
 
-class AccessMetaclass(type):
-    def __new__(meta, name, bases, attrs):
-        is_sub = bases and name != 'Access'
-        # if is_sub:
-        #     attrs['Meta'] = make_role_meta(
-        #         name, bases, attrs,
-        #         attrs.get('Meta')
-        #     )
-        cls = super().__new__(meta, name, bases, make_access_attrs(attrs))
+
+class AccessMetaclass(RegisteredType):
+    BASE_TYPE_NAME = 'Access'
+
+    def __new__(metaclass, name, bases, attrs):
+        is_sub = metaclass.is_sub_type(metaclass, name, bases)
+        cls = super().__new__(metaclass, name, bases, make_access_attrs(attrs))
         if is_sub:
-            access_registry.append(cls)
+            metaclass.register_type(metaclass, cls)
         return cls
 
+    def register_type(metaclass, cls):
+        default_blueprint.add_access(cls)
 
-class QueryMetaclass(type):
-    def __new__(meta, name, bases, attrs):
-        is_sub = bases and name != 'Query'
+
+class QueryMetaclass(RegisteredType):
+    BASE_TYPE_NAME = 'Query'
+
+    def __new__(metaclass, name, bases, attrs):
+        is_sub = metaclass.is_sub_type(metaclass, name, bases)
         if is_sub:
             attrs['Meta'] = make_query_meta(
-                name, bases, attrs,
-                attrs.get('Meta')
+                name, bases, attrs, attrs.get('Meta')
             )
-        cls = super().__new__(meta, name, bases, make_query_attrs(attrs))
+        cls = super().__new__(metaclass, name, bases, make_query_attrs(attrs))
         if is_sub:
-            query_registry.append(cls)
+            metaclass.register_type(metaclass, cls)
         return cls
 
+    def register_type(metaclass, cls):
+        default_blueprint.add_query(cls)
 
-class MutationMetaclass(type):
-    def __new__(meta, name, bases, attrs):
-        is_sub = bases and name != 'Mutation'
+
+class MutationMetaclass(RegisteredType):
+    def __new__(metaclass, name, bases, attrs):
+        is_sub = metaclass.is_sub_type(metaclass, name, bases)
         if is_sub:
             attrs['Meta'] = make_mutation_meta(
-                name, bases, attrs,
-                attrs.get('Meta')
+                name, bases, attrs, attrs.get('Meta')
             )
-        cls = super().__new__(meta, name, bases, make_mutation_attrs(attrs))
+        cls = super().__new__(metaclass, name, bases, make_mutation_attrs(attrs))
         if is_sub:
-            mutation_registry.append(cls)
+            metaclass.register_type(metaclass, cls)
         return cls
+
+    def register_type(metaclass, cls):
+        default_blueprint.add_mutation(cls)
 
 
 # TODO: So similar to models.
-def make_type_meta(name, bases, attrs, meta):
+def make_type_meta(name, attrs, meta):
     fields = {
         f.name: f
         for f in get_type_fields(attrs)
@@ -147,7 +166,7 @@ def make_type_meta(name, bases, attrs, meta):
     })
 
 
-def make_model_meta(name, bases, attrs, meta):
+def make_model_meta(name, attrs, meta):
     # TODO: Ugh.
     from .resolver import (
         CreateResolver, ResolverList, CreateResolverManager,

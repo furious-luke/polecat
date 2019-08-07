@@ -1,23 +1,23 @@
 from ...db.schema import Access as DBAccess
 from ...db.schema import Role as DBRole
 from ...db.schema import Schema
+from ..defaults import default_blueprint
 from ..field import MutableField, ReverseField
-from ..registry import access_registry, model_registry, role_registry
 from .build import TableBuilder
 
 
 def create_schema():
     tables = [
         model_to_table(model)
-        for model in model_registry
+        for model in default_blueprint.iter_models()
     ]
     roles = [
         role_to_dbrole(role)
-        for role in role_registry
+        for role in default_blueprint.iter_roles()
     ]
     access = [
         access_to_dbaccess(access)
-        for access in access_registry
+        for access in default_blueprint.iter_access()
     ]
     schema = Schema(tables, roles=roles, access=access)
     schema.bind()

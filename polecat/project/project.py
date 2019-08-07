@@ -6,9 +6,8 @@ from graphql_server import HttpQueryError
 from polecat.admin.commands import *  # noqa
 from polecat.core.context import active_context
 from polecat.db.role_prefix import set_role_prefix
+from polecat.model import default_blueprint
 from polecat.model.db.helpers import create_schema
-from polecat.model.registry import (access_registry, model_registry,
-                                    role_registry)
 from polecat.utils import get_class_path
 
 from .index import IndexHandler, get_index_html
@@ -87,6 +86,7 @@ class Project:
         for key, value in self.config.items():
             context.config[key] = value
         self.prepare_apps()
+        self.prepare_blueprint()
         self.prepare_schema()
         # TODO: If not in DEBUG mode, validate settings.
         if not len(self.handlers):
@@ -125,7 +125,7 @@ class Project:
         if not items:
             return
         prog = re.compile('(' + ')|('.join(items) + ')')
-        for model in model_registry:
+        for model in default_blueprint.iter_models():
             module_name = r'.'.join(model.__module__.split('.')[:-1])
             match = prog.search(module_name)
             try:
@@ -142,7 +142,7 @@ class Project:
             # TODO: I should be able to remove this once I get models
             # into the app context.
             self.models[f'{app.name}.{model.Meta.name}'] = model
-        for type in context.registries.type_registry:
+        for type in default_blueprint.iter_types():
             module_name = r'.'.join(type.__module__.split('.')[:-1])
             match = prog.search(module_name)
             try:
@@ -152,7 +152,7 @@ class Project:
                 continue
             app.types.append(model)
             type.Meta.app = app
-        for role in role_registry:
+        for role in default_blueprint.iter_roles():
             module_name = r'.'.join(role.__module__.split('.')[:-1])
             match = prog.search(module_name)
             try:
@@ -162,7 +162,7 @@ class Project:
                 continue
             app.roles.append(model)
             role.Meta.app = app
-        for access in access_registry:
+        for access in default_blueprint.iter_access():
             module_name = r'.'.join(access.__module__.split('.')[:-1])
             match = prog.search(module_name)
             try:
@@ -172,6 +172,11 @@ class Project:
                 continue
             app.access.append(access)
             access.app = app
+
+    def prepare_blueprint(self):
+        # TODO: Should this go before prepare apps? Would love to
+        # automatically get the app into the models etc.
+        default_blueprint.run_hooks()
 
     @active_context
     def prepare_schema(self, context=None):

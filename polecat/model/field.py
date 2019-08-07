@@ -9,11 +9,13 @@ default_resolver = None
 class Field:
     query_resolver = None
     mutation_resolver = None
-    post_build_hooks = []
+    hooks = []
+    graphql_post_build_hooks = []
 
-    def __init__(self, resolver=None, omit=None):
+    def __init__(self, resolver=None, omit=None, hooks=None):
         self.resolver = resolver or default_resolver
         self.omit = omit or 0
+        self.hooks = hooks or self.hooks
 
     def __repr__(self):
         name = getattr(self, 'name', '?')

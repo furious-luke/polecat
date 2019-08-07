@@ -1,9 +1,9 @@
 from factory import base
+from polecat.model import default_blueprint
 from polecat.model.db import Q
 
 from ...core.context import active_context
 from ...model.field import ReverseField
-from ...model.registry import model_registry
 from .field import *  # noqa
 
 
@@ -25,7 +25,7 @@ class FactoryContainer:
 
 def create_model_factory():
     factory = type('Factory', (FactoryContainer,), {})
-    for model in model_registry:
+    for model in default_blueprint.iter_models():
         setattr(
             factory,
             model.__name__,

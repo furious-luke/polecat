@@ -1,9 +1,9 @@
 import re
 
 from jwt import decode
+from polecat.model import default_blueprint
 
 from ..core.context import active_context
-from ..model.registry import role_registry
 
 __all__ = ('JWTMiddleware', 'RoleMiddleware')
 
@@ -39,17 +39,7 @@ class RoleMiddleware(JWTMiddleware):
         role = self.default_role
         claims = event.claims
         if claims and 'role' in claims:
-            # TODO: Inefficient. This can be rectified once I've
-            # converted the model registries to actual registries.
-            found = False
-            for role_class in role_registry:
-                if role_class.Meta.role == claims['role']:
-                    found = True
-                    role = role_class
-                    break
-            if not found:
-                # TODO: Better exception.
-                raise Exception('role not found')
+            role = default_blueprint.roles[claims['role']]
         if role is None:
             # TODO: Better exception.
             raise Exception('No role specified')

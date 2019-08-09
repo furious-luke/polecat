@@ -39,6 +39,6 @@ def active_config(*args):
         func = args[0]
         @wraps(func)
         def inner(*args, **kwargs):
-            return func(*args, config=active_context().confg, **kwargs)
+            return func(*args, config=active_context().config, **kwargs)
         return inner
     return active_context().config

@@ -107,10 +107,11 @@ class Authenticate(model.Mutation):
     input = AuthenticateInput
     returns = JWTType
 
-    def resolve(self, email, password, **kwargs):
+    def resolve(self, ctx):
+        input = ctx.parse_input()
         result = (
             Q(User)
-            .filter(email=email, password=password)
+            .filter(email=input['email'], password=input['password'])
             .select('id')
             .get()
         )

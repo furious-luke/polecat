@@ -4,10 +4,13 @@ from .passthrough import passthrough
 
 
 class MetaMetaclass(type):
-    def __new__(meta, name, bases, attrs):
+    def __new__(metaclass, name, bases, attrs):
         if name == 'Meta':
-            return super().__new__(meta, name, bases, attrs)
-        cls = super().__new__(meta, name, (OptionDict,), attrs)
+            return super().__new__(metaclass, name, bases, attrs)
+        return metaclass.build_dict_type(metaclass, name, attrs)
+
+    def build_dict_type(metaclass, name, attrs, base=OptionDict):
+        cls = super().__new__(metaclass, name, (base,), attrs)
         cls.initial_options = build_options(attrs)
         return passthrough(cls)
 

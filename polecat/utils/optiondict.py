@@ -70,6 +70,9 @@ class OptionDict:
                 pass
         return self
 
+    def get_default(self, option):
+        raise UndefinedOptionError(f'{option.key} is undefined')
+
     def key_error(self, key):
         try:
             from Levenshtein import distance
@@ -112,7 +115,7 @@ class Option(metaclass=OptionMetaclass):
         value = self.get_value(obj)
         if value is Undefined:
             if self.default is Undefined:
-                raise UndefinedOptionError(f'{self.key} is undefined')
+                return obj.get_default(self)
             return self.default
         return value
 

@@ -1,6 +1,7 @@
 from polecat.utils import to_list
 
 from .exceptions import InvalidFieldError
+from .omit import NONE
 from .registry import (AccessMetaclass, ModelMetaclass, MutationMetaclass,
                        QueryMetaclass, RoleMetaclass, TypeMetaclass)
 
@@ -61,6 +62,5 @@ class Query(metaclass=QueryMetaclass):
 
 
 class Mutation(metaclass=MutationMetaclass):
-    def __init__(self, selector=None, session=None):
-        self.selector = selector
-        self.session = session
+    def resolve(self, context):
+        raise NotImplementedError

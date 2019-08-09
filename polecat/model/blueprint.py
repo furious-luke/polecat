@@ -48,12 +48,10 @@ class Blueprint:
         self.queries[query.Meta.name] = query
 
     def add_mutation(self, mutation):
-        self.mutations[mutation.Meta.name] = mutation
+        self.mutations[mutation.name] = mutation
 
     def create_type(self, name, fields):
-        cls = type(name, (Type,), {
-            **fields
-        })
+        type(name, (Type,), {**fields})
 
     def create_mutation(self, name, resolver, return_type, input_type=None):
         cls = type(name, (Mutation,), {
@@ -71,6 +69,9 @@ class Blueprint:
             if context is None:
                 context = default_context
             hook(context)
+
+    def get_mutation(self, name):
+        return self.mutations[name]
 
     def iter_models(self):
         return self.models.values()

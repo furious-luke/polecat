@@ -159,6 +159,18 @@ class DeleteResolverManager(ResolverManager):
         )
 
 
+class MutationResolverManager(ResolverManager):
+    def iter_resolvers(self, context):
+        mutation = context.mutation
+        # TODO: This is interesting. I'm not sure if I want to have to
+        # instantiate the mutation here, or at all. It's nicer for the
+        # user though.
+        return chain(
+            mutation.resolvers,
+            (mutation().resolve,)
+        )
+
+
 class ResolverIterator:
     def __init__(self, context):
         self.context = context

@@ -136,11 +136,9 @@ class QueryMetaclass(RegisteredType):
 class MutationMetaclass(RegisteredType):
     def __new__(metaclass, name, bases, attrs):
         is_sub = metaclass.is_sub_type(metaclass, name, bases)
-        if is_sub:
-            attrs['Meta'] = make_mutation_meta(
-                name, bases, attrs, attrs.get('Meta')
-            )
-        cls = super().__new__(metaclass, name, bases, make_mutation_attrs(attrs))
+        cls = super().__new__(
+            metaclass, name, bases, make_mutation_attrs(name, attrs)
+        )
         if is_sub:
             metaclass.register_type(metaclass, cls)
         return cls
@@ -224,12 +222,19 @@ def make_query_meta(name, bases, attrs, meta):
     })
 
 
-def make_mutation_meta(name, bases, attrs, meta):
-    return type('Meta', (), {
-        'options': meta,
-        'name': name,
-        'omit': getattr(meta, 'omit', NONE) if meta else NONE  # TODO: Duplicate of above
-    })
+def make_mutation_attrs(name, attrs):
+    # TODO: Ugh.
+    from .resolver import MutationResolverManager
+    resolver_manager = attrs.get('resolver_manager')
+    if not resolver_manager:
+        resolver_manager = MutationResolverManager()
+    return {
+        **attrs,
+        'name': attrs.get('name', name),
+        'resolvers': attrs.get('resolvers', ()),
+        'resolver_manager': resolver_manager,
+        'omit': getattr(attrs, 'omit', NONE)
+    }
 
 
 def make_role_attrs(attrs):
@@ -256,10 +261,6 @@ def make_query_attrs(attrs):
     return {
         **attrs
     }
-
-
-def make_mutation_attrs(attrs):
-    return attrs
 
 
 def get_type_fields(attrs):

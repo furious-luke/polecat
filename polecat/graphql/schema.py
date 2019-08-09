@@ -554,7 +554,7 @@ class MutationBuilder:
 
     def build_mutations(self, mutation):
         mutations = {}
-        if not mutation.Meta.omit & omit.ALL:
+        if not mutation.omit & omit.ALL:
             mutations[self.mutation_inflection(mutation)] = add_attribute(
                 GraphQLField(
                     graphql_type_registry[mutation.returns],
@@ -568,4 +568,4 @@ class MutationBuilder:
         return mutations
 
     def mutation_inflection(self, mutation):
-        return uncapitalize(mutation.Meta.name)
+        return uncapitalize(mutation.name)

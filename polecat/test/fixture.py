@@ -4,9 +4,10 @@ from polecat.db.connection import cursor, manager
 from polecat.db.query.selection import Selection
 from polecat.db.session import Session
 from polecat.db.utils import unparse_url
+from polecat.model import default_blueprint
 from polecat.model.db.migrate import sync
 from polecat.model.resolver import APIContext
-from polecat.project.project import load_project
+from polecat.project.project import Project, load_project
 from polecat.test.factory import create_model_factory
 from polecat.utils import random_ident
 
@@ -17,7 +18,11 @@ __all__ = ('server', 'immutabledb', 'testdb', 'migrateddb', 'db', 'factory')
 
 class ServerFixture:
     def __init__(self):
-        self.project = load_project()
+        try:
+            self.project = load_project()
+            # TODO: Better exception.
+        except Exception:
+            self.project = Project()
         self.project.prepare()
 
     def all_query(self, model_class, **kwargs):
@@ -67,6 +72,13 @@ class ServerFixture:
             **kwargs
         )
         return model_class.Meta.delete_resolver_manager(api_context)
+
+    def mutation(self, name, **kwargs):
+        api_context = self.build_api_context(
+            input=kwargs
+        )
+        mutation = default_blueprint.get_mutation(name)
+        return mutation.resolve(api_context)
 
     def build_api_context(self, model_class=None, arguments=None, input=None,
                           role=None):

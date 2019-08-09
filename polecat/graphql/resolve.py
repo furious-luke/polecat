@@ -57,6 +57,10 @@ class GraphQLAPIContext(APIContext):
             return self.return_type.of_type._model
 
     @property
+    def mutation(self):
+        return self.field._mutation
+
+    @property
     def input_type(self):
         return self.field.args['input'].type
 
@@ -157,14 +161,17 @@ def resolve_query(obj, info, **kwargs):
 
 
 def resolve_mutation(obj, info, **kwargs):
-    node = info.field_nodes[0]
-    graphql_field = info.parent_type.fields[info.field_name]
-    return_type = graphql_field.type
-    options = info.context or {}
-    mutation = graphql_field._mutation(
-        selector=get_selector_from_node(return_type, node),
-        **options
-    )
-    api_context = GraphQLAPIContext(obj, info, **kwargs)
-    input = api_context.parse_input()
-    return mutation.resolve(**input)
+    # node = info.field_nodes[0]
+    # graphql_field = info.parent_type.fields[info.field_name]
+    # return_type = graphql_field.type
+    # options = info.context or {}
+    # mutation = graphql_field._mutation(
+    #     selector=get_selector_from_node(return_type, node),
+    #     **options
+    # )
+    # api_context = GraphQLAPIContext(obj, info, **kwargs)
+    # input = api_context.parse_input()
+    # return mutation.resolve(**input)
+    with traceback():
+        ctx = GraphQLAPIContext(obj, info, **kwargs)
+        return ctx.mutation.resolver_manager(ctx)

@@ -1,6 +1,6 @@
 import logging
 
-from polecat.core.context import active_context
+from polecat.core.config import default_config
 
 from ..connection import cursor as cursor_context  # TODO: Ugh.
 from ..decorators import dbcursor
@@ -53,7 +53,6 @@ class Q:
 
     @dbcursor(autocommit=False)
     def execute(self, cursor):
-        ctx = active_context()
         # TODO: This is pretty bad. How to keep this purely as a
         # builder, but also inject strategy and execution knowledge
         # for convenience?
@@ -61,7 +60,7 @@ class Q:
         strategy = Strategy()
         expr = strategy.parse(self)
         sql, args = expr.to_sql()
-        if ctx.config.log_sql:
+        if default_config.log_sql:
             # TODO: Get my logging sorted.
             # logger.debug(cursor.mogrify(sql, args))
             print(cursor.mogrify(sql, args))

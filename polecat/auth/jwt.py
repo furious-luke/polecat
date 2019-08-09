@@ -1,12 +1,10 @@
 from jwt import encode
+from polecat.core.config import default_config
 
-from ..core.context import active_context
 
-
-@active_context
-def jwt(claims, context):
+def jwt(claims):
     return encode(
         claims or {},
-        context.config.jwt_secret,
+        default_config.jwt_secret,
         algorithm='HS256'
     ).decode()

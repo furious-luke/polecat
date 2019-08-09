@@ -25,6 +25,9 @@ class OptionDict:
     def __setitem__(self, key, value):
         return self.set(key, value)
 
+    def add_option(self, option):
+        return self.add_options(option)
+
     def add_options(self, *options):
         for opt in options:
             if opt.key in self.options:
@@ -40,6 +43,9 @@ class OptionDict:
 
     def set(self, key, value):
         self.get_option(key).set(self, value)
+
+    def has_option(self, key):
+        return key in self.options
 
     def get_option(self, key):
         try:

@@ -1,44 +1,35 @@
-import os
-from functools import wraps
-
-from polecat.utils.container import Option, OptionDict, passthrough
-
-from .context import active_context
-
-__all__ = ('ConfigDict', 'active_config')
+from polecat.utils.config import Config
+from polecat.utils.optiondict import Option
+from polecat.utils.proxy import Proxy
 
 
-class ConfigDict(OptionDict):
-    def __init__(self, *args, prefix=None, **kwargs):
-        self.prefix = ((prefix + '_') if prefix else '').upper()
-        super().__init__(*args, **kwargs)
-
-    def init_defaults(self, keys_to_add, defaults_to_add):
-        prefix = self.__dict__['prefix']
-        for key in keys_to_add:
-            value = os.environ.get(f'{prefix}{key.upper()}')
-            if value is not None:
-                defaults_to_add[key] = value
+class RootConfig(Config):
+    debug = (bool, False)
+    log_sql = (bool, False)
+    jwt_secret = str
+    database_url = str
 
 
-active_context().Meta.add_options(
-    Option('config', default=passthrough(ConfigDict)(
-        (
-            Option('debug', bool, False),
-            Option('log_sql', bool, False),
-            Option('jwt_secret'),
-            Option('database_url')
-        ),
-        prefix='POLECAT'
-    ))
-)
+def mount_config(config, path):
+    segments = path.split('.')
+    cur_config = default_config
+    for segment in segments[:-1]:
+        cur_config = getattr(cur_config, segment)
+    if cur_config.Meta.has_option(segments[-1]):
+        cur_config = getattr(cur_config, segments[-1])
+        for name, option in config.Meta.options.items():
+            cur_config.Meta.add_option(option)
+    else:
+        prefix = ''.join([cur_config.Meta.prefix, segments[-1].upper()])
+        config.Meta.set_prefix(prefix)
+        cur_config.Meta.add_option(Option(segments[-1], config))
 
 
-def active_config(*args):
-    if len(args):
-        func = args[0]
-        @wraps(func)
-        def inner(*args, **kwargs):
-            return func(*args, config=active_context().config, **kwargs)
-        return inner
-    return active_context().config
+def auto_mount_config(path):
+    def inner(cls):
+        mount_config(cls(), path)
+        return cls
+    return inner
+
+
+default_config = Proxy(lambda: RootConfig(prefix='POLECAT'))

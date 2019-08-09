@@ -4,6 +4,7 @@ from importlib import import_module
 
 from graphql_server import HttpQueryError
 from polecat.admin.commands import *  # noqa
+from polecat.core.config import default_config
 from polecat.core.context import active_context
 from polecat.db.role_prefix import set_role_prefix
 from polecat.model import default_blueprint
@@ -74,8 +75,7 @@ class Project:
     def path(self):
         return get_class_path(self.__class__)
 
-    @active_context
-    def prepare(self, context):
+    def prepare(self):
         if getattr(self, '_prepared', False):
             return
         self._prepared = True
@@ -84,7 +84,7 @@ class Project:
         # need to have an underscore prefix, which I'm starting to
         # hate.
         for key, value in self.config.items():
-            context.config[key] = value
+            default_config[key] = value
         self.prepare_apps()
         self.prepare_blueprint()
         self.prepare_schema()

@@ -12,9 +12,18 @@ class ConfigMetaclass(MetaMetaclass):
 
 
 class ConfigDict(OptionDict):
+    def __init__(self, *args, prefix=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.set_prefix(prefix)
+
+    def set_prefix(self, prefix):
+        self.prefix = f'{prefix.upper()}' if prefix else ''
+        if self.prefix and self.prefix[-1] != '_':
+            self.prefix += '_'
+
     def get_default(self, option):
         # TODO: Would like to make the prefix optional.
-        value = os.environ.get(f'POLECAT_{option.key.upper()}')
+        value = os.environ.get(f'{self.prefix}{option.key.upper()}')
         if value is None:
             value = super().get_default(option)
         # TODO: Is this a problem?

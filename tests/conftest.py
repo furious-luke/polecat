@@ -1,4 +1,5 @@
 import pytest
+from polecat.core.config import RootConfig, default_config
 from polecat.deploy.aws.server import LambdaServer
 from polecat.deploy.server.server import Server
 from polecat.model import Blueprint, default_blueprint
@@ -45,3 +46,14 @@ def push_blueprint():
         yield bp
     finally:
         default_blueprint.set_target(old_bp)
+
+
+@pytest.fixture
+def push_config():
+    old_cfg = default_config.get_target()
+    try:
+        cfg = RootConfig(prefix='POLECAT')
+        default_config.set_target(cfg)
+        yield cfg
+    finally:
+        default_config.set_target(old_cfg)

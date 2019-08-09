@@ -1,9 +1,8 @@
 import re
 
 from jwt import decode
+from polecat.core.config import default_config
 from polecat.model import default_blueprint
-
-from ..core.context import active_context
 
 __all__ = ('JWTMiddleware', 'RoleMiddleware')
 
@@ -11,8 +10,7 @@ __all__ = ('JWTMiddleware', 'RoleMiddleware')
 class JWTMiddleware:
     bearer_prog = re.compile(r'bearer\s+(\S+)', re.I)
 
-    @active_context
-    def run(self, event, context):
+    def run(self, event):
         claims = None
         jwt = event.get_authorization_header()
         if jwt:
@@ -21,7 +19,7 @@ class JWTMiddleware:
                 jwt = match.group(1)
                 claims = decode(
                     jwt,
-                    context.config.jwt_secret,
+                    default_config.jwt_secret,
                     algorithms=('HS256',)
                 )
         event.claims = claims

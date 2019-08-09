@@ -1,6 +1,6 @@
 import ujson
+from polecat.core.config import default_config
 
-from ...core.context import active_context
 from ..event import Event
 
 
@@ -8,8 +8,7 @@ class APIGatewayRequest:
     def __init__(self, event):
         self.parse_event(event)
 
-    @active_context
-    def parse_event(self, event, context):
+    def parse_event(self, event):
         # TODO: Move to config. Also wrong.
         try:
             self.path = event['path']
@@ -21,7 +20,7 @@ class APIGatewayRequest:
             self.json = ujson.loads(self.body) if self.body is not None else None
             self.is_valid = True
             # TODO: There must be a better way of doing this.
-            if context.config.debug:
+            if default_config.debug:
                 if self.path[:8] == '/LATEST/':
                     self.path = self.path[7:]
                 elif self.path[:7] == '/LATEST' and len(self.path) == 7:

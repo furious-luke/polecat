@@ -29,6 +29,7 @@ setup(
         'graphql-core-next==1.0.2',
         # 'graphql-server-core @ https://github.com/norman-thomas/graphql-server-core/tarball/master',
         'pyjwt==1.7.1',
+        'pytimeparse==1.1.8',
         'pytz==2019.1',
         # Used to be in extras...
         'click==7.0',

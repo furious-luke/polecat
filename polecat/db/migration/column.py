@@ -102,6 +102,18 @@ class TimestampColumn(Column):
             return super().get_default_str()
 
 
+class UUIDColumn(Column):
+    sources = (schema.UUIDColumn,)
+    dbtype = 'uuid'
+
+    def get_default_str(self):
+        col = self.schema_column
+        if col.default == Auto:
+            return 'DEFAULT uuid_generate_v4()', ()
+        else:
+            return super().get_default_str()
+
+
 class RelatedColumn(IntColumn):
     sources = (schema.RelatedColumn,)
 

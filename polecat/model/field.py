@@ -1,19 +1,20 @@
 from polecat.db.schema.utils import Auto
+from polecat.utils import to_tuple
 
 from ..utils.stringcase import camelcase, snakecase
 from .exceptions import InvalidModelDataError
 
-default_resolver = None
-
 
 class Field:
-    query_resolver = None
-    mutation_resolver = None
+    query_resolvers = ()
+    mutation_resolvers = ()
     hooks = []
     graphql_post_build_hooks = []
 
-    def __init__(self, resolver=None, omit=None, hooks=None):
-        self.resolver = resolver or default_resolver
+    def __init__(self, query_resolvers=None, mutation_resolvers=None,
+                 omit=None, hooks=None):
+        self.query_resolvers = to_tuple(query_resolvers or self.query_resolvers)
+        self.mutation_resolvers = to_tuple(mutation_resolvers or self.mutation_resolvers)
         self.omit = omit or 0
         self.hooks = hooks or self.hooks
 

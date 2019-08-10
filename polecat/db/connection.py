@@ -7,6 +7,8 @@ import psycopg2
 
 class ConnectionManager:
     def __init__(self):
+        # TODO: This should be transferred to POLECAT_DATABASE_URL
+        # from the config.
         self.stack = [
             x
             for x in [os.environ.get('DATABASE_URL')]

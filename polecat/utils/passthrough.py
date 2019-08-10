@@ -1,3 +1,6 @@
+import copy
+
+
 def passthrough(cls):
     """ Wrap another dictionary-like class to provide direct access to
     its contents through attribute access. The outer class is renamed
@@ -19,6 +22,12 @@ def passthrough(cls):
 
         def __setitem__(self, key, value):
             return self.Meta.set(key, value)
+
+        def __deepcopy__(self, memo):
+            # TODO: This process does one Meta construct too many.
+            dup = type(self)()
+            dup.__dict__['Meta'] = copy.deepcopy(self.Meta, memo)
+            return dup
 
     Wrapper.__qualname__ = Wrapper.__name__ = cls.__name__
     cls.__qualname__ = cls.__name__ = 'Meta'

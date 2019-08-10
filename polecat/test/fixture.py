@@ -1,5 +1,7 @@
+import copy
 from contextlib import contextmanager
 
+from polecat.core.config import RootConfig, default_config
 from polecat.db.connection import cursor, manager
 from polecat.db.query.selection import Selection
 from polecat.db.session import Session
@@ -180,3 +182,20 @@ def db(migrateddb):
 def factory():
     # Should be scoped to the session.
     yield create_model_factory()
+
+
+@contextmanager
+def config(**kwargs):
+    old_cfg = default_config.get_target()
+    try:
+        cfg = copy.deepcopy(old_cfg)
+        default_config.set_target(cfg)
+        for key, value in kwargs.items():
+            cur_cfg = cfg
+            parts = key.split('__')
+            for p in parts[:-1]:
+                cur_cfg = getattr(cur_cfg, p)
+            setattr(cur_cfg, parts[-1], value)
+        yield cfg
+    finally:
+        default_config.set_target(old_cfg)

@@ -1,3 +1,6 @@
+from datetime import timedelta
+
+import pytimeparse
 from polecat.utils import Undefined, to_dict, to_list
 
 
@@ -170,6 +173,15 @@ class BoolOption(Option):
             )
         else:
             return bool(value)
+
+
+class TimedeltaOption(Option):
+    TYPE = timedelta
+
+    def coerce(self, value):
+        if isinstance(value, str):
+            value = timedelta(pytimeparse.parse(value))
+        return value
 
 
 class ListOption(Option):

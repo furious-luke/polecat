@@ -254,6 +254,11 @@ class MutationResolver:
         results = context.cut_point('build_results', context, query)
         return results
 
+    def resolve_model_fields(self, context, model):
+        for name, field in model.Meta.fields.items():
+            for resolver in field.mutation_resolvers:
+                resolver(context, model=model, field=field, field_name=name)
+
     def select_query(self, context, query):
         return (
             query
@@ -268,7 +273,9 @@ class CreateResolver(MutationResolver):
     def build_model(self, context):
         model_class = context.model_class
         input = context.parse_input()
-        return model_class(**input)
+        model = model_class(**input)
+        self.resolve_model_fields(context, model)
+        return model
 
     def build_query(self, context, model):
         return Q(model, session=context.session).insert()
@@ -279,7 +286,9 @@ class UpdateResolver(CreateResolver):
         model_class = context.model_class
         input = context.parse_input()
         context._id = context.parse_argument('id')
-        return model_class(id=context._id, **input)
+        model = model_class(id=context._id, **input)
+        self.resolve_model_fields(context, model)
+        return model
 
     def build_query(self, context, model):
         return Q(model, session=context.session).update()

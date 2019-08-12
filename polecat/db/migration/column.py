@@ -22,7 +22,7 @@ class Column(metaclass=RegistryMetaclass):
         constraints_sql, args = self.get_constraints_sql()
         parts = [
             Identifier(col.name),
-            self.get_type_sql(),
+            self.get_type_with_dimensions_sql(),
             constraints_sql
         ]
         return SQL(' ').join(parts), args
@@ -51,6 +51,15 @@ class Column(metaclass=RegistryMetaclass):
             (self.translate_default_value(col.default),)
         )
 
+    def get_type_with_dimensions_sql(self):
+        col = self.schema_column
+        sql = self.get_type_sql()
+        if col.dimensions:
+            sql = SQL('{}%s' % '[]'*col.dimensions).format(
+                sql
+            )
+        return sql
+
     def get_type_sql(self):
         return SQL(self.dbtype)
 
@@ -66,6 +75,11 @@ class IntColumn(Column):
 class FloatColumn(Column):
     sources = (schema.FloatColumn,)
     dbtype = 'real'
+
+
+class PointColumn(Column):
+    sources = (schema.PointColumn,)
+    dbtype = 'point'
 
 
 class SerialColumn(Column):

@@ -1,7 +1,7 @@
 from functools import singledispatch
 
 from ...db.schema import (BoolColumn, FloatColumn, IntColumn, PasswordColumn,
-                          RelatedColumn, SerialColumn, TextColumn,
+                          PointColumn, RelatedColumn, SerialColumn, TextColumn,
                           TimestampColumn, UUIDColumn)
 from .. import field
 
@@ -18,65 +18,63 @@ def create_column_from_field(field, type, **kwargs):
 
 
 @singledispatch
-def convert_field(field):
+def convert_field(field, builder):
     raise NotImplementedError
 
 
 @convert_field.register(field.TextField)
 @convert_field.register(field.EmailField)
 @convert_field.register(field.PhoneField)
-def convert_textfield(field):
+def convert_textfield(field, builder):
     return create_column_from_field(field, TextColumn, max_length=field.length)
 
 
 @convert_field.register(field.PasswordField)
-def convert_passwordfield(field):
+def convert_passwordfield(field, builder):
     return create_column_from_field(field, PasswordColumn)
 
 
 @convert_field.register(field.BoolField)
-def convert_boolfield(field):
+def convert_boolfield(field, builder):
     return create_column_from_field(field, BoolColumn)
 
 
 @convert_field.register(field.IntField)
-def convert_intfield(field):
+def convert_intfield(field, builder):
     return create_column_from_field(field, IntColumn)
 
 
 @convert_field.register(field.SerialField)
-def convert_serialfield(field):
+def convert_serialfield(field, builder):
     return create_column_from_field(field, SerialColumn)
 
 
 @convert_field.register(field.FloatField)
-def convert_floatfield(field):
+def convert_floatfield(field, builder):
     return create_column_from_field(field, FloatColumn)
 
 
 @convert_field.register(field.DatetimeField)
-def convert_datetimefield(field):
+def convert_datetimefield(field, builder):
     return create_column_from_field(field, TimestampColumn)
 
 
 @convert_field.register(field.UUIDField)
-def convert_uuidfield(field):
+def convert_uuidfield(field, builder):
     return create_column_from_field(field, UUIDColumn)
 
 
 @convert_field.register(field.PointField)
 @convert_field.register(field.GCSPointField)
-def convert_pointfield(field):
-    return create_column_from_field(field, FloatColumn, ranks=(2,))
+def convert_pointfield(field, builder):
+    return create_column_from_field(field, PointColumn)
 
 
 @convert_field.register(field.RelatedField)
-def convert_relatedfield(field):
-    # TODO: Dang it.
-    from .helpers import model_to_table
+def convert_relatedfield(field, builder):
     return RelatedColumn(
         field.name,
-        model_to_table(field.other),
+        builder.build(field.other),
         related_column=field.related_name,
         unique=field.unique,
         null=field.null,

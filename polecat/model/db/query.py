@@ -2,7 +2,7 @@ from polecat.db.query import Q as BaseQ
 from polecat.db.query import S
 
 from ..model import Model
-from .helpers import model_to_table, model_to_values, set_values_on_model
+from .helpers import model_to_values, set_values_on_model
 
 __all__ = ('Q', 'S')
 
@@ -10,7 +10,7 @@ __all__ = ('Q', 'S')
 class Q(BaseQ):
     def __init__(self, model, queryable=None, branches=None, session=None):
         super().__init__(
-            queryable or model_to_table(model),
+            queryable or model.Meta.table,
             branches,
             session
         )

@@ -1,5 +1,4 @@
-from polecat.db.schema import Role, Table
-from polecat.model.db.helpers import model_to_table
+from polecat.db.schema import Role
 
 from .models import Actor, Address, schema
 

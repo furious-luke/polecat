@@ -11,6 +11,7 @@ from .expression.select import Select
 from .expression.subquery import Subquery
 from .expression.variable import LocalRole, LocalVariable
 from .expression.where import Where
+from .insert_if_missing_strategy import InsertIfMissingStrategy
 from .insert_strategy import InsertStrategy
 from .select_strategy import SelectStrategy
 from .update_strategy import UpdateStrategy
@@ -20,6 +21,7 @@ class Strategy:
     def __init__(self):
         self.select_strategy = SelectStrategy(self)
         self.insert_strategy = InsertStrategy(self)
+        self.insert_if_missing_strategy = InsertIfMissingStrategy(self)
         self.update_strategy = UpdateStrategy(self)
         self.delete_strategy = DeleteStrategy(self)
 
@@ -76,6 +78,8 @@ class Strategy:
         # which. Perhaps a visitor pattern?
         elif isinstance(query, query_module.Update):
             expr = self.create_update(query)
+        elif isinstance(query, query_module.InsertIfMissing):
+            expr = self.create_insert_if_missing(query)
         elif isinstance(query, query_module.Insert):
             expr = self.create_insert(query)
         elif isinstance(query, query_module.Delete):
@@ -93,6 +97,9 @@ class Strategy:
 
     def create_insert(self, query):
         return self.insert_strategy.parse_query(query)
+
+    def create_insert_if_missing(self, query):
+        return self.insert_if_missing_strategy.parse_query(query)
 
     def create_update(self, query):
         return self.update_strategy.parse_query(query)

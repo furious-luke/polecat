@@ -4,7 +4,8 @@ from .utils import column_to_identifier, table_to_identifier
 
 __all__ = ('Column', 'MutableColumn', 'IntColumn', 'TextColumn',
            'BoolColumn', 'FloatColumn', 'RelatedColumn', 'ReverseColumn',
-           'PasswordColumn', 'TimestampColumn', 'UUIDColumn', 'SerialColumn')
+           'PasswordColumn', 'TimestampColumn', 'UUIDColumn', 'SerialColumn',
+           'PointColumn')
 
 
 class Column(Entity):
@@ -46,11 +47,12 @@ class Column(Entity):
 
 class MutableColumn(Column):
     def __init__(self, name, null=True, primary_key=False, default=None,
-                 unique=False, **kwargs):
+                 unique=False, dimensions=None, **kwargs):
         super().__init__(name, unique=True if primary_key else unique, **kwargs)
         self.null = False if primary_key else null
         self.primary_key = primary_key
         self.default = default
+        self.dimensions = dimensions
 
     def __repr__(self):
         return to_repr(
@@ -72,7 +74,8 @@ class MutableColumn(Column):
             unique=self.unique,
             null=self.null,
             primary_key=self.primary_key,
-            default=self.default
+            default=self.default,
+            dimensions=self.dimensions
         )
 
 
@@ -85,6 +88,10 @@ class SerialColumn(MutableColumn):
 
 
 class FloatColumn(MutableColumn):
+    pass
+
+
+class PointColumn(MutableColumn):
     pass
 
 

@@ -7,8 +7,9 @@ from .build import TableBuilder
 
 
 def create_schema():
+    table_builder = TableBuilder()
     tables = [
-        model_to_table(model)
+        table_builder.build(model)
         for model in default_blueprint.iter_models()
     ]
     roles = [
@@ -22,16 +23,6 @@ def create_schema():
     schema = Schema(tables, roles=roles, access=access)
     schema.bind()
     return schema
-
-
-def model_to_table(model):
-    table = getattr(model.Meta, 'table', None)
-    if not table:
-        # TODO: Should keep one around?
-        builder = TableBuilder()
-        table = builder.build(model)
-        model.Meta.table = table
-    return table
 
 
 def role_to_dbrole(role):

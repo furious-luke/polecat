@@ -159,6 +159,18 @@ def test_insert_strategy_with_implicit_reverse(immutabledb):
     )
 
 
+def test_insert_if_missing_strategy(immutabledb):
+    table = create_table('a_table')
+    query = Q(table).insert_if_missing({'col1': 1}, {'col2': 2})
+    sql = query.to_sql()
+    assert sql == (
+        b'WITH "c0" AS (INSERT INTO "a_table" ("col2", "col1") SELECT 2, 1'
+        b' WHERE NOT EXISTS (SELECT 1 FROM "a_table" WHERE "a_table"."col1" ='
+        b' 1) RETURNING "id") SELECT row_to_json(__tl) FROM (SELECT * FROM'
+        b' "c0") AS __tl'
+    )
+
+
 def test_update_strategy_with_nesting(immutabledb):
     b_table = create_table('b_table')
     a_table = create_table('a_table', related_table=b_table)

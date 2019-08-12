@@ -48,6 +48,9 @@ class Select(Expression):
         for name in to_tuple(self.columns):
             if isinstance(name, Expression):
                 sql, args = name.to_sql()
+            elif isinstance(name, SQL):
+                sql = name
+                args = ()
             else:
                 name_ident = Identifier(name)
                 sql = SQL('{}.{} AS {}').format(

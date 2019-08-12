@@ -222,6 +222,13 @@ class QueryResolver:
             query = Q(context.model_class, session=context.session)
         return query
 
+    def resolve_model_fields(self, context, model):
+        model_class = context.model_class
+        for name, field in model_class.Meta.fields.items():
+            for resolver in field.query_resolvers:
+                resolver(context, model=model, field=field, field_name=name)
+        return model
+
 
 class AllResolver(QueryResolver):
     def build_query(self, context, query=None):
@@ -229,7 +236,10 @@ class AllResolver(QueryResolver):
         return query.select(context.selector)
 
     def build_results(self, context, query):
-        return list(query)
+        return [
+            self.resolve_model_fields(context, m)
+            for m in query
+        ]
 
 
 class GetResolver(QueryResolver):
@@ -243,7 +253,7 @@ class GetResolver(QueryResolver):
         )
 
     def build_results(self, context, query):
-        return query.get()
+        return self.resolve_model_fields(context, query.get())
 
 
 class MutationResolver:

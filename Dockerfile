@@ -26,7 +26,8 @@ RUN    apk add --no-cache --virtual .build-deps \
 ADD polecat /app/polecat
 ADD tests /app/tests
 ADD scripts /app/scripts
-ADD .env /app/
+
+ENV PYTHONPATH=/app:$PYTHONPATH
 
 EXPOSE 8000
 CMD pipenv run pytest

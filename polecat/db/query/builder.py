@@ -4,7 +4,8 @@ from polecat.core.config import default_config
 
 from ..connection import cursor as cursor_context  # TODO: Ugh.
 from ..decorators import dbcursor
-from .query import Common, Delete, Filter, Insert, Query, Select, Update
+from .query import (Common, Delete, Filter, Insert, InsertIfMissing, Query,
+                    Select, Update)
 from .selection import Selection
 
 logger = logging.getLogger(__name__)
@@ -106,6 +107,14 @@ class Q:
         return self.chain(
             Insert(source, values)
         )
+
+    def insert_if_missing(self, values, defaults={}):
+        source = self.get_mutation_source()
+        values = self.parse_value_dict(self.queryable, values)
+        defaults = self.parse_value_dict(self.queryable, defaults)
+        insert = InsertIfMissing(source, values, defaults)
+        # TODO: Do I need to worry about reverse queries?
+        return self.chain(insert)
 
     def update(self, *subquery, **values):
         # TODO: Need to think about this more, but an Update is almost

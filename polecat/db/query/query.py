@@ -116,6 +116,12 @@ class Insert(Query):
                 raise ValueError(f'Invalid column "{column_name}" name in insert')
 
 
+class InsertIfMissing(Insert):
+    def __init__(self, source, values, defaults, **kwargs):
+        super().__init__(source, values, **kwargs)
+        self.defaults = defaults
+
+
 class Update(Insert):
     def assert_mutatable(self, source):
         # TODO: Think about this more, but Update can work with pretty

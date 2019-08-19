@@ -61,8 +61,27 @@ class CTE(Expression):
 
 
 class CTEAs(As):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.recursive_expression = None
+
     def get_as_sql(self, expression_sql):
-        return SQL('{} AS ({})').format(
+        rec_sql, rec_args = self.get_recursive_sql()
+        return SQL('{}{} AS ({}{})').format(
+            SQL('RECURSIVE ' if self.recursive_expression else ''),
             Identifier(self.alias),
-            expression_sql
-        )
+            expression_sql,
+            rec_sql
+        ), rec_args
+
+    def get_recursive_sql(self):
+        if self.recursive_expression:
+            expr_sql, expr_args = self.recursive_expression.to_sql()
+            return SQL(' UNION ALL {}').format(
+                expr_sql
+            ), expr_args
+        else:
+            return SQL(''), ()
+
+    def set_recursive_expression(self, expression):
+        self.recursive_expression = expression

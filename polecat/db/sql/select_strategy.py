@@ -1,3 +1,4 @@
+from polecat.utils import to_tuple
 from psycopg2.sql import SQL, Identifier
 
 from ..query.selection import Selection
@@ -5,7 +6,7 @@ from ..schema import ReverseColumn
 from .expression.alias import Alias
 from .expression.array_agg import ArrayAgg
 from .expression.as_ import As
-from .expression.join import LateralJoin
+from .expression.join import Join, LateralJoin
 from .expression.raw import RawSQL
 from .expression.select import Select
 from .expression.subquery import Subquery
@@ -20,10 +21,35 @@ class SelectStrategy:
         self.agg_counter = 0
 
     def parse_query(self, queryable):
-        return self.parse_query_from_components(
+        expr = self.parse_query_from_components(
             queryable.source,
             queryable.selection
         )
+        if queryable.recurse_column:
+            alias = self.root.create_alias(expr)
+            top_level = Select(
+                alias,
+                columns=expr.columns,
+                subqueries=expr.subqueries
+            )
+            alias.push_selection(Selection(queryable.recurse_column))
+            cte_as = alias.expression
+            join = Join(alias)
+            recursive_expr = Select(
+                expr.root_relation,
+                columns=expr.columns,
+                subqueries=expr.subqueries,
+                joins=to_tuple(expr.joins) + (join,),
+                where=Where(
+                    id=SQL('{}.{}').format(
+                        Identifier(alias.alias),
+                        Identifier(queryable.recurse_column)
+                    )
+                )
+            )
+            cte_as.set_recursive_expression(recursive_expr)
+            expr = top_level
+        return expr
 
     def parse_query_from_components(self, relation, selection):
         relation = self.parse_relation(relation)

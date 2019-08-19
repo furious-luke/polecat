@@ -539,7 +539,6 @@ class QueryBuilder:
             return GraphQLInt
         else:
             raise NotImplementedError(f'invalid GraphQL argument: {type}')
-                
 
     def query_inflection(self, query):
         return uncapitalize(query.Meta.name)

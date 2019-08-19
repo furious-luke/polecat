@@ -95,15 +95,17 @@ class CreateTable(Operation):
     def sql(self):
         table_name_ident = Identifier(self.get_table_name())
         all_sql, all_args = self.all_sql()
+        idx_sql, idx_args = self.indexes_sql()
         return (
             SQL('\n').join(
                 (SQL('CREATE TABLE {} (\n{}\n);').format(
                     table_name_ident,
                     all_sql
                 ),) +
-                self.access_sql(table_name_ident)
+                self.access_sql(table_name_ident) +
+                (idx_sql,)
             ),
-            all_args
+            all_args + idx_args
         )
 
     def set_app(self, app):
@@ -178,6 +180,14 @@ class CreateTable(Operation):
             grants = ()
         return grants
 
+    def indexes_sql(self):
+        all_sql, all_args = [], ()
+        for index in self.table.indexes:
+            sql, args = index.sql
+            all_sql.append(sql)
+            all_args += args
+        return SQL('\n').join(all_sql), all_args
+
     def iter_grants(self, access, table_name):
         roles_and_perms = (
             (access.all, 'ALL'),
@@ -216,6 +226,9 @@ class CreateTable(Operation):
         uniques = self.serialize_uniques()
         if uniques:
             options.append(f'uniques={uniques}')
+        indexes = self.serialize_indexes()
+        if indexes:
+            options.append(f'indexes={indexes}')
         options = ',\n'.join(options)
         if options:
             options = indent(f',\n{options}', 4)
@@ -265,6 +278,15 @@ class CreateTable(Operation):
         if uniques:
             uniques = str(uniques)
         return uniques
+
+    def serialize_indexes(self):
+        indexes = self.table.indexes
+        if indexes:
+            indexes = '[' + ', '.join(
+                index.serialize()
+                for index in indexes
+            ) + ']'
+        return indexes
 
 
 class DeleteTable(Operation):

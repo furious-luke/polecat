@@ -60,6 +60,44 @@ def test_select_strategy_detached(immutabledb):
     )
 
 
+def test_select_recursive(immutabledb):
+    table = create_table('table', related_table='table')
+    query = (
+        Q(table)
+        .select('col1')
+        .recurse('col3')
+    )
+    sql = query.to_sql()
+    assert sql == (
+        b'WITH RECURSIVE "c0" AS (SELECT "table"."col1" AS "col1",'
+        b' "table"."col3" AS "col3" FROM "table" UNION ALL SELECT'
+        b' "table"."col1" AS "col1", "table"."col3" AS "col3" FROM "table"'
+        b' , "c0" WHERE "table"."id" = "c0"."col3") SELECT'
+        b' row_to_json(__tl) FROM (SELECT "c0"."col1" AS "col1"'
+        b' FROM "c0") AS __tl'
+    )
+
+
+def test_filter_recursive(immutabledb):
+    table = create_table('table', related_table='table')
+    query = (
+        Q(table)
+        .filter(id=1)
+        .select('col1')
+        .recurse('col3')
+    )
+    sql = query.to_sql()
+    assert sql == (
+        b'WITH RECURSIVE "c0" AS (SELECT "r0"."col1" AS "col1", "r0"."col3"'
+        b' AS "col3" FROM (SELECT "table"."col1" AS "col1", "table"."col3"'
+        b' AS "col3" FROM "table" WHERE "table"."id" = 1) AS "r0" UNION'
+        b' ALL SELECT "table"."col1" AS "col1", "table"."col3" AS "col3"'
+        b' FROM "table" , "c0" WHERE "table"."id" = "c0"."col3")'
+        b' SELECT row_to_json(__tl) FROM (SELECT "c0"."col1" AS "col1"'
+        b' FROM "c0") AS __tl'
+    )
+
+
 def test_insert_strategy_unnested(immutabledb):
     table = create_table('a_table')
     query = Q(table).insert(col1=1, col2=2)
@@ -164,10 +202,12 @@ def test_insert_if_missing_strategy(immutabledb):
     query = Q(table).insert_if_missing({'col1': 1}, {'col2': 2})
     sql = query.to_sql()
     assert sql == (
-        b'WITH "c0" AS (INSERT INTO "a_table" ("col2", "col1") SELECT 2, 1'
-        b' WHERE NOT EXISTS (SELECT 1 FROM "a_table" WHERE "a_table"."col1" ='
-        b' 1) RETURNING "id") SELECT row_to_json(__tl) FROM (SELECT * FROM'
-        b' "c0") AS __tl'
+        b'WITH "c0" AS (INSERT INTO "a_table" ("col2", "col1") SELECT'
+        b' 2, 1 WHERE NOT EXISTS (SELECT 1 FROM "a_table" WHERE'
+        b' "a_table"."col1" = 1) RETURNING "id"), "c1" AS (SELECT * FROM'
+        b' "c0" UNION ALL SELECT "a_table"."id" AS "id" FROM "a_table" WHERE'
+        b' "a_table"."col1" = 1) SELECT row_to_json(__tl) FROM (SELECT'
+        b' * FROM "c1") AS __tl'
     )
 
 

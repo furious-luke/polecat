@@ -6,6 +6,7 @@ from .expression.insert import Insert
 from .expression.not_ import Not
 from .expression.select import Select
 from .expression.subquery import Subquery
+from .expression.union import Union
 from .expression.where import Where
 from .insert_strategy import InsertStrategy
 
@@ -40,7 +41,7 @@ class InsertIfMissingStrategy(InsertStrategy):
             **query.defaults,
             **query.values.values
         }
-        expr = Insert(
+        insert_expr = Insert(
             query.source,
             DummySelect(
                 values,
@@ -59,4 +60,15 @@ class InsertIfMissingStrategy(InsertStrategy):
                 )
             )
         )
+        alias = self.root.create_alias(insert_expr)
+        expr = Union([
+            Select(alias),
+            Select(
+                query.source,
+                ('id',),  # TODO: Wat...
+                where=Where(
+                    **query.values.values
+                )
+            )
+        ])
         return expr

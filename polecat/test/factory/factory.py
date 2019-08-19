@@ -37,10 +37,10 @@ def create_model_factory():
 def create_factory_for_model(model, factory):
     name = f'Auto{model.Meta.name}'
     return type(name, (ModelFactory,), {
-        **{
-            f.name: create_factory_field(f, factory)
+        **filter_none({
+            f.name: create_factory_field(model, f, factory)
             for f in iter_model_fields(model)
-        },
+        }),
         'Meta': type('Meta', (), {
             'model': model
         })
@@ -60,8 +60,17 @@ def iter_model_fields(model):
 
 
 @active_context
-def create_factory_field(field, factory, context=None):
+def create_factory_field(model, field, factory, context=None):
     return (
         context.registries.factory_field_registry[field]
-        .get_declaration(field, factory)
+        .get_declaration(model, field, factory)
     )
+
+
+# TODO: Make this nicer.
+def filter_none(d):
+    return {
+        k: v
+        for k, v in d.items()
+        if v is not None
+    }

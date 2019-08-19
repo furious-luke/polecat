@@ -43,6 +43,7 @@ def bootstrap_migrations(cursor):
         sql = (
             'CREATE EXTENSION IF NOT EXISTS chkpass;'
             'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
+            'CREATE EXTENSION IF NOT EXISTS pg_trgm;'
         )
         cursor.execute(sql)
     except Exception:

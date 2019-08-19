@@ -22,8 +22,8 @@ class ConfigDict(OptionDict):
             self.prefix += '_'
 
     def get_default(self, option):
-        # TODO: Would like to make the prefix optional.
-        value = os.environ.get(f'{self.prefix}{option.key.upper()}')
+        key = f'{self.prefix}{option.key.upper()}'
+        value = os.environ.get(key)
         if value is None:
             value = super().get_default(option)
         # TODO: Is this a problem?

@@ -30,10 +30,13 @@ class Query(Queryable):
 class Select(Query):
     mutatable = False
 
-    def __init__(self, source, selection, **kwargs):
+    def __init__(self, source, selection, limit=None, order=None, **kwargs):
         super().__init__(source, **kwargs)
         self.assert_selectable(source)
         self.selection = selection
+        self.limit = limit
+        self.order = order
+        self.recurse_column = None
 
     def iter_column_names(self):
         return iter(self.selection)

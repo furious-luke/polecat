@@ -5,10 +5,12 @@ from .delete_strategy import DeleteStrategy
 from .expression.alias import Alias
 from .expression.as_ import As
 from .expression.cte import CTE
+from .expression.expression import Expression
 from .expression.json import JSON
 from .expression.multi import Multi
 from .expression.select import Select
 from .expression.subquery import Subquery
+from .expression.union import Union
 from .expression.variable import LocalRole, LocalVariable
 from .expression.where import Where
 from .insert_if_missing_strategy import InsertIfMissingStrategy
@@ -62,10 +64,13 @@ class Strategy:
 
     def create_query_alias(self, query):
         expression = self.create_expression_from_query(query)
-        alias = Alias(self.cte.append(expression))
+        alias = self.create_alias(expression)
         query_id = id(query)
         self.query_alias_map[query_id] = alias
         return alias
+
+    def create_alias(self, expression):
+        return Alias(self.cte.append(expression))
 
     def create_expression_from_query(self, query):
         alias = self.get_query_alias(query)
@@ -88,6 +93,8 @@ class Strategy:
             expr = self.create_filter(query)
         elif isinstance(query, query_module.Common):
             expr = self.create_common(query)
+        elif isinstance(query, Expression):
+            expr = query
         else:
             raise TypeError(f'Unknown query: {query}')
         return expr
@@ -153,7 +160,7 @@ class Strategy:
             expression = JSON(Subquery(expression))
         elif isinstance(expression, Alias):
             expression = JSON(expression)
-        elif expression.returning:
+        elif isinstance(expression, Union) or expression.returning:
             expression = JSON(Subquery(Select(Alias(self.cte.append(expression)))))
         return expression
 

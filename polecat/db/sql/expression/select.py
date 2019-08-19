@@ -8,12 +8,18 @@ from .expression import Expression
 
 class Select(Expression):
     def __init__(self, relation, columns=None, subqueries=None, joins=None,
-                 where=None):
+                 where=None, limit=None, order=None):
         self.relation = relation
         self.columns = columns or ()
         self.subqueries = subqueries or {}
         self.joins = joins or ()
         self.where = where
+        self.limit = limit
+        self.order = to_tuple(order)
+
+    @property
+    def root_relation(self):
+        return self.relation.root_relation
 
     def to_sql(self):
         columns_sql, columns_args = self.get_columns_sql()
@@ -21,11 +27,15 @@ class Select(Expression):
         rel_sql, rel_args = self.relation.to_sql()
         joins_sql, joins_args = self.get_all_joins_sql()
         where_sql, where_args = self.get_where_sql()
-        sql = SQL('SELECT {} FROM {}{}{}').format(
+        limit_sql = self.get_limit_sql()
+        order_sql = self.get_order_sql()
+        sql = SQL('SELECT {} FROM {}{}{}{}{}').format(
             SQL(', ').join(chain(columns_sql, all_subquery_sql)),
             rel_sql,
             joins_sql,
-            where_sql
+            where_sql,
+            limit_sql,
+            order_sql
         )
         return sql, columns_args + all_subquery_args + rel_args + joins_args + where_args
 
@@ -87,6 +97,20 @@ class Select(Expression):
             return SQL(' WHERE {}').format(sql), args
         else:
             return SQL(''), ()
+
+    def get_limit_sql(self):
+        if self.limit is not None:
+            # TODO: Is this risky?
+            return SQL(f' LIMIT {int(self.limit)}')
+        else:
+            return SQL('')
+
+    def get_order_sql(self):
+        if self.order:
+            columns = ', '.join(self.order)
+            return SQL(f' ORDER {columns}')
+        else:
+            return SQL('')
 
     def iter_column_names(self):
         for name in self.columns:

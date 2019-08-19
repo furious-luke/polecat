@@ -17,7 +17,7 @@ class Union(Expression):
             sql, args = expr.to_sql()
             all_sql.append(sql)
             all_args += args
-        return SQL(' UNION ').join(all_sql), all_args
+        return SQL(' UNION ALL ').join(all_sql), all_args
 
     def push_selection(self, selection):
         for expr in self.expressions:

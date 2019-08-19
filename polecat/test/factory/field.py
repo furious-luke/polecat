@@ -1,7 +1,8 @@
 from functools import partial
 
-from factory import declarations
+from factory import LazyFunction, declarations
 from factory.fuzzy import FuzzyDateTime, FuzzyInteger, FuzzyText
+from polecat.db.sql.postgres import Point
 from polecat.utils import timezone
 
 from ...core.registry import MappedRegistry, RegistryMetaclass
@@ -45,7 +46,7 @@ class Field(metaclass=RegistryMetaclass):
     _registry_base = 'Field'
 
     @classmethod
-    def get_declaration(self, model_field, factory):
+    def get_declaration(self, model, model_field, factory):
         raise NotImplemented
 
 
@@ -53,7 +54,7 @@ class TextField(Field):
     sources = (mf.TextField,)
 
     @classmethod
-    def get_declaration(self, model_field, factory):
+    def get_declaration(self, model, model_field, factory):
         return FuzzyText()
 
 
@@ -61,16 +62,25 @@ class NumberField(Field):
     sources = (mf.IntField,)
 
     @classmethod
-    def get_declaration(self, model_field, factory):
+    def get_declaration(self, model, model_field, factory):
         # TODO: 0 isn't good.
         return FuzzyInteger(0)
+
+
+class PointField(Field):
+    sources = (mf.PointField, mf.GCSPointField)
+
+    @classmethod
+    def get_declaration(self, model, model_field, factory):
+        # TODO: 0 isn't good.
+        return LazyFunction(lambda: Point(0, 0))
 
 
 class DatetimeField(Field):
     sources = (mf.DatetimeField,)
 
     @classmethod
-    def get_declaration(self, model_field, factory):
+    def get_declaration(self, model, model_field, factory):
         return FuzzyDateTime(timezone.now())
 
 
@@ -78,5 +88,8 @@ class RelatedField(Field):
     sources = (mf.RelatedField,)
 
     @classmethod
-    def get_declaration(self, model_field, factory):
-        return SubFactory(partial(factory.get, model_field.other))
+    def get_declaration(self, model, model_field, factory):
+        if model_field.other != model:
+            return SubFactory(partial(factory.get, model_field.other))
+        else:
+            return None

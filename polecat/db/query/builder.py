@@ -151,6 +151,27 @@ class Q:
     def filter(self, **options):
         return self.chain(Filter(self.queryable, options))
 
+    def recurse(self, column):
+        # TODO: This is clearly wrong. It mutates the query, possibly
+        # effecting other uses.
+        assert isinstance(self.queryable, Select)
+        self.queryable.recurse_column = column
+        return self
+
+    def limit(self, limit):
+        # TODO: This is clearly wrong. It mutates the query, possibly
+        # effecting other uses.
+        assert isinstance(self.queryable, Select)
+        self.queryable.limit = limit
+        return self
+
+    def order(self, columns):
+        # TODO: This is clearly wrong. It mutates the query, possibly
+        # effecting other uses.
+        assert isinstance(self.queryable, Select)
+        self.queryable.order = columns
+        return self
+
     def branch(self, query):
         self.branches.append(self.queryable)
         self.branches.extend(query.branches)

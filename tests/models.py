@@ -86,6 +86,7 @@ class MovieAccess(model.Access):
 
 class Store(model.Model):
     name = model.TextField()
+    parent = model.RelatedField('self')
 
     class Meta:
         mutation_resolvers = [

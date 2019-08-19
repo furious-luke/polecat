@@ -270,6 +270,17 @@ class WithinDistance(FilterType):
         return self.format('{}.{} <@> %s < %s', tbl, col)
 
 
+# TODO: This may not be the fastest formulation: https://www.postgresql.org/docs/10/pgtrgm.html#id-1.11.7.41.8
+class TrigramSimilar(FilterType):
+    def eval(self, filter):
+        super().eval(filter)
+        try:
+            tbl, col = self.get_table_column(filter)
+        except KeyError:
+            raise ValueError(f'invalid attribute: {self.field}')
+        return self.format('{}.{} % %s', tbl, col)
+
+
 class Operator:
     def __init__(self, left, right):
         self.left = left
@@ -317,5 +328,6 @@ Where.FILTER_TYPES = {
     'nu': IsNull,
     # 'nn': NotNull,
     'ov': Overlap,
-    # 'bt': Between
+    # 'bt': Between,
+    'trigram_similar': TrigramSimilar
 }

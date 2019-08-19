@@ -11,6 +11,10 @@ class Subquery(Expression):
     def alias(self):
         return self.expression.alias
 
+    @property
+    def root_relation(self):
+        return self.expression.root_relation
+
     def to_sql(self):
         expr_sql, expr_args = self.expression.to_sql()
         return (

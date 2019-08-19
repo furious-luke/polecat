@@ -113,5 +113,5 @@ def test_cascade_constraint(testdb):
     sql = testdb.mogrify(*migrations[0].operations[1].sql)
     assert sql == (
         b'CREATE TABLE "t1" (\n"id" int PRIMARY KEY,\n"t0" int REFERENCES'
-        b' "t0"("id") ON DELETE CASCADE \n);'
+        b' "t0"("id") ON DELETE CASCADE \n);\n'
     )

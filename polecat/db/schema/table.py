@@ -14,7 +14,7 @@ class Table(Entity):
     mutatable = True
 
     def __init__(self, name, columns=None, checks=None, uniques=None,
-                 access=None, app=None):
+                 access=None, indexes=None, app=None):
         # TODO: Unknown-unknown; cannot rename "name" or
         # polecat.db.query.selection.Selection will break. It expects
         # that if the column name passed in is not a string it has a
@@ -25,6 +25,7 @@ class Table(Entity):
         self.checks = checks or []
         self.uniques = uniques or []
         self.access = access
+        self.indexes = indexes or []
         self.C = type('Columns', (), {})  # TODO
         self.schema = None
 
@@ -76,9 +77,17 @@ class Table(Entity):
     def alias(self):
         return self.name
 
+    @property
+    def root_relation(self):
+        return self
+
     def add_column(self, column):
         self.columns.append(column)
         self.bind_column(column)
+
+    def add_index(self, index):
+        self.indexes.append(index)
+        self.bind_index(index)
 
     # TODO: This is for making SQL expressions. It would be nice to
     # not have this here, as it's bleeding information between
@@ -90,6 +99,7 @@ class Table(Entity):
         if self.schema is None:
             self.schema = schema
             self.bind_all_columns()
+            self.bind_all_indexes()
 
     def bind_all_columns(self):
         for column in self.columns:
@@ -98,6 +108,13 @@ class Table(Entity):
     def bind_column(self, column):
         setattr(self.C, column.name, column)
         column.bind(self)
+
+    def bind_all_indexes(self):
+        for index in self.indexes:
+            self.bind_index(index)
+
+    def bind_index(self, index):
+        index.bind(self)
 
     def has_column(self, name):
         return hasattr(self.C, name)

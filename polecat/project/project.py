@@ -42,6 +42,12 @@ def load_project():
     return project
 
 
+def setup_project():
+    project = load_project()
+    project.prepare()
+    return project
+
+
 class Project:
     name = None
     deployment = None

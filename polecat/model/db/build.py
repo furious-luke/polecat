@@ -27,7 +27,8 @@ class TableBuilder:
             columns=self.build_all_columns(model),
             app=model.Meta.app,
             uniques=model.Meta.uniques,
-            checks=model.Meta.checks
+            checks=model.Meta.checks,
+            indexes=model.Meta.indexes
         )
 
     def build_all_columns(self, model):

@@ -22,7 +22,11 @@ def cli_feedback(title):
                     # TODO: Should be hiding this.
                     path = fb.renderer.t.bright_white(path)
                     fb.add_notice(f'Loaded configuration from {path}')
-                return func(*args, feedback=fb, **kwargs)
+                try:
+                    return func(*args, feedback=fb, **kwargs)
+                except Exception as e:
+                    # TODO: Add error handling.
+                    raise
         return inner
     return outer
 

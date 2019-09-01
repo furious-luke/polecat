@@ -158,7 +158,7 @@ def test_where_expression_with_lookups(immutabledb):
     sql = immutabledb.mogrify(*where.get_sql(a_table))
     assert sql == (
         b'"a_table"."col1" = 1 AND EXISTS (SELECT 1 FROM "b_table" WHERE'
-        b' "a_table"."col3" = "b_table".id AND "b_table"."col2" = 2)'
+        b' "a_table"."col3" = "b_table"."id" AND "b_table"."col2" = 2)'
     )
 
 

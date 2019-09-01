@@ -23,7 +23,8 @@ class SelectStrategy:
     def parse_query(self, queryable):
         expr = self.parse_query_from_components(
             queryable.source,
-            queryable.selection
+            queryable.selection,
+            queryable=queryable
         )
         if queryable.recurse_column:
             alias = self.root.create_alias(expr)
@@ -51,13 +52,17 @@ class SelectStrategy:
             expr = top_level
         return expr
 
-    def parse_query_from_components(self, relation, selection):
+    def parse_query_from_components(self, relation, selection, queryable=None):
         relation = self.parse_relation(relation)
         if selection.has_lookups():
             relation = self.create_alias_for_relation(relation)
         columns = selection.fields
         subqueries, joins = self.create_subqueries(relation, selection)
-        return Select(relation, columns, subqueries, joins)
+        return Select(
+            relation, columns, subqueries, joins,
+            limit=queryable.limit if queryable else None,
+            order=queryable.order if queryable else None
+        )
 
     def parse_relation(self, relation):
         return self.root.parse_chained_relation(relation)

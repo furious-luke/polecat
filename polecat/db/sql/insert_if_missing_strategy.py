@@ -1,4 +1,4 @@
-from psycopg2.sql import SQL
+from psycopg2.sql import SQL, Placeholder
 
 from .expression.exists import Exists
 from .expression.expression import Expression
@@ -19,12 +19,25 @@ class DummySelect(Expression):
 
     def to_sql(self):
         where_sql, where_args = self.where.to_sql()
-        values_str = ', '.join(['%s']*len(self.values))
+        # TODO: This is all wrong, need to think more clearly about
+        # this.
+        values_sql = []
+        values_args = ()
+        for value in self.values.values():
+            if isinstance(value, Expression):
+                sql, args = value.to_sql()
+                values_sql.append(sql)
+                values_args += args
+            else:
+                values_sql.append(Placeholder())
+                values_args += (value,)
+        values_sql = SQL(', ').join(values_sql)
         return (
-            SQL('SELECT %s WHERE {}' % values_str).format(
+            SQL('SELECT {} WHERE {}').format(
+                values_sql,
                 where_sql
             ),
-            tuple(self.values.values()) + where_args
+            values_args + where_args
         )
 
     def iter_column_names(self):
@@ -37,10 +50,12 @@ class InsertIfMissingStrategy(InsertStrategy):
         self.relation_counter = 0
 
     def parse_query(self, query):
+        parsed_values = self.parse_values(query, query.values)
         values = {
             **query.defaults,
-            **query.values.values
+            **parsed_values
         }
+        where_expr = Where(**parsed_values)
         insert_expr = Insert(
             query.source,
             DummySelect(
@@ -51,9 +66,7 @@ class InsertIfMissingStrategy(InsertStrategy):
                             Select(
                                 query.source,
                                 (SQL('1'),),
-                                where=Where(
-                                    **query.values.values
-                                )
+                                where=where_expr
                             )
                         )
                     )
@@ -66,9 +79,7 @@ class InsertIfMissingStrategy(InsertStrategy):
             Select(
                 query.source,
                 ('id',),  # TODO: Wat...
-                where=Where(
-                    **query.values.values
-                )
+                where=where_expr
             )
         ])
         return expr

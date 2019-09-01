@@ -216,9 +216,21 @@ def make_role_meta(name, bases, attrs, meta):
 
 
 def make_query_meta(name, bases, attrs, meta):
+    meta_name = getattr(meta, 'name', None)
+    if meta_name is not None:
+        name = meta_name
+    elif name[-5:] == 'Query':
+        name = name[:-5]
+    # TODO: Ugh.
+    from .resolver import QueryResolverManager
+    resolver_manager = attrs.get('resolver_manager')
+    if not resolver_manager:
+        resolver_manager = QueryResolverManager()
     return type('Meta', (), {
         'options': meta,
         'name': name,
+        'resolvers': attrs.get('resolvers', ()),
+        'resolver_manager': resolver_manager,
         'omit': getattr(meta, 'omit', NONE) if meta else NONE  # TODO: Duplicate of above
     })
 

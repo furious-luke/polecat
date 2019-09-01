@@ -57,6 +57,10 @@ class GraphQLAPIContext(APIContext):
             return self.return_type.of_type._model
 
     @property
+    def query(self):
+        return self.field._query
+
+    @property
     def mutation(self):
         return self.field._mutation
 
@@ -154,10 +158,13 @@ def get_selector_from_node(graphql_type, node):
 
 
 def resolve_query(obj, info, **kwargs):
-    graphql_field = info.parent_type.fields[info.field_name]
-    query = graphql_field._query
-    # TODO: Need to pass the context.
-    return query.resolve(**kwargs)
+    # graphql_field = info.parent_type.fields[info.field_name]
+    # query = graphql_field._query
+    # # TODO: Need to pass the context.
+    # return query.resolve(**kwargs)
+    with traceback():
+        ctx = GraphQLAPIContext(obj, info, **kwargs)
+        return ctx.query.Meta.resolver_manager(ctx)
 
 
 def resolve_mutation(obj, info, **kwargs):

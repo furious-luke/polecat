@@ -34,8 +34,8 @@ class Select(Expression):
             rel_sql,
             joins_sql,
             where_sql,
-            limit_sql,
-            order_sql
+            order_sql,
+            limit_sql
         )
         return sql, columns_args + all_subquery_args + rel_args + joins_args + where_args
 
@@ -107,10 +107,16 @@ class Select(Expression):
 
     def get_order_sql(self):
         if self.order:
-            columns = ', '.join(self.order)
-            return SQL(f' ORDER {columns}')
+            columns = ', '.join(self.parse_order_column(o) for o in self.order)
+            return SQL(f' ORDER BY {columns}')
         else:
             return SQL('')
+
+    def parse_order_column(self, column):
+        if column[0] == '-':
+            return f'{column[1:]} DESC'
+        else:
+            return column
 
     def iter_column_names(self):
         for name in self.columns:

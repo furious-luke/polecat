@@ -211,6 +211,24 @@ def test_insert_if_missing_strategy(immutabledb):
     )
 
 
+def test_insert_if_missing_strategy_with_subquery(immutabledb):
+    table = create_table('a_table')
+    query = Q(table).insert_if_missing({
+        'col1': Q(table).select('col1')
+    }, {'col2': 2})
+    sql = query.to_sql()
+    assert sql == (
+        b'WITH "c0" AS (INSERT INTO "a_table" ("col2", "col1")'
+        b' SELECT 2, (SELECT "a_table"."col1" AS "col1" FROM "a_table")'
+        b' WHERE NOT EXISTS (SELECT 1 FROM "a_table" WHERE "a_table"."col1"'
+        b' = (SELECT "a_table"."col1" AS "col1" FROM "a_table")) RETURNING'
+        b' "id"), "c1" AS (SELECT * FROM "c0" UNION ALL SELECT'
+        b' "a_table"."id" AS "id" FROM "a_table" WHERE "a_table"."col1"'
+        b' = (SELECT "a_table"."col1" AS "col1" FROM "a_table"))'
+        b' SELECT row_to_json(__tl) FROM (SELECT * FROM "c1") AS __tl'
+    )
+
+
 def test_update_strategy_with_nesting(immutabledb):
     b_table = create_table('b_table')
     a_table = create_table('a_table', related_table=b_table)
@@ -311,6 +329,18 @@ def test_filter_only(immutabledb):
         b'SELECT row_to_json(__tl) FROM ('
         b'SELECT * FROM "a_table" WHERE "a_table"."col2" = 2'
         b') AS __tl'
+    )
+
+
+def test_reverse_filter(immutabledb):
+    b_table = create_table('b_table')
+    create_table(related_table=b_table)
+    query = Q(b_table).filter(a_tables__col1=1)
+    sql = query.to_sql()
+    assert sql == (
+        b'SELECT row_to_json(__tl) FROM (SELECT * FROM "b_table" WHERE EXISTS'
+        b' (SELECT 1 FROM "a_table" WHERE "b_table"."id" = "a_table"."col3"'
+        b' AND "a_table"."col1" = 1)) AS __tl'
     )
 
 

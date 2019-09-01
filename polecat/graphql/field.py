@@ -90,6 +90,11 @@ class UUIDField(Field):
     sources = (field.UUIDField,)
 
 
+class JSONField(Field):
+    graphql_type = GraphQLString
+    sources = (field.JSONField,)
+
+
 class PointField(Field):
     graphql_type = GraphQLList(GraphQLFloat)
     sources = (field.PointField,)

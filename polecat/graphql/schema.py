@@ -515,7 +515,7 @@ class QueryBuilder:
                     self.build_arguments(query),
                     resolve_query
                 ),
-                '_query', query()  # TODO: Don't actually need to instantiate here.
+                '_query', query
             )
         return queries
 

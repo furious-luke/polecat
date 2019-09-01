@@ -1,8 +1,9 @@
 from functools import singledispatch
 
-from ...db.schema import (BoolColumn, FloatColumn, IntColumn, PasswordColumn,
-                          PointColumn, RelatedColumn, SerialColumn, TextColumn,
-                          TimestampColumn, UUIDColumn)
+from ...db.schema import (BoolColumn, FloatColumn, IntColumn, JSONColumn,
+                          PasswordColumn, PointColumn, RelatedColumn,
+                          SerialColumn, TextColumn, TimestampColumn,
+                          UUIDColumn)
 from .. import field
 
 
@@ -62,6 +63,11 @@ def convert_datetimefield(field, builder):
 @convert_field.register(field.UUIDField)
 def convert_uuidfield(field, builder):
     return create_column_from_field(field, UUIDColumn)
+
+
+@convert_field.register(field.JSONField)
+def convert_jsonfield(field, builder):
+    return create_column_from_field(field, JSONColumn)
 
 
 @convert_field.register(field.PointField)

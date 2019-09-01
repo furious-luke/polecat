@@ -1,9 +1,11 @@
 import re
 
 import ujson
+from polecat.db.schema.column import ReverseColumn
 from psycopg2.sql import SQL, Composable, Identifier
 
 from ....utils import to_tuple
+from .expression import Expression
 
 
 class Where:
@@ -85,9 +87,14 @@ class FilterType:
         for i, joined_column_name in enumerate(self.joins):
             # TODO: Handle m2m, reverse fk, reverse m2m.
             column = relation.get_column(joined_column_name)
-            prev_tbl_name = relation.alias
-            prev_col_name = column.name
-            # TODO: Handle case of field not being related.
+            if isinstance(column, ReverseColumn):
+                prev_tbl_name = relation.alias
+                prev_col_name = 'id'
+                col_name = column.related_column.name
+            else:
+                prev_tbl_name = relation.alias
+                prev_col_name = column.name
+                col_name = 'id'
             relation = column.related_table
             tbl = relation.alias
             # TODO: Use Identifier
@@ -96,7 +103,7 @@ class FilterType:
             args.extend([
                 Identifier(tbl),
                 SQL('{}.{}').format(Identifier(prev_tbl_name), Identifier(prev_col_name)),
-                SQL('{}.id').format(Identifier(tbl))
+                SQL('{}.{}').format(Identifier(tbl), Identifier(col_name))
             ])
             sql = sql % next
         sql = sql % '{}'
@@ -116,7 +123,15 @@ class FilterType:
         self.field = lookup_parts[-1]
 
     def parse_value(self, filter, value):
-        self.value = value
+        # TODO: Oh this isn't nice. I need to be able to use fields to
+        # convert values.
+        if self.field == 'id':
+            try:
+                self.value = value.id
+            except AttributeError:
+                self.value = value
+        else:
+            self.value = value
 
     def get_table_column(self, filter):
         relation = filter.relation
@@ -128,10 +143,14 @@ class FilterType:
         return table_name, self.field
 
     def format(self, format_string, *args):
-        # TODO: A little ugly.
+        # TODO: A little ugly. Now a lot ugly.
         if isinstance(self.value, Composable):
             format_string = format_string % '{}'
             return SQL(format_string).format(*(args + (self.value,))), ()
+        elif isinstance(self.value, Expression):
+            value_sql, value_args = self.value.to_sql()
+            format_string = format_string % '{}'
+            return SQL(format_string).format(*(args + (value_sql,))), value_args
         else:
             return SQL(format_string).format(*args), to_tuple(self.value)
 

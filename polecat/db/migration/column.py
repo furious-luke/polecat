@@ -128,6 +128,11 @@ class UUIDColumn(Column):
             return super().get_default_str()
 
 
+class JSONColumn(Column):
+    sources = (schema.JSONColumn,)
+    dbtype = 'jsonb'
+
+
 class RelatedColumn(IntColumn):
     sources = (schema.RelatedColumn,)
 

@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class Q:
-    def __init__(self, queryable, branches=None, session=None):
+    def __init__(self, queryable=None, branches=None, session=None):
         self.queryable = queryable
         self.branches = branches or []
         self.session = session
@@ -173,7 +173,8 @@ class Q:
         return self
 
     def branch(self, query):
-        self.branches.append(self.queryable)
+        if self.queryable is not None:
+            self.branches.append(self.queryable)
         self.branches.extend(query.branches)
         return self.chain(query.queryable)
 

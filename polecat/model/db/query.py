@@ -8,9 +8,9 @@ __all__ = ('Q', 'S')
 
 
 class Q(BaseQ):
-    def __init__(self, model, queryable=None, branches=None, session=None):
+    def __init__(self, model=None, queryable=None, branches=None, session=None):
         super().__init__(
-            queryable or model.Meta.table,
+            queryable or (model and model.Meta.table) or None,
             branches,
             session
         )
@@ -32,6 +32,23 @@ class Q(BaseQ):
         else:
             args = (model_or_subquery,) if (model_or_subquery is not None) else ()
             return super().insert(*args, **kwargs)
+
+    def insert_if_missing(self, values_or_model=None, defaults={}):
+        if isinstance(values_or_model, Model):
+            return super().insert_if_missing(
+                model_to_values(self.model),
+                defaults=defaults
+            )
+        elif values_or_model is not None:
+            return super().insert_if_missing(
+                values_or_model,
+                defaults=defaults
+            )
+        else:
+            return super().insert_if_missing(
+                model_to_values(self.model),
+                defaults=defaults
+            )
 
     def insert_from_model_argument(self, model):
         return super().insert(**model_to_values(model))

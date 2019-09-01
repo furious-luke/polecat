@@ -5,7 +5,7 @@ from .utils import column_to_identifier, table_to_identifier
 __all__ = ('Column', 'MutableColumn', 'IntColumn', 'TextColumn',
            'BoolColumn', 'FloatColumn', 'RelatedColumn', 'ReverseColumn',
            'PasswordColumn', 'TimestampColumn', 'UUIDColumn', 'SerialColumn',
-           'PointColumn')
+           'PointColumn', 'JSONColumn')
 
 
 class Column(Entity):
@@ -126,6 +126,10 @@ class TimestampColumn(MutableColumn):
 
 
 class UUIDColumn(MutableColumn):
+    pass
+
+
+class JSONColumn(MutableColumn):
     pass
 
 

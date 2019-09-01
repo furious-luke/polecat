@@ -159,6 +159,18 @@ class DeleteResolverManager(ResolverManager):
         )
 
 
+class QueryResolverManager(ResolverManager):
+    def iter_resolvers(self, context):
+        query = context.query
+        # TODO: This is interesting. I'm not sure if I want to have to
+        # instantiate the mutation here, or at all. It's nicer for the
+        # user though.
+        return chain(
+            query.Meta.resolvers,
+            (query().resolve,)
+        )
+
+
 class MutationResolverManager(ResolverManager):
     def iter_resolvers(self, context):
         mutation = context.mutation

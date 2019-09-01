@@ -93,6 +93,10 @@ class UUIDField(MutableField):
         self.auto = auto
 
 
+class JSONField(MutableField):
+    pass
+
+
 class PointField(MutableField):
     pass
 

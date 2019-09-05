@@ -17,6 +17,8 @@ class Update(Insert):
         if isinstance(self.values, Expression):
             prefix_sql = SQL('')
             suffix_sql = SQL('')
+            # TODO: This is ugly as.
+            self.values.keyword = 'ROW'
             get_values_func = self.get_values_sql_from_expression
         else:
             prefix_sql = SQL('ROW (')

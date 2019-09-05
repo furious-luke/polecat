@@ -5,7 +5,7 @@ from polecat.core.config import default_config
 from ..connection import cursor as cursor_context  # TODO: Ugh.
 from ..decorators import dbcursor
 from .query import (Common, Delete, Filter, Insert, InsertIfMissing, Query,
-                    Select, Update)
+                    Select, Update, Values)
 from .selection import Selection
 
 logger = logging.getLogger(__name__)
@@ -102,6 +102,18 @@ class Q:
             # TODO: Do I need to wrap insert in a select?
         return self.chain(insert)
 
+    def bulk_insert(self, columns, values):
+        source = self.get_mutation_source()
+        values = self.parse_bulk_values(columns, values)
+        insert = Insert(source, values)
+        if insert.reverse_queries:
+            if self.branches is None:
+                self.branches = []
+            for reverse_queries in insert.reverse_queries.values():
+                self.branches.extend(reverse_queries)
+            # TODO: Do I need to wrap insert in a select?
+        return self.chain(insert)
+
     def insert_into(self, source, **values):
         self.split_branch()
         return self.chain(
@@ -186,6 +198,9 @@ class Q:
                 value = queryable
             parsed_values[column_name] = self.parse_value(queryable, column_name, value)
         return parsed_values
+
+    def parse_bulk_values(self, columns, values):
+        return Values(values, columns)
 
     def parse_value(self, queryable, column_name, value):
         return value

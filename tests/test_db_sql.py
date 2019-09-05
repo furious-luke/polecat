@@ -72,6 +72,22 @@ def test_insert_subquery(db, factory):
     assert store.name == copied_store['name']
 
 
+def test_bulk_insert(db, factory):
+    query = (
+        Q(Address).bulk_insert(
+            ['country'],
+            [('AU',), ('US',)]
+        )
+        .select('id', 'country')
+    )
+    results = list(query)
+    assert len(results) == 2
+    assert results[0]['id'] == 1
+    assert results[0]['country'] == 'AU'
+    assert results[1]['id'] == 2
+    assert results[1]['country'] == 'US'
+
+
 def test_update_sql(db):
     inst = Address(country='AU')
     Q(inst).insert().into(inst)

@@ -51,6 +51,8 @@ class InsertIfMissingStrategy(InsertStrategy):
 
     def parse_query(self, query):
         parsed_values = self.parse_values(query, query.values)
+        # TODO: This is pretty awful.
+        parsed_values = parsed_values.values.as_dict()
         values = {
             **query.defaults,
             **parsed_values

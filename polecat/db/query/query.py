@@ -173,12 +173,25 @@ class Common(Query):
 class Values(Query):
     mutatable = False
 
-    def __init__(self, values, **kwargs):
+    def __init__(self, values, columns=None, **kwargs):
         super().__init__(**kwargs)
-        self.values = values
+        if isinstance(values, dict):
+            self.columns = tuple(values.keys())
+            self.values = (tuple(values.values()),)
+        else:
+            self.columns = columns
+            self.values = values
 
-    def iter_items(self):
-        return self.values.items()
+    def iter_rows(self):
+        for values in self.values:
+            yield zip(self.columns, values)
 
     def iter_column_names(self):
-        return iter(self.values)
+        return iter(self.columns)
+
+    def is_bulk(self):
+        return len(self.values) > 1
+
+    def as_dict(self):
+        assert len(self.values) == 1
+        return dict(zip(self.columns, self.values[0]))

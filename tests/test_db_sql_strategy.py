@@ -88,13 +88,14 @@ def test_filter_recursive(immutabledb):
     )
     sql = query.to_sql()
     assert sql == (
-        b'WITH RECURSIVE "c0" AS (SELECT "r0"."col1" AS "col1", "r0"."col3"'
-        b' AS "col3" FROM (SELECT "table"."col1" AS "col1", "table"."col3"'
-        b' AS "col3" FROM "table" WHERE "table"."id" = 1) AS "r0" UNION'
-        b' ALL SELECT "table"."col1" AS "col1", "table"."col3" AS "col3"'
-        b' FROM "table" , "c0" WHERE "table"."id" = "c0"."col3")'
-        b' SELECT row_to_json(__tl) FROM (SELECT "c0"."col1" AS "col1"'
-        b' FROM "c0") AS __tl'
+        b'WITH RECURSIVE "c0" AS (SELECT "r0"."col1" AS "col1", "r0"."col3" AS'
+        b' "col3" FROM (SELECT "table"."col1" AS "col1", "table"."col3" AS'
+        b' "col3" FROM "table" WHERE "table"."id" = 1) AS "r0" UNION ALL'
+        b' SELECT "r1"."col1" AS "col1", "r1"."col3" AS "col3" FROM (SELECT'
+        b' "table"."col1" AS "col1", "table"."col3" AS "col3" FROM "table" ,'
+        b' "c0" WHERE "table"."id" = "c0"."col3") AS "r1") SELECT'
+        b' row_to_json(__tl) FROM (SELECT "c0"."col1" AS "col1" FROM "c0")'
+        b' AS __tl'
     )
 
 
@@ -341,6 +342,17 @@ def test_reverse_filter(immutabledb):
         b'SELECT row_to_json(__tl) FROM (SELECT * FROM "b_table" WHERE EXISTS'
         b' (SELECT 1 FROM "a_table" WHERE "b_table"."id" = "a_table"."col3"'
         b' AND "a_table"."col1" = 1)) AS __tl'
+    )
+
+
+def test_join(immutabledb):
+    table = create_table()
+    query = Q(table).select('col1').join()
+    sql = query.to_sql()
+    assert sql == (
+        b'SELECT row_to_json(__tl) FROM (SELECT string_agg("r0"."col1", " ")'
+        b' AS "col1" FROM (SELECT "a_table"."col1" AS "col1" FROM "a_table")'
+        b' AS "r0") AS __tl'
     )
 
 

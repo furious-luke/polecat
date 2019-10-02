@@ -2,9 +2,9 @@ import re
 
 import ujson
 from polecat.db.schema.column import ReverseColumn
+from polecat.utils import to_bool, to_tuple
 from psycopg2.sql import SQL, Composable, Identifier
 
-from ....utils import to_tuple
 from .expression import Expression
 
 
@@ -152,7 +152,10 @@ class FilterType:
             format_string = format_string % '{}'
             return SQL(format_string).format(*(args + (value_sql,))), value_args
         else:
-            return SQL(format_string).format(*args), to_tuple(self.value)
+            return SQL(format_string).format(*args), to_tuple(self.get_value())
+
+    def get_value(self):
+        return self.value
 
     def get_primary_columns(self):
         return (self.field,)
@@ -253,10 +256,15 @@ class IsNull(FilterType):
         except KeyError:
             raise ValueError(f'invalid attribute: {self.field}')
         op = 'IS' if self.value else 'IS NOT'
-        return self.format('{}.{} {} NULL', tbl, col, op)
+        return self.format(
+            '{}.{} {} NULL', Identifier(tbl), Identifier(col), SQL(op)
+        )
 
     def parse_value(self, filter, value):
         self.value = to_bool(value)
+
+    def get_value(self):
+        return None
 
 
 # class NotNull(FilterType):

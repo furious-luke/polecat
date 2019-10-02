@@ -1,3 +1,5 @@
+from psycopg2.sql import SQL, Identifier
+
 from ..query import Q
 from ..query import query as query_module
 from ..schema.role import Role
@@ -8,7 +10,9 @@ from .expression.cte import CTE
 from .expression.expression import Expression
 from .expression.json import JSON
 from .expression.multi import Multi
+from .expression.raw import RawSQL
 from .expression.select import Select
+from .expression.string_agg import StringAgg
 from .expression.subquery import Subquery
 from .expression.union import Union
 from .expression.variable import LocalRole, LocalVariable
@@ -78,9 +82,9 @@ class Strategy:
             return alias
         if isinstance(query, query_module.Select):
             expr = self.create_select(query)
-        # TODO: Update must come before Insert, as it's
-        # inherited. Probably need a better way of deciding which is
-        # which. Perhaps a visitor pattern?
+            # TODO: Update must come before Insert, as it's
+            # inherited. Probably need a better way of deciding which is
+            # which. Perhaps a visitor pattern?
         elif isinstance(query, query_module.Update):
             expr = self.create_update(query)
         elif isinstance(query, query_module.InsertIfMissing):
@@ -91,6 +95,8 @@ class Strategy:
             expr = self.create_delete(query)
         elif isinstance(query, query_module.Filter):
             expr = self.create_filter(query)
+        elif isinstance(query, query_module.Join):
+            expr = self.create_join(query)
         elif isinstance(query, query_module.Common):
             expr = self.create_common(query)
         elif isinstance(query, Expression):
@@ -121,6 +127,27 @@ class Strategy:
             self.parse_chained_relation(query.source),
             where=Where(
                 **query.options
+            )
+        )
+
+    def create_join(self, query):
+        # TODO: Currently assumes parent is a select?
+        rel = self.parse_chained_relation(query.source)
+        select = rel.expression.expression
+        column_name = select.columns[0]
+        return Select(
+            rel,
+            As(
+                StringAgg(
+                    RawSQL(
+                        SQL('{}.{}').format(
+                            Identifier(rel.alias),
+                            Identifier(column_name)
+                        )
+                    ),
+                    separator=query.separator
+                ),
+                column_name
             )
         )
 

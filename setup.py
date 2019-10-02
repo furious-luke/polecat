@@ -27,6 +27,8 @@ setup(
         'ujson==1.35',
         'psycopg2-binary==2.7.7',
         'graphql-core-next==1.0.2',
+        # TODO: This should be in "cli".
+        'polecat-feedback==0.0.0',
         # 'graphql-server-core @ https://github.com/norman-thomas/graphql-server-core/tarball/master',
         'pyjwt==1.7.1',
         'pytimeparse==1.1.8',
@@ -46,7 +48,6 @@ setup(
             'sanic==19.3.1',
             'boto3==1.9.125',
             'coolname==1.1.0',
-            'polecat-feedback==0.0.0',
             'python-Levenshtein==0.12.0'
         ]
     },

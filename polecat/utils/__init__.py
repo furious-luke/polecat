@@ -30,6 +30,15 @@ def to_class(value):
     return value if inspect.isclass(value) else value.__class__
 
 
+def to_bool(value):
+    if isinstance(value, str):
+        return not (
+            not len(value) or value.lower()[0] in ('f', 'n', '0')
+        )
+    else:
+        return bool(value)
+
+
 def get_class_path(value):
     return Path(inspect.getfile(value)).parent
 

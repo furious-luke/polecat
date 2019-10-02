@@ -4,8 +4,8 @@ from polecat.core.config import default_config
 
 from ..connection import cursor as cursor_context  # TODO: Ugh.
 from ..decorators import dbcursor
-from .query import (Common, Delete, Filter, Insert, InsertIfMissing, Query,
-                    Select, Update, Values)
+from .query import (Common, Delete, Filter, Insert, InsertIfMissing, Join,
+                    Query, Select, Update, Values)
 from .selection import Selection
 
 logger = logging.getLogger(__name__)
@@ -183,6 +183,11 @@ class Q:
         assert isinstance(self.queryable, Select)
         self.queryable.order = columns
         return self
+
+    def join(self, separator=' '):
+        return self.chain(
+            Join(self.queryable, separator)
+        )
 
     def branch(self, query):
         if self.queryable is not None:

@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 import pytimeparse
-from polecat.utils import Undefined, to_dict, to_list
+from polecat.utils import Undefined, to_bool, to_dict, to_list
 
 
 class UndefinedOptionError(Exception):
@@ -167,12 +167,7 @@ class BoolOption(Option):
     TYPE = bool
 
     def coerce(self, value):
-        if isinstance(value, str):
-            return not (
-                not len(value) or value.lower()[0] in ('f', 'n', '0')
-            )
-        else:
-            return bool(value)
+        return to_bool(value)
 
 
 class TimedeltaOption(Option):

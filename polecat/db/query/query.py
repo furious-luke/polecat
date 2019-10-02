@@ -162,6 +162,14 @@ class Filter(Query):
         return self.source.get_column(name)
 
 
+class Join(Query):
+    mutatable = False
+
+    def __init__(self, source, separator=' ', **kwargs):
+        super().__init__(source, **kwargs)
+        self.separator = separator
+
+
 class Common(Query):
     mutatable = False
 

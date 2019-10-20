@@ -19,7 +19,7 @@ class Q:
         self.row_count = 0
 
     def __iter__(self):
-        with cursor_context(autocommit=False) as cursor:
+        with cursor_context() as cursor:
             self.execute(cursor=cursor)
             for row in cursor:
                 yield row[0]
@@ -29,7 +29,7 @@ class Q:
         return self.row_count
 
     def get(self):
-        with cursor_context(autocommit=False) as cursor:
+        with cursor_context() as cursor:
             self.execute(cursor=cursor)
             if cursor.rowcount == 0:
                 return None
@@ -52,7 +52,7 @@ class Q:
         expr = strategy.parse(self)
         return cursor.mogrify(*expr.to_sql())
 
-    @dbcursor(autocommit=False)
+    @dbcursor()
     def execute(self, cursor):
         # TODO: This is pretty bad. How to keep this purely as a
         # builder, but also inject strategy and execution knowledge
@@ -67,10 +67,6 @@ class Q:
             print(cursor.mogrify(sql, args))
         cursor.execute(sql, args)
         self.row_count = cursor.rowcount
-        # TODO: This is strange. For some reason I need to commit
-        # the outcome of the query here. If I don't, then the
-        # changes are somehow lost.
-        cursor.connection.commit()
 
     def select(self, *args, **kwargs):
         if len(args) == 1 and isinstance(args[0], Selection):
@@ -234,5 +230,5 @@ class Q:
 
     def merge_query_branches(self, query):
         queryable = query.queryable
-        self.branches = (self.branches or []).extend(query.branches or [])
+        self.branches = (self.branches or []) + (query.branches or [])
         return queryable

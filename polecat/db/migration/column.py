@@ -104,6 +104,18 @@ class PasswordColumn(TextColumn):
     dbtype = 'chkpass'
 
 
+class DateColumn(Column):
+    sources = (schema.DateColumn,)
+    dbtype = 'date'
+
+    def get_default_str(self):
+        col = self.schema_column
+        if col.default == Auto:
+            return 'DEFAULT now()', ()
+        else:
+            return super().get_default_str()
+
+
 class TimestampColumn(Column):
     sources = (schema.TimestampColumn,)
     dbtype = 'timestamptz'

@@ -12,7 +12,11 @@ class TableBuilder:
             # TODO: This is to catch self-referential
             # models. Returning the name means the DB schema can bind
             # it later. Refactor for clarity.
-            return model.Meta.table_name
+            table_name = f'{model.Meta.table_name}'
+            if model.Meta.app:
+                # TODO: Also pretty horrible.
+                table_name = f'{model.Meta.app.name.lower()}_{table_name}'
+            return table_name
         table = getattr(model.Meta, 'table', None)
         if not table:
             self.processing_models.add(model)

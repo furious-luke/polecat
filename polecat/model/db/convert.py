@@ -3,7 +3,7 @@ from functools import singledispatch
 from ...db.schema import (BoolColumn, FloatColumn, IntColumn, JSONColumn,
                           PasswordColumn, PointColumn, RelatedColumn,
                           SerialColumn, TextColumn, TimestampColumn,
-                          UUIDColumn)
+                          UUIDColumn, DateColumn)
 from .. import field
 
 
@@ -53,6 +53,11 @@ def convert_serialfield(field, builder):
 @convert_field.register(field.FloatField)
 def convert_floatfield(field, builder):
     return create_column_from_field(field, FloatColumn)
+
+
+@convert_field.register(field.DateField)
+def convert_datefield(field, builder):
+    return create_column_from_field(field, DateColumn)
 
 
 @convert_field.register(field.DatetimeField)

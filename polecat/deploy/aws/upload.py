@@ -48,6 +48,9 @@ def upload_bundle(project, bucket, source=None, version=None, feedback=None):
         params = {}
         if '.map.' in dst_file or dst_file.endswith('.map'):
             return
+        # TODO: Should really generalize this.
+        if dst_file.endswith('stats.json'):
+            return
         if dst_file.endswith('.br'):
             return
         if dst_file.endswith('.gz'):

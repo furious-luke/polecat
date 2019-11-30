@@ -1,3 +1,4 @@
+from datetime import date, datetime
 from uuid import UUID
 
 from graphql.error import INVALID
@@ -6,7 +7,48 @@ from graphql.language.ast import (BooleanValueNode, FloatValueNode,
 from graphql.pyutils import inspect, is_finite, is_integer
 from graphql.type.definition import GraphQLScalarType, is_named_type
 
-__all__ = ('GraphQLDatetime',)
+__all__ = ('GraphQLDatetime', 'GraphQLDate')
+
+
+def serialize_date(value):
+    if isinstance(value, str):
+        # TODO: Confirm value is a date?
+        return value
+    if isinstance(value, date):
+        # TODO: Which format?
+        return str(value)
+    # Do not serialize builtin types as strings, but allow
+    # serialization of custom types via their `__str__` method.
+    if type(value).__module__ == 'builtins':
+        raise TypeError(f'Date cannot represent value: {inspect(value)}')
+    return str(value)
+
+
+def coerce_date(value):
+    if not isinstance(value, str):
+        raise TypeError(
+            f'Date cannot represent a non string value: {inspect(value)}'
+        )
+    return value
+
+
+def parse_date_literal(ast, _variables=None):
+    """ Parse a string value node in the AST.
+    """
+    if isinstance(ast, StringValueNode):
+        # TODO: Must be a datetime.
+        return ast.value
+    return INVALID
+
+
+GraphQLDate = GraphQLScalarType(
+    name="Date",
+    description="The `Date` scalar type represents"
+    " a date.",
+    serialize=serialize_date,
+    parse_value=coerce_date,
+    parse_literal=parse_date_literal
+)
 
 
 def serialize_datetime(value):

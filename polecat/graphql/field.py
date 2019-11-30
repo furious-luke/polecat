@@ -14,7 +14,7 @@ from .input import Input
 from .registry import (FieldMetaclass, graphql_create_input_registry,
                        graphql_reverse_input_registry, graphql_type_registry,
                        graphql_update_input_registry)
-from .type import GraphQLDatetime, GraphQLUUID
+from .type import GraphQLDatetime, GraphQLUUID, GraphQLDate
 
 __all__ = ('Field', 'StringField', 'IntField', 'RelatedField')
 
@@ -78,6 +78,11 @@ class Field(metaclass=FieldMetaclass):
 class StringField(Field):
     graphql_type = GraphQLString
     sources = (field.TextField,)
+
+
+class DateField(Field):
+    graphql_type = GraphQLDate
+    sources = (field.DateField,)
 
 
 class DatetimeField(Field):

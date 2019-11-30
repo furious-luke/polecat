@@ -154,6 +154,11 @@ class PointField(Field):
     sources = (mf.PointField,)
 
 
+class DateField(Field):
+    db_type = 'date'
+    sources = (mf.DateField,)
+
+
 class DatetimeField(Field):
     db_type = 'timestamptz'
     sources = (mf.DatetimeField,)

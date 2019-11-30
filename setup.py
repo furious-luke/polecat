@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-version = '0.0.8'
+version = '0.0.9'
 
 setup(
     name='polecat',
@@ -25,7 +25,7 @@ setup(
     package_data={'': ['*.txt', '*.js', '*.html', '*.*']},
     install_requires=[
         'ujson==1.35',
-        'psycopg2-binary==2.7.7',
+        'psycopg2-binary==2.8.4',
         'graphql-core-next==1.0.2',
         # TODO: This should be in "cli".
         'polecat-feedback==0.0.0',

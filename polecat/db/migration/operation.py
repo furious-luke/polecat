@@ -451,8 +451,6 @@ class GrantAccessToTable(GrantAccess):
             entity_string = entity
         else:
             entity_string = entity.name
-            if entity.app:
-                entity_string = f'{entity.app}.{entity_string}'
         return entity_string
 
     def get_entity_tag(self, entity):

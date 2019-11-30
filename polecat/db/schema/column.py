@@ -4,7 +4,7 @@ from .utils import column_to_identifier, table_to_identifier
 
 __all__ = ('Column', 'MutableColumn', 'IntColumn', 'TextColumn',
            'BoolColumn', 'FloatColumn', 'RelatedColumn', 'ReverseColumn',
-           'PasswordColumn', 'TimestampColumn', 'UUIDColumn', 'SerialColumn',
+           'PasswordColumn', 'DateColumn', 'TimestampColumn', 'UUIDColumn', 'SerialColumn',
            'PointColumn', 'JSONColumn')
 
 
@@ -118,6 +118,10 @@ class TextColumn(MutableColumn):
 
 
 class PasswordColumn(TextColumn):
+    pass
+
+
+class DateColumn(MutableColumn):
     pass
 
 

@@ -76,6 +76,14 @@ class PointField(Field):
         return LazyFunction(lambda: Point(0, 0))
 
 
+class Date(Field):
+    sources = (mf.DateField,)
+
+    @classmethod
+    def get_declaration(self, model, model_field, factory):
+        return FuzzyDateTime(timezone.now().date())
+
+
 class DatetimeField(Field):
     sources = (mf.DatetimeField,)
 

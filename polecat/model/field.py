@@ -83,6 +83,10 @@ class FloatField(MutableField):
     pass
 
 
+class DateField(MutableField):
+    pass
+
+
 class DatetimeField(MutableField):
     pass
 

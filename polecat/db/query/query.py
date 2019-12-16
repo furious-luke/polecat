@@ -150,10 +150,11 @@ class Delete(Query):
 class Filter(Query):
     mutatable = False
 
-    def __init__(self, source, options, **kwargs):
+    def __init__(self, source, expression=None, options=None, **kwargs):
         super().__init__(source, **kwargs)
         self.assert_selectable(source)
-        self.options = options
+        self.expression = expression
+        self.options = options or {}
 
     def has_column(self, name):
         return self.source.has_column(name)

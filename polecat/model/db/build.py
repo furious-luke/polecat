@@ -32,7 +32,8 @@ class TableBuilder:
             app=model.Meta.app,
             uniques=model.Meta.uniques,
             checks=model.Meta.checks,
-            indexes=model.Meta.indexes
+            indexes=model.Meta.indexes,
+            policies=model.Meta.policies
         )
 
     def build_all_columns(self, model):

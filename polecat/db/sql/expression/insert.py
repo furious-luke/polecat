@@ -19,14 +19,14 @@ class Insert(Expression):
     def to_sql(self):
         # TODO: Generating SQL for inserts could be improved by using
         # a Values expression instead of this mishmash.
-        if isinstance(self.values, Expression):
-            prefix_sql = SQL('')
-            suffix_sql = SQL('')
-            get_values_func = self.get_values_sql_from_expression
-        elif not self.values:
+        if not self.values or (isinstance(self.values, Expression) and self.values.values.values == [[]]):
             prefix_sql = SQL('DEFAULT VALUES')
             suffix_sql = SQL('')
             get_values_func = None
+        elif isinstance(self.values, Expression):
+            prefix_sql = SQL('')
+            suffix_sql = SQL('')
+            get_values_func = self.get_values_sql_from_expression
         else:
             prefix_sql = SQL('VALUES (')
             suffix_sql = SQL(')')

@@ -137,7 +137,11 @@ class RelatedField(Field):
             return super().make_graphql_field(name, optional)
 
     def get_graphql_type(self, registry=None):
+        # TODO: I really need to be able to create and update with an
+        # ID first and foremost, hence this change. This is so bad.
         registry = registry or self.registry
+        if registry == graphql_update_input_registry or registry == graphql_reverse_input_registry or registry == graphql_create_input_registry:
+            return GraphQLInt
         try:
             return registry[self.model_field.other]
         except KeyError:
@@ -195,8 +199,9 @@ class ReverseField(RelatedField):
         if name in input:
             # TODO: Nesting.
             # TODO: Is this a bit inefficient? All the conditionls?
-            delete = input[name].get('delete', set())
-            change = input[name].get('create', None)
+            value = input[name] or {}
+            delete = value.get('delete', set())
+            change = value.get('create', None)
             if change:
                 sub_type = graphql_type.fields[self.model_field.cc_name].type.fields['create'].type.of_type
                 new_change = []

@@ -140,6 +140,11 @@ class UUIDColumn(Column):
             return super().get_default_str()
 
 
+class BoolColumn(Column):
+    sources = (schema.BoolColumn,)
+    dbtype = 'boolean'
+
+
 class JSONColumn(Column):
     sources = (schema.JSONColumn,)
     dbtype = 'jsonb'

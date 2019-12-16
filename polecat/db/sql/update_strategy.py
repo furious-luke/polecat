@@ -1,6 +1,7 @@
 from ..query import query as query_module
 from .expression.update import Update
 from .expression.where import Where
+from .expression.subrelation_override import SubrelationOverride
 from .insert_strategy import InsertStrategy
 
 
@@ -13,8 +14,11 @@ class UpdateStrategy(InsertStrategy):
         else:
             relation = query.source
             where = None
-        return Update(
+        expr = Update(
             relation,
             self.parse_values_or_subquery(query, query.values),
             where=where
         )
+        if query.reverse_queries:
+            expr = SubrelationOverride(expr, query.reverse_queries, self.root)
+        return expr

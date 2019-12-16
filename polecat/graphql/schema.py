@@ -21,7 +21,7 @@ from .resolve import (resolve_all_query, resolve_create_mutation,
                       resolve_delete_mutation, resolve_get_query,
                       resolve_mutation, resolve_query, resolve_update_mutation,
                       resolve_update_or_create_mutation)
-from .type import scalars
+from .type import scalars, GraphQLJSON
 
 logger = logging.getLogger(__name__)
 
@@ -537,6 +537,8 @@ class QueryBuilder:
             return GraphQLString
         elif type == int:
             return GraphQLInt
+        elif type == dict:
+            return GraphQLJSON
         else:
             raise NotImplementedError(f'invalid GraphQL argument: {type}')
 

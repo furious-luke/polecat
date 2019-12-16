@@ -49,11 +49,14 @@ class Where:
                 pass
         return target, Equal
 
-    def merge(self, other):
+    def merge(self, other, boolean='AND'):
         # TODO: We should really do a check for duplicate filters.
         if self.root:
             if other.root:
-                self.root = And(self.root, other.root)
+                if boolean == 'AND':
+                    self.root = And(self.root, other.root)
+                else:
+                    self.root = Or(self.root, other.root)
         elif other.root:
             self.root = other.root
 
@@ -158,6 +161,9 @@ class FilterType:
         return self.value
 
     def get_primary_columns(self):
+        # TODO: Test this.
+        if self.joins:
+            return (self.joins[0],)
         return (self.field,)
 
 

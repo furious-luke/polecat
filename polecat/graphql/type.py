@@ -1,3 +1,4 @@
+import ujson
 from datetime import date, datetime
 from uuid import UUID
 
@@ -7,7 +8,7 @@ from graphql.language.ast import (BooleanValueNode, FloatValueNode,
 from graphql.pyutils import inspect, is_finite, is_integer
 from graphql.type.definition import GraphQLScalarType, is_named_type
 
-__all__ = ('GraphQLDatetime', 'GraphQLDate')
+__all__ = ('GraphQLDatetime', 'GraphQLDate', 'GraphQLJSON')
 
 
 def serialize_date(value):
@@ -133,5 +134,32 @@ GraphQLUUID = GraphQLScalarType(
 )
 
 
+def serialize_json(value):
+    return ujson.dumps(value)
+
+
+def coerce_json(value):
+    return ujson.loads(value)
+
+
+def parse_json_literal(ast, _variables=None):
+    """ Parse a string value node in the AST.
+    """
+    if isinstance(ast, StringValueNode):
+        # TODO: Must be a UUID.
+        return ast.value
+    return INVALID
+
+
+GraphQLJSON = GraphQLScalarType(
+    name="JSON",
+    description="The `JSON` scalar type represents"
+    " a JSON.",
+    serialize=serialize_json,
+    parse_value=coerce_json,
+    parse_literal=parse_json_literal,
+)
+
+
 # TODO: Prefer tuple, but we add it to a list in `./schema.py`.
-scalars = [GraphQLDatetime, GraphQLUUID]
+scalars = [GraphQLDatetime, GraphQLUUID, GraphQLJSON]

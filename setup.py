@@ -46,6 +46,7 @@ setup(
             'pytest-polecat==0.0.0',
             'factory-boy==2.11.1',
             'sanic==19.3.1',
+            'sanic-cors==0.9.9.post3',
             'boto3==1.9.125',
             'coolname==1.1.0',
             'python-Levenshtein==0.12.0'

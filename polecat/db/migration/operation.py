@@ -29,7 +29,7 @@ create_table_template = '''operation.CreateTable(
 
 class Operation:
     def __init__(self):
-        pass
+        self.post_ops = []
 
     @property
     def dependencies(self):
@@ -95,17 +95,17 @@ class CreateTable(Operation):
     def sql(self):
         table_name_ident = Identifier(self.get_table_name())
         all_sql, all_args = self.all_sql()
-        idx_sql, idx_args = self.indexes_sql()
+        self.post_ops.append(self.indexes_sql())
+        self.post_ops.append(self.policies_sql())
         return (
             SQL('\n').join(
                 (SQL('CREATE TABLE {} (\n{}\n);').format(
                     table_name_ident,
                     all_sql
                 ),) +
-                self.access_sql(table_name_ident) +
-                (idx_sql,)
+                self.access_sql(table_name_ident)
             ),
-            all_args + idx_args
+            all_args
         )
 
     def set_app(self, app):
@@ -188,6 +188,14 @@ class CreateTable(Operation):
             all_args += args
         return SQL('\n').join(all_sql), all_args
 
+    def policies_sql(self):
+        all_sql, all_args = [], ()
+        for policy in self.table.policies:
+            sql, args = policy.sql
+            all_sql.append(sql)
+            all_args += args
+        return SQL('\n').join(all_sql), all_args
+
     def iter_grants(self, access, table_name):
         roles_and_perms = (
             (access.all, 'ALL'),
@@ -229,6 +237,9 @@ class CreateTable(Operation):
         indexes = self.serialize_indexes()
         if indexes:
             options.append(f'indexes={indexes}')
+        policies = self.serialize_policies()
+        if policies:
+            options.append(f'policies={policies}')
         options = ',\n'.join(options)
         if options:
             options = indent(f',\n{options}', 4)
@@ -287,6 +298,15 @@ class CreateTable(Operation):
                 for index in indexes
             ) + ']'
         return indexes
+
+    def serialize_policies(self):
+        policies = self.table.policies
+        if policies:
+            policies = '[' + ', '.join(
+                policy.serialize()
+                for policy in policies
+            ) + ']'
+        return policies
 
 
 class DeleteTable(Operation):

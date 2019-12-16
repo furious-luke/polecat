@@ -141,8 +141,8 @@ class UpdateResolverManager(ResolverManager):
 class UpdateOrCreateResolverManager(ResolverManager):
     def resolve_with_context(self, context, *args, **kwargs):
         model_class = context.model_class
-        input = context.parse_input()
-        if input.get('id') is None:
+        id = context.parse_argument('id')
+        if id is None:
             manager = model_class.Meta.create_resolver_manager
         else:
             manager = model_class.Meta.update_resolver_manager

@@ -123,11 +123,10 @@ class Strategy:
     def create_filter(self, query):
         # TODO: Should maybe factor this out into a filter
         # strategy?
+        expr = query.expression or Where(**query.options)
         return Select(
             self.parse_chained_relation(query.source),
-            where=Where(
-                **query.options
-            )
+            where=expr
         )
 
     def create_join(self, query):

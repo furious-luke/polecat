@@ -190,6 +190,7 @@ def make_model_meta(name, attrs, meta):
         'checks': getattr(meta, 'checks', ()) if meta else (),
         'omit': getattr(meta, 'omit', NONE) if meta else NONE,  # TODO: Duplicate of above
         'indexes': getattr(meta, 'indexes', ()),
+        'policies': getattr(meta, 'policies', ()),
         'query_resolvers': ResolverList(query_resolvers),
         'all_resolvers': ResolverList(AllResolver()),
         'get_resolvers': ResolverList(GetResolver()),

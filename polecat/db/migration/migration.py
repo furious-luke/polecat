@@ -11,7 +11,7 @@ from .utils import project_migrations_path
 
 migration_template = '''from polecat.db.migration import migration, operation
 from polecat.db import schema
-from polecat.db.schema import column, index
+from polecat.db.schema import column, index, policy
 
 
 class Migration(migration.Migration):
@@ -84,6 +84,15 @@ class Migration:
                         '  VALUES(%s, %s, now());'
                     )
                     cursor.execute(sql, (self.app.name if self.app else None, self.name))
+
+    @dbcursor
+    def forward_post_ops(self, cursor=None):
+        with transaction(cursor):
+            for op in self.operations:
+                for sql, args in op.post_ops:
+                    # TODO: This isn't a nice check.
+                    if sql.seq:
+                        cursor.execute(sql, args)
 
     @property
     def filename(self):

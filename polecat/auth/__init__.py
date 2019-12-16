@@ -1,1 +1,1 @@
-from .jwt import jwt  # noqa
+from .jwt import jwt, jwt_decode  # noqa

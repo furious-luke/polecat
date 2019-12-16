@@ -1,4 +1,5 @@
 from sanic import Sanic, response
+from sanic_cors import CORS
 
 from ...project.project import load_project
 from ..event import HttpEvent
@@ -11,6 +12,7 @@ class Server:
         self.production = production
         self.port = 80 if production else 8000
         self.sanic_app = Sanic()
+        CORS(self.sanic_app, automatic_options=True)
         self.sanic_app.add_route(self.index, '/', methods=['GET'])
         self.sanic_app.add_route(
             self.index,

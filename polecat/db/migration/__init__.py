@@ -22,6 +22,8 @@ def migrate(migration_paths=None, apps=None, cursor=None):
     schema = Schema()
     for migration in migrations.values():
         migration.forward(schema, migrations, cursor=cursor)
+    for migration in migrations.values():
+        migration.forward_post_ops(cursor=cursor)
 
 
 def load_migrations(migration_paths=None, apps=None):

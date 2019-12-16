@@ -138,7 +138,14 @@ class Q:
             values = self.merge_query_branches(subquery[0])
         else:
             values = self.parse_value_dict(self.queryable, values)
-        return self.chain(Update(source, values))
+        update = Update(source, values)
+        if update.reverse_queries:
+            if self.branches is None:
+                self.branches = []
+            for reverse_queries in update.reverse_queries.values():
+                self.branches.extend(reverse_queries)
+            # TODO: Do I need to wrap update in a select?
+        return self.chain(update)
 
     def update_into(self, source, **values):
         self.split_branch()
@@ -156,8 +163,8 @@ class Q:
         self.split_branch()
         return self.chain(Update(source))
 
-    def filter(self, **options):
-        return self.chain(Filter(self.queryable, options))
+    def filter(self, expression=None, **options):
+        return self.chain(Filter(self.queryable, expression, options))
 
     def recurse(self, column):
         # TODO: This is clearly wrong. It mutates the query, possibly

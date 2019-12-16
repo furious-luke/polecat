@@ -33,7 +33,7 @@ def find_config():
         path = dir / 'polecat.json'
         if path.exists():
             return str(path)
-        if dir == Path.home():
+        if dir == Path.home() or dir.parent == dir:
             return None
         dir = dir.parent
 

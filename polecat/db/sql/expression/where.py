@@ -155,7 +155,7 @@ class FilterType:
             format_string = format_string % '{}'
             return SQL(format_string).format(*(args + (value_sql,))), value_args
         else:
-            return SQL(format_string).format(*args), to_tuple(self.get_value())
+            return SQL(format_string).format(*args), to_tuple(self.get_value(), keep_none=True)
 
     def get_value(self):
         return self.value

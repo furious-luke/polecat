@@ -92,6 +92,8 @@ class Insert(Query):
         # handing being given an integer for the primary key.
         if isinstance(subvalues, int):
             return subvalues
+        if subvalues is None:
+            return subvalues
         # TODO: Should we be considering if there's an ID in the
         # subset? If so this should be an Update instead of a Insert.
         return Select(

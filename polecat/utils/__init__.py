@@ -43,13 +43,16 @@ def get_class_path(value):
     return Path(inspect.getfile(value)).parent
 
 
-def to_tuple(value):
+def to_tuple(value, keep_none=False):
     if isinstance(value, tuple):
         return value
     if isinstance(value, list):
         return tuple(value)
     elif value is None:
-        return ()
+        if keep_none:
+            return (None,)
+        else:
+            return ()
     else:
         return (value,)
 

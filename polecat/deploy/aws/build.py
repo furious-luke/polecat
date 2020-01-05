@@ -22,8 +22,13 @@ def handler(event, context):
 
 def build(project, source=None, local_packages=None, feedback=None):
     feedback.declare_steps(
-        'Install polecat', 'Install dependencies', 'Create archive'
+        # 'Update docker images',
+        'Install polecat',
+        'Install dependencies',
+        'Create archive'
     )
+    # with feedback('Update docker images'):
+    #     subprocess.check_output('docker pull python:3.7'.split(), stderr=subprocess.PIPE)
     source = Path(source) if source else (Path.cwd() / project)
     local_packages = local_packages or []
     with TemporaryDirectory() as root:
@@ -48,9 +53,14 @@ def build(project, source=None, local_packages=None, feedback=None):
 
 
 def install_package(package, root):
-    subprocess.check_output([
-        sys.executable, '-m', 'pip', 'install', '--target', root, package
-    ], stderr=subprocess.PIPE)
+    if str(package).startswith('http'):
+        cmd = f'python -m pip install --target /app {package}'
+        docker_cmd = f'docker run --rm --user 1000:1000 -v {root}:/app python:3.7'
+    else:
+        cmd = 'python -m pip install --target /app /tmp/pkg'
+        docker_cmd = f'docker run --rm --user 1000:1000 -v {package}:/tmp/pkg -v {root}:/app python:3.7'
+    split_cmd = f'{docker_cmd} {cmd}'.split()
+    subprocess.check_output(split_cmd, stderr=subprocess.PIPE)
 
 
 def find_polecat_package(feedback):

@@ -36,7 +36,7 @@ class Field:
 
 
 class MutableField(Field):
-    def __init__(self, *args, null=True, unique=False, default=None,
+    def __init__(self, *args, null=False, unique=False, default=None,
                  primary_key=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.null = null

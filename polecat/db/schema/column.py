@@ -46,7 +46,7 @@ class Column(Entity):
 
 
 class MutableColumn(Column):
-    def __init__(self, name, null=True, primary_key=False, default=None,
+    def __init__(self, name, null=False, primary_key=False, default=None,
                  unique=False, dimensions=None, **kwargs):
         super().__init__(name, unique=True if primary_key else unique, **kwargs)
         self.null = False if primary_key else null

@@ -54,8 +54,9 @@ class Project:
     bundle = None
     default_role = None
     config = None
+    enable_cors = False
 
-    def __init__(self, name=None, deployment=None, default_role=None, config=None):
+    def __init__(self, name=None, deployment=None, default_role=None, enable_cors=False, config=None):
         self.models = {}  # TODO: Will remove later.
         self.name = name or self.name
         if not self.name:
@@ -66,6 +67,7 @@ class Project:
         if not self.deployment:
             self.deployment = os.environ.get('DEPLOYMENT', '')
         self.default_role = default_role or self.default_role
+        self.enable_cors = enable_cors or self.enable_cors
         self.bucket = os.environ.get('BUCKET')
         self.bundle = os.environ.get('BUNDLE', self.bundle)
         self.bundle_version = os.environ.get('BUNDLE_VERSION')

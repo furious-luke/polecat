@@ -12,7 +12,7 @@ class APIGatewayRequest:
         # TODO: Move to config. Also wrong.
         try:
             self.path = event['path']
-            self.method = event['httpMethod']
+            self.method = event['httpMethod'].upper()
             self.headers = event.get('headers', {})
             self.host = self.headers.get('Host', None)
             self.query_parameters = event.get('queryStringParameters', None)
@@ -46,3 +46,6 @@ class LambdaEvent(Event):
 
     def get_authorization_header(self):
         return self.request.headers.get('Authorization', None)
+
+    def get_access_control_request_method_header(self):
+        return self.request.headers.get('Access-Control-Request-Method', None)

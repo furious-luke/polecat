@@ -517,6 +517,7 @@ class RevokeAccess(Operation):
 
 class RunPython(Operation):
     def __init__(self, forward_func):
+        super().__init__()
         self.forward_func = forward_func
 
     @dbcursor

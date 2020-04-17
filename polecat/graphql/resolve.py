@@ -14,6 +14,7 @@ class GraphQLAPIContext(APIContext):
         self.root = root
         self.info = info
         self.kwargs = kwargs
+        self.event = self.graphql_context.get('event')
         self.session = self.graphql_context.get('session')
 
     def parse_argument(self, name):

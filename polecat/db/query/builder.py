@@ -70,9 +70,9 @@ class Q:
 
     def select(self, *args, **kwargs):
         if len(args) == 1 and isinstance(args[0], Selection):
-            if len(kwargs):
-                raise ValueError('Cannot pass a Selection instance and lookups.')
-            selection = args[0]
+            selection = args[0].copy()
+            if kwargs:
+                selection.merge(Selection(**kwargs))
         else:
             selection = Selection(*args, **kwargs)
         return self.chain(

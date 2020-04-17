@@ -178,6 +178,7 @@ def make_model_meta(name, attrs, meta):
     }
     query_resolvers = to_list(getattr(meta, 'query_resolvers', []))
     mutation_resolvers = to_list(getattr(meta, 'mutation_resolvers', []))
+    create_resolvers = to_list(getattr(meta, 'create_resolvers', []))
     return type('Meta', (), {
         'options': meta.__dict__ if meta else {},
         'app': getattr(meta, 'app', None),
@@ -197,7 +198,7 @@ def make_model_meta(name, attrs, meta):
         'all_resolver_manager': AllResolverManager(),
         'get_resolver_manager': GetResolverManager(),
         'mutation_resolvers': ResolverList(mutation_resolvers),
-        'create_resolvers': ResolverList(CreateResolver()),
+        'create_resolvers': ResolverList(create_resolvers + [CreateResolver()]),
         'update_resolvers': ResolverList(UpdateResolver()),
         'delete_resolvers': ResolverList(DeleteResolver()),
         'create_resolver_manager': CreateResolverManager(),

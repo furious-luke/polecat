@@ -1,6 +1,7 @@
 from collections import defaultdict
 
 from ..schema import RelatedColumn, ReverseColumn
+from ..schema.variable import SessionVariable
 from .selection import Selection
 
 
@@ -86,7 +87,7 @@ class Insert(Query):
         return Values(mapped_values)
 
     def subvalues_to_subquery(self, column, subvalues):
-        if isinstance(subvalues, Query):
+        if isinstance(subvalues, (Query, SessionVariable)):
             return subvalues
         # TODO: Ugh, this is soooo bad. This is how I'm currently
         # handing being given an integer for the primary key.

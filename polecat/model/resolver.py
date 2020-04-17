@@ -7,6 +7,7 @@ from cached_property import cached_property
 
 from polecat.utils import to_list
 
+from .defaults import default_blueprint
 from .db.query import Q
 
 logger = logging.getLogger(__name__)
@@ -36,6 +37,10 @@ class APIContext:
 
     def get_selector(self):
         raise NotImplementedError
+
+    def get_model(self, name):
+        # TODO: This is no good. It should include the app name.
+        return default_blueprint.models[name]
 
 
 class ResolverContext:

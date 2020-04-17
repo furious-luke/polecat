@@ -26,6 +26,7 @@ class GraphqlAPI(Handler):
             # batch_enabled=False,
             # catch=False,
             context_value={
+                'event': event,
                 'session': event.session
             }
         )

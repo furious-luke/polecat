@@ -1,4 +1,5 @@
 import asyncio
+from jwt import InvalidSignatureError
 
 import ujson
 from graphql_server.error import HttpQueryError
@@ -20,6 +21,11 @@ class LambdaServer:
         try:
             result = loop.run_until_complete(
                 self.project.handle_event(event)
+            )
+        except InvalidSignatureError:
+            result = (
+                {'errors': ['Unauthorized']},
+                401
             )
         except HttpQueryError as e:
             result = (

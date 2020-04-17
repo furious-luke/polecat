@@ -1,7 +1,8 @@
 from functools import partial
+from uuid import uuid4
 
 from factory import LazyFunction, declarations
-from factory.fuzzy import FuzzyDateTime, FuzzyInteger, FuzzyText
+from factory.fuzzy import FuzzyDateTime, FuzzyInteger, FuzzyText, FuzzyAttribute
 from polecat.db.sql.postgres import Point
 from polecat.utils import timezone
 
@@ -55,7 +56,10 @@ class TextField(Field):
 
     @classmethod
     def get_declaration(self, model, model_field, factory):
-        return FuzzyText()
+        kwargs = {}
+        if model_field.length is not None:
+            kwargs['length'] = model_field.length
+        return FuzzyText(**kwargs)
 
 
 class NumberField(Field):
@@ -90,6 +94,42 @@ class DatetimeField(Field):
     @classmethod
     def get_declaration(self, model, model_field, factory):
         return FuzzyDateTime(timezone.now())
+
+
+class BoolField(Field):
+    sources = (mf.BoolField,)
+
+    @classmethod
+    def get_declaration(self, model, model_field, factory):
+        # TODO
+        return FuzzyAttribute(lambda: True)
+
+
+class FloatField(Field):
+    sources = (mf.FloatField,)
+
+    @classmethod
+    def get_declaration(self, model, model_field, factory):
+        # TODO
+        return FuzzyAttribute(lambda: 0.0)
+
+
+class UUIDField(Field):
+    sources = (mf.UUIDField,)
+
+    @classmethod
+    def get_declaration(self, model, model_field, factory):
+        # TODO
+        return FuzzyAttribute(lambda: uuid4())
+
+
+class JSONField(Field):
+    sources = (mf.JSONField,)
+
+    @classmethod
+    def get_declaration(self, model, model_field, factory):
+        # TODO
+        return FuzzyAttribute(lambda: {})
 
 
 class RelatedField(Field):

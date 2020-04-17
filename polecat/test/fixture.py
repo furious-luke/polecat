@@ -83,12 +83,13 @@ class ServerFixture:
         return mutation.resolve(api_context)
 
     def build_api_context(self, model_class=None, arguments=None, input=None,
-                          role=None):
+                          role=None, session_variables=None):
         return TestAPIContext(
             model_class,
             arguments=arguments,
             input=input,
-            role=role or self.project.default_role
+            role=role or self.project.default_role,
+            session_variables=session_variables
         )
 
     def get_model_class(self, model_class):
@@ -100,12 +101,12 @@ class ServerFixture:
 
 class TestAPIContext(APIContext):
     def __init__(self, model_class=None, arguments=None, input=None,
-                 role=None):
+                 role=None, session_variables=None):
         super().__init__()
         self._model_class = model_class
         self._arguments = arguments or {}
         self._input = input or {}
-        self.session = Session(role=role)
+        self.session = Session(role=role, variables=session_variables)
         self.event = type('TestEvent', (), {
             'role': role,
             'session': self.session

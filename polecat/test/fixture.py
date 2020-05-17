@@ -1,7 +1,8 @@
+import inspect
 import copy
 from contextlib import contextmanager
 
-from polecat.core.config import RootConfig, default_config
+from polecat.core.config import default_config
 from polecat.db.connection import cursor, manager
 from polecat.db.query.selection import Selection
 from polecat.db.session import Session
@@ -9,7 +10,7 @@ from polecat.db.utils import unparse_url
 from polecat.model import default_blueprint
 from polecat.model.db.migrate import sync
 from polecat.model.resolver import APIContext
-from polecat.project.project import Project, load_project
+from polecat.project.project import Project, load_project, setup_project
 from polecat.test.factory import create_model_factory
 from polecat.utils import random_ident
 
@@ -75,19 +76,23 @@ class ServerFixture:
         )
         return model_class.Meta.delete_resolver_manager(api_context)
 
-    def mutation(self, name, **kwargs):
+    def mutation(self, name, input=None, **kwargs):
         api_context = self.build_api_context(
-            input=kwargs
+            input=input,
+            **kwargs
         )
         mutation = default_blueprint.get_mutation(name)
+        if inspect.isclass(mutation):
+            mutation = mutation()
         return mutation.resolve(api_context)
 
     def build_api_context(self, model_class=None, arguments=None, input=None,
-                          role=None, session_variables=None):
+                          selector=None, role=None, session_variables=None):
         return TestAPIContext(
             model_class,
             arguments=arguments,
             input=input,
+            selector=selector,
             role=role or self.project.default_role,
             session_variables=session_variables
         )
@@ -101,11 +106,12 @@ class ServerFixture:
 
 class TestAPIContext(APIContext):
     def __init__(self, model_class=None, arguments=None, input=None,
-                 role=None, session_variables=None):
+                 selector=None, role=None, session_variables=None):
         super().__init__()
         self._model_class = model_class
         self._arguments = arguments or {}
         self._input = input or {}
+        self._selector = selector or Selection()
         self.session = Session(role=role, variables=session_variables)
         self.event = type('TestEvent', (), {
             'role': role,
@@ -126,7 +132,7 @@ class TestAPIContext(APIContext):
         return self._input
 
     def get_selector(self):
-        return Selection()
+        return self._selector
 
 
 @contextmanager
@@ -151,7 +157,7 @@ def migrateddb():
     # Should be scoped to the session.
     try:
         # Loading the project ensures we have all models.
-        load_project()
+        setup_project()
         # TODO: Catch better error.
     except Exception:
         pass
@@ -162,7 +168,9 @@ def migrateddb():
 
 @contextmanager
 def db(migrateddb):
-    url = migrateddb.connection.dsn
+    # TODO: DSN representation in the psycopg2 connection has changed.
+    # url = migrateddb.connection.dsn
+    url = manager.get_url()
     dbinfo = manager.parse_url(url)
     local_dbname = random_ident()
     migrateddb.execute(

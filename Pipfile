@@ -31,4 +31,4 @@ pytz = "==2019.1"
 pytimeparse = "==1.1.8"
 
 [requires]
-python_version = "3.7"
+python_version = "3.8"

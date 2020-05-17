@@ -15,8 +15,8 @@ class Selection:
     def copy(self):
         return Selection(*self.fields, **self.lookups)
 
-    def get(self, name):
-        return self.lookups.get(name)
+    def get(self, name, force=False):
+        return self.lookups.get(name) or (Selection() if force else None)
 
     def merge(self, other):
         if other is not None:

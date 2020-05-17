@@ -114,9 +114,9 @@ class Select(Expression):
 
     def parse_order_column(self, column):
         if column[0] == '-':
-            return f'{column[1:]} DESC'
+            return f'"{column[1:]}" DESC'
         else:
-            return column
+            return f'"{column}"'
 
     def iter_column_names(self):
         for name in self.columns:

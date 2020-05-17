@@ -129,7 +129,7 @@ class JSONField(Field):
     @classmethod
     def get_declaration(self, model, model_field, factory):
         # TODO
-        return FuzzyAttribute(lambda: {})
+        return FuzzyAttribute(lambda: '{}')
 
 
 class RelatedField(Field):

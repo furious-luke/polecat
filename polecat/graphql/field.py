@@ -1,6 +1,7 @@
 import logging
 from functools import partial
 
+import ujson as json
 from graphql.type import (GraphQLArgument, GraphQLBoolean, GraphQLEnumType,
                           GraphQLEnumValue, GraphQLField, GraphQLFloat,
                           GraphQLInputField, GraphQLInputObjectType,
@@ -98,6 +99,10 @@ class UUIDField(Field):
 class JSONField(Field):
     graphql_type = GraphQLString
     sources = (field.JSONField,)
+
+    # TODO: Not sure this is the right way to do this.
+    def default_resolver(self, obj, path):
+        return json.dumps(super().default_resolver(obj, path))
 
 
 class PointField(Field):

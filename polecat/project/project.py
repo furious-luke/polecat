@@ -105,13 +105,21 @@ class Project:
             from polecat.deploy.aws.middleware import DevelopMiddleware
             from polecat.auth.middleware import RoleMiddleware
             from polecat.graphql.api import GraphqlAPI
+            from polecat.rest.rest_api import RestAPI
+            middleware = [
+                DevelopMiddleware(),
+                RoleMiddleware(self.default_role)
+            ]
             self.handlers.append(
                 GraphqlAPI(
                     self,
-                    middleware=[
-                        DevelopMiddleware(),
-                        RoleMiddleware(self.default_role)
-                    ]
+                    middleware=middleware
+                )
+            )
+            self.handlers.append(
+                RestAPI(
+                    self,
+                    middleware=middleware
                 )
             )
         self.handlers.append(IndexHandler(self))

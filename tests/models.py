@@ -107,6 +107,7 @@ class AuthenticateInput(model.Type):
 class Authenticate(model.Mutation):
     input = AuthenticateInput
     returns = JWTType
+    route = 'authenticate'
 
     def resolve(self, ctx):
         input = ctx.parse_input()

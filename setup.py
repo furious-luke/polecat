@@ -44,6 +44,7 @@ setup(
             'pytest~=4.3.1',
             'pytest-asyncio~=0.10.0',
             'pytest-cov~=2.8.1',
+            'pytest-mock~=3.1.1',
             'pytest-polecat',
             'factory-boy~=2.11.1',
             'sanic~=19.3.1',

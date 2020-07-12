@@ -5,14 +5,16 @@ from .expression import Expression
 
 class Delete(Expression):
     def __init__(self, relation, returning=None, where=None):
-        self.relation = relation
+        super().__init__(relation)
+        self.relation = self.term
         self.returning = returning or ()
         self.where = where
 
     def to_sql(self):
         if self.returning:
-            returning_sql = SQL(' RETURNING {}').format(
-                map(Identifier, self.returning)
+            placeholders = ', '.join(('{}',) * len(self.returning))
+            returning_sql = SQL(' RETURNING %s' % placeholders).format(
+                *map(Identifier, self.returning)
             )
         else:
             returning_sql = SQL('')

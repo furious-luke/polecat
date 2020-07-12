@@ -5,8 +5,9 @@ from .expression import Expression
 
 
 class CTE(Expression):
-    def __init__(self):
-        self.expression = None
+    def __init__(self, term=None):
+        super().__init__(term)
+        self.expression = self.term  # TODO: Deprecate
         self.common_expressions = []
         self.alias_counter = 0
 
@@ -17,7 +18,7 @@ class CTE(Expression):
 
     def prepend(self, expression):
         alias = self.create_alias(expression)
-        self.expressions.insert(0, expression)
+        self.common_expressions.insert(0, alias)
         return alias
 
     def set_final_expression(self, expression):

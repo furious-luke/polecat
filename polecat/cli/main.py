@@ -20,6 +20,9 @@ def main(ctx, project):
         from polecat.project.project import load_project
         project = load_project()
         project.prepare()
-    except ModuleNotFoundError:
+    except ModuleNotFoundError as e:
         # TODO: Make this nicer.
+        module_path = os.environ.get('POLECAT_PROJECT_MODULE')
+        if module_path != e:
+            raise e
         print('Warning: unable to find Polecat project')

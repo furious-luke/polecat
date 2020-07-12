@@ -42,7 +42,7 @@ class ServerFixture:
             },
             **kwargs
         )
-        return model_class.Meta.all_resolver_manager(api_context)
+        return model_class.Meta.get_resolver_manager(api_context)
 
     def create_mutation(self, model_class, input, **kwargs):
         model_class = self.get_model_class(model_class)
@@ -63,7 +63,7 @@ class ServerFixture:
             input=input,
             **kwargs
         )
-        return model_class.Meta.create_resolver_manager(api_context)
+        return model_class.Meta.update_resolver_manager(api_context)
 
     def delete_mutation(self, model_class, id, **kwargs):
         model_class = self.get_model_class(model_class)
@@ -75,6 +75,18 @@ class ServerFixture:
             **kwargs
         )
         return model_class.Meta.delete_resolver_manager(api_context)
+
+    def update_or_create_mutation(self, model_class, input, id=None, **kwargs):
+        model_class = self.get_model_class(model_class)
+        api_context = self.build_api_context(
+            model_class,
+            arguments={
+                'id': id
+            },
+            input=input,
+            **kwargs
+        )
+        return model_class.Meta.update_or_create_resolver_manager(api_context)
 
     def mutation(self, name, input=None, **kwargs):
         api_context = self.build_api_context(
@@ -159,8 +171,9 @@ def migrateddb():
         # Loading the project ensures we have all models.
         setup_project()
         # TODO: Catch better error.
-    except Exception:
-        pass
+    except Exception as e:
+        if 'project' not in str(e):
+            raise
     with create_database() as curs:
         sync(cursor=curs)
         yield curs

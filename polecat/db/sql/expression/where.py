@@ -1,11 +1,15 @@
 import re
 
 import ujson
-from polecat.db.schema.column import ReverseColumn
-from polecat.utils import to_bool, to_tuple
 from psycopg2.sql import SQL, Composable, Identifier
 
+from polecat.utils import to_bool, to_tuple
+from ...schema.column import ReverseColumn
 from .expression import Expression
+
+
+class DiscardValue:
+    pass
 
 
 class Where:
@@ -155,10 +159,15 @@ class FilterType:
             format_string = format_string % '{}'
             return SQL(format_string).format(*(args + (value_sql,))), value_args
         else:
-            return SQL(format_string).format(*args), to_tuple(self.get_value(), keep_none=True)
+            value = self.get_value()
+            if value == DiscardValue:
+                sql_args = ()
+            else:
+                sql_args = to_tuple(self.get_value(), keep_none=True)
+            return SQL(format_string).format(*args), sql_args
 
     def get_value(self):
-        return self.value
+        return (self.value,)
 
     def get_primary_columns(self):
         # TODO: Test this.
@@ -201,7 +210,7 @@ class Contains(FilterType):
             tbl, col = self.get_table_column(filter)
         except KeyError:
             raise ValueError(f'invalid attribute: {self.field}')
-        return self.format('{}.{} LIKE %s', tbl, col)
+        return self.format('{}.{} LIKE %s', Identifier(tbl), Identifier(col))
 
     def parse_value(self, filter, value):
         value = '%{}%'.format(value)
@@ -239,13 +248,19 @@ class In(FilterType):
             tbl, col = self.get_table_column(filter)
         except KeyError:
             raise ValueError(f'invalid attribute: {self.field}')
-        return self.format('{}.{} = ANY (%s)', tbl, col)
+        return self.format('{}.{} = ANY (%s)', Identifier(tbl), Identifier(col))
 
     def parse_value(self, filter, value):
-        try:
-            self.value = ujson.loads(value)
-        except Exception:
-            raise ValueError(f'Unable to parse "in" filter value: {value}')
+        if isinstance(value, (list, tuple, set)):
+            self.value = list(value)
+        else:
+            try:
+                self.value = ujson.loads(value)
+            except Exception:
+                raise ValueError(f'Unable to parse "in" filter value: {value}')
+
+    def get_value(self):
+        return ([self.value],)
 
 
 class NotIn(In):
@@ -270,7 +285,7 @@ class IsNull(FilterType):
         self.value = to_bool(value)
 
     def get_value(self):
-        return None
+        return DiscardValue
 
 
 # class NotNull(FilterType):

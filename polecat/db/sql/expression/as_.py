@@ -11,10 +11,12 @@ class As(Expression):
         else:
             return expression
 
-    def __init__(self, expression, alias):
-        self.expression = expression
+    def __init__(self, term, alias):
+        super().__init__(term)
+        self.expression = self.term  # TODO: Deprecate
         self.alias = alias
 
+    # TODO: Deprecate
     @property
     def root_relation(self):
         return self.expression.root_relation
@@ -32,23 +34,3 @@ class As(Expression):
             expression_sql,
             Identifier(self.alias)
         ), ()
-
-    def get_subrelation(self, name):
-        # TODO: This feels like bad design. Not sure how to correct
-        # just at the moment, and at least it's clear what it's doing.
-        return self.expression.get_subrelation(name)
-
-    def get_column(self, name):
-        # TODO: Also bad design, but also what's the difference
-        # between this and the above? Looks like the above just does
-        # 'this.related_table'.
-        return self.expression.get_column(name)
-
-    def has_column(self, name):
-        # TODO: Also bad design, but also what's the difference
-        # between this and the above? Looks like the above just does
-        # 'this.related_table'.
-        return self.expression.has_column(name)
-
-    def push_selection(self, selection=None):
-        self.expression.push_selection(selection)

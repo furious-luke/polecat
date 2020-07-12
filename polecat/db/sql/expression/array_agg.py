@@ -4,8 +4,9 @@ from .expression import Expression
 
 
 class ArrayAgg(Expression):
-    def __init__(self, expression):
-        self.expression = expression
+    def __init__(self, term):
+        super().__init__(term)
+        self.expression = self.term  # TODO: Deprecate
 
     def to_sql(self):
         expr_sql, expr_args = self.expression.to_sql()

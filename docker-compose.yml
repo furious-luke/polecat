@@ -12,7 +12,7 @@ services:
     build:
       context: .
     environment:
-      DATABASE_URL: postgres://postgres@db/postgres
+      DATABASE_URL: postgres://postgres:test@db/postgres
       POLECAT_JWT_SECRET: secret
     depends_on:
       - db

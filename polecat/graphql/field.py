@@ -205,8 +205,8 @@ class ReverseField(RelatedField):
             # TODO: Nesting.
             # TODO: Is this a bit inefficient? All the conditionls?
             value = input[name] or {}
-            delete = value.get('delete', set())
-            change = value.get('create', None)
+            delete = value.get('delete')
+            change = value.get('create')
             if change:
                 sub_type = graphql_type.fields[self.model_field.cc_name].type.fields['create'].type.of_type
                 new_change = []
@@ -214,11 +214,16 @@ class ReverseField(RelatedField):
                     sub_input = Input(sub_type, sub_args)
                     sub_input.merge_delete(sub_input.delete, delete)
                     new_change.append(sub_input.change)
-                change = {
-                    self.model_field.name: new_change
+                change = new_change
+            if delete:
+                delete = [d['id'] for d in delete]
+            change = {
+                self.model_field.name: {
+                    'create': change,
+                    'delete': delete
                 }
-            if not len(delete):
-                delete = None
+            }
+            delete = None
         else:
             change, delete = None, None
         return change, delete

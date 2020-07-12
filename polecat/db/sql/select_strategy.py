@@ -8,7 +8,7 @@ from .expression.array_agg import ArrayAgg
 from .expression.as_ import As
 from .expression.join import Join, LateralJoin
 from .expression.raw import RawSQL
-from .expression.select import Select
+from .expression.select_ import Select
 from .expression.subquery import Subquery
 from .expression.where import Where
 

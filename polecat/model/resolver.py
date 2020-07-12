@@ -9,6 +9,7 @@ from polecat.utils import to_list
 
 from .defaults import default_blueprint
 from .db.query import Q
+from .field import ReverseField
 
 logger = logging.getLogger(__name__)
 
@@ -80,10 +81,12 @@ class ResolverList:
     def __iter__(self):
         return iter(self.resolvers)
 
-    def use(self, resolvers):
+    def use(self, resolvers, replace=False):
         # TODO: Track origin of resolvers.
         resolvers = to_list(resolvers)
-        self.resolvers = resolvers + self.resolvers
+        if not replace:
+            resolvers += self.resolvers
+        self.resolvers = resolvers
 
 
 class ResolverManager:
@@ -300,12 +303,39 @@ class CreateResolver(MutationResolver):
     def build_model(self, context):
         model_class = context.model_class
         input = context.parse_input()
+        self._manage_reverse_deletes(context, model_class, input)
         model = model_class(**input)
         self.resolve_model_fields(context, model)
         return model
 
     def build_query(self, context, model):
-        return Q(model, session=context.session).insert()
+        query = self._build_delete_query(context, model)
+        return query.branch(
+            Q(model, session=context.session).insert()
+        )
+
+    # TODO: This doesn't feel right to me.
+    def _manage_reverse_deletes(self, context, model_class, input):
+        context._deletes = {}
+        for field_name, field in model_class.Meta.fields.items():
+            if isinstance(field, ReverseField):
+                value = input.get(field_name)
+                if value:
+                    input[field_name] = value.get('create', [])
+                    to_delete = value.get('delete')
+                    if to_delete:
+                        ids = context._deletes.setdefault(field.other, set())
+                        ids.update(to_delete)
+
+    def _build_delete_query(self, context, model):
+        query = Q(session=context.session)
+        for delete_model, ids in context._deletes.items():
+            query = query.branch(
+                Q(delete_model, session=context.session)
+                .filter(id__in=ids)
+                .delete()
+            )
+        return query
 
 
 class UpdateResolver(CreateResolver):
@@ -313,12 +343,16 @@ class UpdateResolver(CreateResolver):
         model_class = context.model_class
         input = context.parse_input()
         context._id = context.parse_argument('id')
+        self._manage_reverse_deletes(context, model_class, input)
         model = model_class(id=context._id, **input)
         self.resolve_model_fields(context, model)
         return model
 
     def build_query(self, context, model):
-        return Q(model, session=context.session).update()
+        query = self._build_delete_query(context, model)
+        return query.branch(
+            Q(model, session=context.session).update()
+        )
 
 
 class DeleteResolver:

@@ -35,4 +35,8 @@ class RestView:
             context_value.get('event'),
             context_value.get('session')
         )
-        return self.field.resolver_manager(ctx)
+        # TODO: Must unify this.
+        try:
+            return self.field.Meta.resolver_manager(ctx)
+        except AttributeError:
+            return self.field.resolver_manager(ctx)

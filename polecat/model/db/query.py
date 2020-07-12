@@ -99,5 +99,10 @@ class Q(BaseQ):
             return destination_model
         raise ValueError('No results returned from query')
 
+    def branch(self, query):
+        result = super().branch(query)
+        result.model = query.model
+        return result
+
     def chain(self, queryable):
-        return self.__class__(self.model, queryable, self.branches, self.session)
+        return self.__class__(self.model, queryable, self.branches, session=self.session)

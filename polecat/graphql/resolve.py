@@ -21,7 +21,8 @@ class GraphQLAPIContext(APIContext):
         return self.kwargs.get(name)
 
     def parse_input(self):
-        return Input(self.input_type, self.kwargs.get('input', {})).change
+        input = Input(self.input_type, self.kwargs.get('input', {}))
+        return input.change
 
     def raw_input(self):
         return self.kwargs['input']

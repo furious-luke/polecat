@@ -1,6 +1,6 @@
 from .as_ import As
 from .expression import Expression
-from .select import Select
+from .select_ import Select
 from .subquery import Subquery
 from .union import Union
 

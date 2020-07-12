@@ -4,7 +4,7 @@ from .expression.exists import Exists
 from .expression.expression import Expression
 from .expression.insert import Insert
 from .expression.not_ import Not
-from .expression.select import Select
+from .expression.select_ import Select
 from .expression.subquery import Subquery
 from .expression.union import Union
 from .expression.where import Where

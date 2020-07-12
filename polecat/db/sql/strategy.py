@@ -8,10 +8,10 @@ from .expression.alias import Alias
 from .expression.as_ import As
 from .expression.cte import CTE
 from .expression.expression import Expression
-from .expression.json import JSON
+from .expression.json_ import JSON
 from .expression.multi import Multi
 from .expression.raw import RawSQL
-from .expression.select import Select
+from .expression.select_ import Select
 from .expression.string_agg import StringAgg
 from .expression.subquery import Subquery
 from .expression.union import Union

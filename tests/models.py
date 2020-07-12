@@ -53,9 +53,9 @@ class AddressAccess(model.Access):
 class Actor(model.Model):
     first_name = model.TextField()
     last_name = model.TextField()
-    age = model.IntField()
-    address = model.RelatedField(Address)
-    user = model.RelatedField(User, default=model.session('claims.user_id', 'int'))
+    age = model.IntField(null=True)
+    address = model.RelatedField(Address, null=True)
+    user = model.RelatedField(User, null=True, default=model.session('claims.user_id', 'int'))
 
     class Meta:
         uniques = (

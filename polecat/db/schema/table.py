@@ -1,13 +1,14 @@
 from psycopg2.sql import Identifier
 
 from ...utils.repr import to_repr
+from ..sql.sql_term import SqlTerm
 from .column import MutableColumn
 from .entity import Entity
 
 __all__ = ('Table',)
 
 
-class Table(Entity):
+class Table(SqlTerm, Entity):
     # TODO: These are here to support the Queryable interface. Bad
     # design, need to encapsulate these somewhere else.
     selectable = True
@@ -48,6 +49,16 @@ class Table(Entity):
             name = f'{self.app.name.lower()}_{name}'
         return name
 
+    # TODO: Deprecate.
+    @property
+    def alias(self):
+        return self.get_alias()
+
+    # TODO: Deprecate.
+    @property
+    def root_relation(self):
+        return self.get_root_relation()
+
     def has_changed(self, other):
         return (
             getattr(self.app, 'name', self.app) != getattr(other.app, 'name', other.app) or
@@ -70,17 +81,6 @@ class Table(Entity):
             for column in other.iter_mutable_columns()
         }
         return from_columns != to_columns
-
-    # TODO: This is for making SQL expressions. It would be nice to
-    # not have this here, as it's bleeding information between
-    # abstractions.
-    @property
-    def alias(self):
-        return self.name
-
-    @property
-    def root_relation(self):
-        return self
 
     def add_column(self, column):
         self.columns.append(column)
@@ -153,9 +153,15 @@ class Table(Entity):
         for column in self.columns:
             yield column.name
 
-    def get_subrelation(self, name):
+    def get_alias(self) -> str:
+        return self.name
+
+    def get_root_relation(self) -> 'Table':
+        return self
+
+    def get_subrelation(self, name: str) -> SqlTerm:
         column = self.get_column(name)
         return column.related_table
 
-    def push_selection(self, selection=None):
+    def push_selection(self, selection=None) -> None:
         pass

@@ -15,6 +15,8 @@ class ConnectionManager:
             if x is not None
         ]
         self.connections = {}
+        # TODO: I don't think I need current cursor... it creates
+        # strange behavior.
         self.current_cursor = {}
 
     def get_url(self, url=None):
@@ -48,18 +50,18 @@ class ConnectionManager:
         if cursor:
             yield cursor
         url = self.get_url(url)
-        curs = self.current_cursor.get(url)
-        if curs:
-            yield curs
-        else:
-            with self.connection(url, autocommit=autocommit) as conn:
-                curs = conn.cursor()
-                self.current_cursor[url] = curs
-                try:
-                    yield curs
-                finally:
-                    curs.close()
-                    del self.current_cursor[url]
+        # curs = self.current_cursor.get(url)
+        # if curs:
+        #     yield curs
+        # else:
+        with self.connection(url, autocommit=autocommit) as conn:
+            curs = conn.cursor()
+            # self.current_cursor[url] = curs
+            try:
+                yield curs
+            finally:
+                curs.close()
+                # del self.current_cursor[url]
 
     def open_connection(self, url, autocommit=True):
         url = self.get_url(url)

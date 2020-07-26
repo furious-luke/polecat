@@ -87,6 +87,16 @@ class Q(BaseQ):
             .update(**model_to_values(self.model, exclude_fields=('id',)))
         )
 
+    def delete(self):
+        if isinstance(self.model, Model):
+            if self.model.id:
+                result = self.filter(id=self.model.id)
+                return super(Q, result).delete()
+            else:
+                return self
+        else:
+            return super().delete()
+
     def get_model_id(self, model):
         id = getattr(model, 'id', None)
         if id is None:

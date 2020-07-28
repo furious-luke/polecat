@@ -196,7 +196,8 @@ class Project:
 
     @active_context
     def prepare_schema(self, context=None):
-        context.db.schema = create_schema()
+        self.schema = create_schema()
+        context.db.schema = self.schema
 
     def get_index_html(self):
         kwargs = {}

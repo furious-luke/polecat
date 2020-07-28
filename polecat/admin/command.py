@@ -54,5 +54,8 @@ class Command(metaclass=CommandMetaclass):
     def get_options(cls):
         pass
 
+    def get_params(self):
+        pass
+
     def run(self):
         raise NotImplementedError

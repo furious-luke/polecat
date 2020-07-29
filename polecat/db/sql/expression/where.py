@@ -210,11 +210,20 @@ class Contains(FilterType):
             tbl, col = self.get_table_column(filter)
         except KeyError:
             raise ValueError(f'invalid attribute: {self.field}')
-        return self.format('{}.{} LIKE %s', Identifier(tbl), Identifier(col))
+        op = self.get_operation()
+        return self.format('{}.{} {} %s', Identifier(tbl), Identifier(col), SQL(op))
 
     def parse_value(self, filter, value):
         value = '%{}%'.format(value)
         self.value = value.replace('%', r'%%')
+
+    def get_operation(self):
+        return 'LIKE'
+
+
+class ContainsInsensitive(Contains):
+    def get_operation(self):
+        return 'ILIKE'
 
 
 class Less(FilterType):
@@ -372,6 +381,7 @@ Where.FILTER_TYPES = {
     'ge': GreaterEqual,
     'in': In,
     'ct': Contains,
+    'cti': ContainsInsensitive,
     'ni': NotIn,
     'nu': IsNull,
     # 'nn': NotNull,

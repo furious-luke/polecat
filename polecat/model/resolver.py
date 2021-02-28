@@ -257,7 +257,7 @@ class AllResolver(QueryResolver):
 
     def build_results(self, context, query):
         return [
-            self.resolve_model_fields(context, m)
+            context.cut_point('resolve_model_fields', context, m)
             for m in query
         ]
 

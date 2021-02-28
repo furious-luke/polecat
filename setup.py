@@ -26,7 +26,7 @@ setup(
     install_requires=[
         'ujson~=1.35',
         'psycopg2-binary~=2.8.4',
-        'graphql-core-next~=1.0.2',
+        'graphql-core-next~=1.1.1',
         # TODO: This should be in "cli".
         'polecat-feedback',
         # 'graphql-server-core @ https://github.com/norman-thomas/graphql-server-core/tarball/master',

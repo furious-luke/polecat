@@ -558,7 +558,7 @@ class MutationBuilder:
         if not mutation.omit & omit.ALL:
             mutations[self.mutation_inflection(mutation)] = add_attribute(
                 GraphQLField(
-                    graphql_type_registry[mutation.returns],
+                    self.build_return_type(mutation),
                     {
                         'input': graphql_type_registry[mutation.input]
                     } if mutation.input else None,
@@ -570,3 +570,9 @@ class MutationBuilder:
 
     def mutation_inflection(self, mutation):
         return uncapitalize(mutation.name)
+
+    def build_return_type(self, mutation):
+        if isinstance(mutation.returns, list):
+            return GraphQLList(graphql_type_registry[mutation.returns[0]])
+        else:
+            return graphql_type_registry[mutation.returns]

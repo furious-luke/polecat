@@ -207,3 +207,27 @@ class Values(Query):
     def as_dict(self):
         assert len(self.values) == 1
         return dict(zip(self.columns, self.values[0]))
+
+
+class Count(Query):
+    mutatable = False
+
+    def __init__(self, source, alias=None):
+        super().__init__(source)
+        self.alias = alias
+
+
+class Max(Query):
+    mutatable = False
+
+    def __init__(self, source, alias=None):
+        super().__init__(source)
+        self.alias = alias
+
+
+class Ref(Query):
+    mutatable = False
+
+    def __init__(self, field):
+        super().__init__()
+        self.field = field

@@ -1,8 +1,10 @@
+from itertools import chain
+
 from polecat.utils import to_tuple
 from psycopg2.sql import SQL, Identifier
 
 from ..query.selection import Selection
-from ..schema import ReverseColumn
+from ..schema import ReverseColumn, QueryColumn
 from .expression.alias import Alias
 from .expression.array_agg import ArrayAgg
 from .expression.as_ import As
@@ -61,7 +63,7 @@ class SelectStrategy:
         relation = self.parse_relation(relation)
         if selection.has_lookups():
             relation = self.create_alias_for_relation(relation)
-        columns = selection.fields
+        columns = list(self.iter_non_query_columns(relation, selection))
         subqueries, joins = self.create_subqueries(relation, selection)
         return Select(
             relation, columns, subqueries, joins,
@@ -79,11 +81,23 @@ class SelectStrategy:
         self.relation_counter += 1
         return alias
 
+    def iter_non_query_columns(self, relation, selection):
+        for name in selection.fields:
+            column = relation.get_column(name)
+            if not isinstance(column, QueryColumn):
+                yield name
+
+    def iter_query_columns(self, relation, selection):
+        for name in selection.fields:
+            column = relation.get_column(name)
+            if isinstance(column, QueryColumn):
+                yield name, column.query
+
     def create_subqueries(self, relation, selection):
         lookups = selection.lookups
         subqueries = {}
         joins = []
-        for name, subquery in lookups.items():
+        for name, subquery in chain(lookups.items(), self.iter_query_columns(relation, selection)):
             if isinstance(subquery, Selection):
                 expr = self.create_lateral_subquery(relation, subquery, name)
                 joins.append(expr)
@@ -100,7 +114,7 @@ class SelectStrategy:
                     alias_column = None
                 subqueries[name] = Alias(expr.alias, column=alias_column)
             else:
-                expr = self.create_detached_subquery(subquery)
+                expr = self.create_detached_subquery(relation, subquery)
                 subqueries[name] = expr
         return subqueries, joins
 
@@ -155,8 +169,11 @@ class SelectStrategy:
         else:
             return RawSQL(SQL('TRUE'))
 
-    def create_detached_subquery(self, subquery):
-        return Subquery(self.root.parse_queryable_or_builder(subquery))
+    def create_detached_subquery(self, relation, subquery):
+        expr = self.root.parse_queryable_or_builder(subquery, parent_relation=relation)
+        # TODO: Not sure why this happens, but need to remove the "as" and "subquery".
+        expr = expr.expression.expression
+        return Subquery(expr)
 
     def create_alias_name_for_lateral(self):
         alias_name = f'j{self.lateral_counter}'

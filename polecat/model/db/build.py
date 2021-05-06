@@ -1,5 +1,5 @@
 from ...db.schema import Table
-from ..field import MutableField
+from ..field import MutableField, QueryField
 from .convert import convert_field
 
 
@@ -39,7 +39,7 @@ class TableBuilder:
     def build_all_columns(self, model):
         columns = []
         for field in model.Meta.fields.values():
-            if not isinstance(field, MutableField):
+            if not isinstance(field, QueryField) and not isinstance(field, MutableField):
                 continue
             columns.append(self.build_column(field))
         return columns

@@ -204,3 +204,11 @@ class ReverseField(IntField):
 
     def is_concrete(self):
         return False
+
+
+class QueryField(Field):
+    sources = (mf.QueryField,)
+
+    def __init__(self, query, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.query = query

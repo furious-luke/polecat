@@ -17,6 +17,9 @@ from .expression.subquery import Subquery
 from .expression.union import Union
 from .expression.variable import LocalRole, LocalVariable
 from .expression.where import Where
+from .expression.count import Count
+from .expression.max import Max
+from .expression.correlation import Correlation
 from .insert_if_missing_strategy import InsertIfMissingStrategy
 from .insert_strategy import InsertStrategy
 from .select_strategy import SelectStrategy
@@ -30,6 +33,7 @@ class Strategy:
         self.insert_if_missing_strategy = InsertIfMissingStrategy(self)
         self.update_strategy = UpdateStrategy(self)
         self.delete_strategy = DeleteStrategy(self)
+        self._parent_relations = []
 
     def parse(self, queryable_or_builder):
         self.cte = CTE()
@@ -41,11 +45,16 @@ class Strategy:
         self.push_selection_to_relations()
         return self.wrap_with_session(queryable_or_builder)
 
-    def parse_queryable_or_builder(self, queryable_or_builder):
+    def parse_queryable_or_builder(self, queryable_or_builder, parent_relation=None):
+        if parent_relation:
+            self._parent_relations.append(parent_relation)
         if isinstance(queryable_or_builder, Q):
-            return self.parse_builder(queryable_or_builder)
+            expr = self.parse_builder(queryable_or_builder)
         else:
-            return self.create_expression_from_query(queryable_or_builder)
+            expr = self.create_expression_from_query(queryable_or_builder)
+        if parent_relation:
+            self._parent_relations.pop(-1)
+        return expr
 
     def parse_builder(self, builder):
         for branch in builder.iter_branches():
@@ -99,6 +108,10 @@ class Strategy:
             expr = self.create_join(query)
         elif isinstance(query, query_module.Common):
             expr = self.create_common(query)
+        elif isinstance(query, query_module.Count):
+            expr = self.create_count(query)
+        elif isinstance(query, query_module.Max):
+            expr = self.create_max(query)
         elif isinstance(query, Expression):
             expr = query
         else:
@@ -121,9 +134,14 @@ class Strategy:
         return self.delete_strategy.parse_query(query)
 
     def create_filter(self, query):
-        # TODO: Should maybe factor this out into a filter
-        # strategy?
-        expr = query.expression or Where(**query.options)
+        # TODO: Should maybe factor this out into a filter strategy?
+        if query.expression:
+            expr = query.expression
+        else:
+            expr = Where(**{
+                k: Correlation(self._parent_relations[-1], v.field) if isinstance(v, query_module.Ref) else v
+                for k, v in query.options.items()
+            })
         return Select(
             self.parse_chained_relation(query.source),
             where=expr
@@ -155,6 +173,18 @@ class Strategy:
             expr = self.parse_queryable_or_builder(subquery)
             self.cte.append(expr)
         return self.parse_queryable_or_builder(query.subqueries[-1])
+
+    def create_count(self, query):
+        rel = self.parse_chained_relation(query.source)
+        select = rel.expression.expression
+        select.columns = (Count(),)
+        return rel
+
+    def create_max(self, query):
+        rel = self.parse_chained_relation(query.source)
+        select = rel.expression.expression
+        select.columns = (Max(select.columns[0]),)
+        return rel
 
     def parse_chained_relation(self, relation):
         # TODO: I'm not too happy about the type conditional here.

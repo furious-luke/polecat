@@ -1,10 +1,10 @@
 from polecat.db.query import Q as BaseQ
-from polecat.db.query import S
+from polecat.db.query import S, Ref
 
 from ..model import Model
 from .helpers import model_to_values, set_values_on_model
 
-__all__ = ('Q', 'S')
+__all__ = ('Q', 'S', 'Ref')
 
 
 class Q(BaseQ):

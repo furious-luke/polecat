@@ -172,7 +172,7 @@ def migrateddb():
         setup_project()
         # TODO: Catch better error.
     except Exception as e:
-        if 'project' not in str(e):
+        if 'POLECAT_PROJECT_MODULE' not in str(e):
             raise
     with create_database() as curs:
         sync(cursor=curs)

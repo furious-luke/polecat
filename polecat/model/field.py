@@ -225,7 +225,7 @@ class RelatedField(MutableField):
         return values
 
 
-class ComputedField(Field):
-    def __init__(self, function, *args, **kwargs):
+class QueryField(Field):
+    def __init__(self, query, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.function = function
+        self.query = query

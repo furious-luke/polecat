@@ -3,7 +3,7 @@ from functools import singledispatch
 from ...db.schema import (BoolColumn, FloatColumn, IntColumn, JSONColumn,
                           PasswordColumn, PointColumn, RelatedColumn,
                           SerialColumn, TextColumn, TimestampColumn,
-                          UUIDColumn, DateColumn)
+                          UUIDColumn, DateColumn, QueryColumn)
 from .. import field
 
 
@@ -92,4 +92,12 @@ def convert_relatedfield(field, builder):
         primary_key=field.primary_key,
         default=field.default,
         on_delete=field.on_delete
+    )
+
+
+@convert_field.register(field.QueryField)
+def convert_queryfield(field, builder):
+    return QueryColumn(
+        field.name,
+        field.query,
     )

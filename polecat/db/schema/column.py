@@ -5,7 +5,7 @@ from .utils import column_to_identifier, table_to_identifier
 __all__ = ('Column', 'MutableColumn', 'IntColumn', 'TextColumn',
            'BoolColumn', 'FloatColumn', 'RelatedColumn', 'ReverseColumn',
            'PasswordColumn', 'DateColumn', 'TimestampColumn', 'UUIDColumn', 'SerialColumn',
-           'PointColumn', 'JSONColumn')
+           'PointColumn', 'JSONColumn', 'QueryColumn')
 
 
 class Column(Entity):
@@ -218,3 +218,13 @@ class ReverseColumn(Column):
             self.related_table.signature != other.related_table.signature or
             self.related_column.signature != other.related_column.signature
         )
+
+
+class QueryColumn(Column):
+    def __init__(self, name, query):
+        self.name = name
+        self._query = query
+
+    @property
+    def query(self):
+        return self._query()

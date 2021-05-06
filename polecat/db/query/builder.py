@@ -5,7 +5,7 @@ from polecat.core.config import default_config
 from ..connection import cursor as cursor_context  # TODO: Ugh.
 from ..decorators import dbcursor
 from .query import (Common, Delete, Filter, Insert, InsertIfMissing, Join,
-                    Query, Select, Update, Values)
+                    Query, Select, Update, Values, Count, Max)
 from .selection import Selection
 
 logger = logging.getLogger(__name__)
@@ -165,6 +165,12 @@ class Q:
 
     def filter(self, expression=None, **options):
         return self.chain(Filter(self.queryable, expression, options))
+
+    def count(self):
+        return self.chain(Count(self.queryable))
+
+    def max(self):
+        return self.chain(Max(self.queryable))
 
     def recurse(self, column):
         # TODO: This is clearly wrong. It mutates the query, possibly

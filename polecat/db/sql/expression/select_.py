@@ -132,7 +132,7 @@ class Select(Expression):
         return self.relation.get_subrelation(name)
 
     def push_selection(self, selection=None):
-        from ...schema import ReverseColumn
+        from ...schema import ReverseColumn, QueryColumn
         # TODO: Efficiency. Everything.
         for column_name in selection or ():
             if column_name not in self.columns and column_name not in self.subqueries:
@@ -146,7 +146,7 @@ class Select(Expression):
                 column = self.relation.get_column(column_name)
             except KeyError:
                 continue
-            if not isinstance(column, ReverseColumn):
+            if not isinstance(column, (ReverseColumn, QueryColumn)):
                 to_push += (column_name,)
         if self.where:
             to_push += self.where.get_primary_columns()
